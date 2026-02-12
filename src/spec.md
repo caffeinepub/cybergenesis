@@ -1,0 +1,1077 @@
+# CyberGenesis
+
+## Overview
+A cyberpunk-themed land minting DApp where users can generate and claim multiple virtual land plots with deterministic coordinates and biomes based on their Internet Identity principal. Users can claim ICRC-1 token rewards over time, upgrade their plots using accumulated tokens, compete on a global leaderboard, trade land NFTs and modifiers in a P2P marketplace, participate in decentralized governance, and engage in long-term discovery mechanics through a three-tiered loot cache system with energy-based balance mechanisms. The system supports multi-land ownership through scarce LandToken consumption for additional plot minting. All application content is displayed in Russian language.
+
+## Development Environment Setup
+
+### Project Configuration Files
+- **`dfx.json` configuration file** in project root defining all five canisters:
+  - **LandCanister**: Source file `backend/main.mo`, type `motoko`
+  - **CyberTokenCanister**: Source file `backend/cyber_token.mo`, type `motoko`
+  - **MarketplaceCanister**: Source file `backend/marketplace.mo`, type `motoko`
+  - **GovernanceCanister**: Source file `backend/governance.mo`, type `motoko`
+  - **AssetCanister**: Source file `backend/asset.mo`, type `motoko`
+  - Network configuration for local development and IC mainnet deployment
+  - Build settings with empty packtool configuration
+- **`.gitpod.yml` configuration file** in project root for automated development environment:
+  - Base image: `gitpod/workspace-full`
+  - Automated DFINITY SDK installation via official installation script
+  - PATH configuration adding `$HOME/bin` for dfx accessibility
+  - Version verification with `dfx --version`
+  - Frontend dependency installation with `cd frontend && npm install`
+  - VSCode extension installation: `dfinity-foundation.vscode-motoko`
+  - Deploy command display for identity management and IC deployment
+- **`.env.example` configuration template** in project root:
+  - Network configuration with `VITE_DFX_NETWORK=ic`
+  - Placeholder canister IDs for all five canisters
+  - Authorized admin principal configuration
+  - Template for environment variable setup after deployment
+
+### Gitpod Configuration
+- **Automated DFINITY SDK installation** with complete environment preparation:
+  - Uses `gitpod/workspace-full` base image for comprehensive development tools
+  - Automatically installs DFINITY SDK (`dfx`) via official installation script
+  - Configures PATH environment variable for dfx accessibility
+  - Installs frontend dependencies via npm in the frontend directory
+  - Copies `.env.example` to `.env` for environment configuration
+  - Provides ready-to-use deployment commands in terminal output
+- **VSCode extension integration**:
+  - Automatically installs `dfinity-foundation.vscode-motoko` extension for Motoko language support
+  - Provides syntax highlighting and IntelliSense for Motoko development
+- **Deployment command guidance**:
+  - Displays essential dfx commands for Internet Computer deployment
+  - Shows identity management, deployment, and status checking commands
+  - Provides clear instructions for canister deployment workflow
+- **Zero-configuration setup**: Complete ICP development environment ready without manual intervention
+
+## Authentication
+- Internet Identity integration for user login using `@dfinity/auth-client`
+- Enhanced authentication flow with proper session handling:
+  - Check for existing authenticated session on app initialization
+  - If user is already authenticated, automatically set identity and skip login process
+  - Silently reuse current session and immediately update frontend state to "authenticated"
+  - Proper async login handling with `await authClient.login({ onSuccess: ... })` only when not already authenticated
+- **Enhanced session validation and restoration**:
+  - Validate restored sessions before actor creation to ensure they are not expired or invalid
+  - Clear stored sessions and trigger fresh login flow when expired or invalid identity is detected
+  - Consistent error handling and console logging for easier diagnosis of identity authentication issues
+- Visual loading feedback (glow animation) while Internet Identity window is open
+- Store authenticated principal and switch to dashboard state after successful login
+- **Ultra-robust actor initialization with maximum fault tolerance configuration and comprehensive retry logic**:
+  - **Actor creation timeout extended to 120 seconds** for maximum stability under all network conditions
+  - **Progressive backoff retry loops with exponential delays** for up to 120 seconds before showing fatal error
+  - **Up to 25 automatic retry attempts** with progressive delays (1s, 2s, 4s, 8s, 16s, 32s, 64s) before reporting failure
+  - **Comprehensive connection handling** to prevent disconnection during initialization
+  - **Enhanced initialization data poller** that continuously attempts to fetch Network Status and Admin status data with progressive backoff retries for up to 120 seconds with 25 retry attempts until stable connection is confirmed or timeout threshold is reached
+  - **Smooth startup under poor network conditions** with persistent retry mechanisms and consistent user feedback
+  - **Fatal error display only after 120-second timeout** with clear retry instructions
+  - **Primary gateway configuration**: All backend actor connections use `https://ic0.app` as the default primary gateway with automatic failover to `https://boundary.ic0.app` and `https://icp-api.io`
+  - **Async error handling**: Robust asynchronous error trapping and retry scheduling to handle early "Network fetch failed" exceptions gracefully without bypassing retry logic
+  - **Complete actor reinitialization system**: Rebuild all actor connections from scratch to restore canister visibility and fix offline status issues
+  - **Enhanced connection diagnostics**: Real-time monitoring and reporting of connection status for all canisters with visual indicators
+  - **Network reinitialization protocol**: Full network connection refresh and gateway synchronization to restore Connected status
+- Display user's Principal ID after connection
+- Login button behavior:
+  - When not authenticated: initiate login process
+  - When already authenticated: show notification "You are already logged in via Internet Identity"
+- Logout functionality that fully clears identity data and local state before allowing new login
+
+## Plug Wallet Integration
+- Plug Wallet integration as primary Web3 wallet for authentication and transaction signing
+- "Connect Wallet" button in dashboard header that initiates Plug connection
+- Plug wallet authorization requests for both LandCanister and CyberTokenCanister Principal IDs
+- React context to store connected Plug Principal and wallet state accessible across components
+- All transaction-triggering actions use authenticated Plug wallet for signing:
+  - `discoverLootCache` function calls
+  - `buyLand` marketplace transactions
+  - `stakeTokens` governance operations
+  - CBR and ICP payment button actions
+  - `useConsumableBuff` function calls
+  - `mintLand` function calls for additional land creation
+  - `list_item` and `buy_item` marketplace transactions
+  - `applyModifier` function calls for attaching modifiers to lands
+- Secure inter-canister call execution via Plug's API for all wallet-signed transactions
+- Display connected Plug Principal ID in the UI
+- "Disconnect Wallet" option to clear Plug wallet connection and state
+- Plug wallet state persistence across page reloads and browser sessions
+
+## Post-Authentication Initialization
+- After successful Internet Identity login, automatically call backend's `initializeAccessControl()` method
+- **Ultra-reinforced initialization flow with maximum fault tolerance configuration, comprehensive retry logic, enhanced error handling, and fail-safe mechanisms:**
+  - **Ultra-robust retry loops for all backend canisters** (AssetCanister, LandCanister, CyberTokenCanister, MarketplaceCanister, GovernanceCanister) with up to 120 seconds of retry attempts using progressive backoff with 25 retry attempts
+  - **Enhanced initialization data poller** that continuously checks and attempts to fetch Network Status and Admin status data with progressive backoff retries for up to 120 seconds with 25 retry attempts until stable connection is confirmed or timeout threshold is reached
+  - **Cyclic polling mechanism for continuous network status verification**: Implement continuous polling that checks network connectivity and canister status every 5 seconds with progressive backoff during initialization phase until stable connection or 120-second timeout
+  - **High-tolerance connection logic**: Retry until success or 120-second timeout for all actor hooks (`useActor`, `useAssetActor`, `useCyberTokenActor`, `useMarketplaceActor`, `useGovernanceActor`)
+  - **Automatic retry mechanism with progressive exponential backoff**: `initializeAccessControl()` retries continuously with progressive delays (1s, 2s, 4s, 8s, 16s, 32s, 64s) for up to 120 seconds on failure
+  - **Up to 25 reconnection attempts** for each canister with exponential backoff before declaring failure
+  - **Primary gateway configuration**: All backend actor connections use `https://ic0.app` as the default primary gateway with automatic failover to backup boundary nodes
+  - **Async error handling**: Robust asynchronous error trapping and retry scheduling to handle early "Network fetch failed" exceptions gracefully without bypassing retry logic
+  - **Proper async/await patterns**: All async functions use `await` properly and are enclosed in comprehensive `try...catch` blocks
+  - **Enhanced error messaging**: When failing after 120-second timeout, display user-readable error messages with specific context like "Canister temporarily unavailable, please try again" instead of generic "Initialization error" screen
+  - **Sequential execution control**: Prevent LandCanister data queries (`getLandData`, `getCallerUserProfile`) until `initializeAccessControl()` returns successfully
+  - **Dynamic loading states**: Display "Synchronizing access control..." during initialization state with clear progress indication and timeout countdown
+  - **Automatic progression**: Proceed to dashboard automatically once actor and access control initialization are confirmed
+  - **Ultra-robust actor creation with comprehensive retry logic**: Backend canister actors (LandCanister, CyberTokenCanister, AssetCanister, MarketplaceCanister, GovernanceCanister) are created with automatic retry mechanisms for up to 120 seconds when initialization fails
+  - **Environment variable validation**: Verify correct environment variables (`VITE_LAND_CANISTER_ID`, `VITE_CYBER_TOKEN_CANISTER_ID`, `VITE_ASSET_CANISTER_ID`, `VITE_MARKETPLACE_CANISTER_ID`, `VITE_GOVERNANCE_CANISTER_ID`) are used when creating actors
+  - **HttpAgent initialization synchronization**: Ensure HttpAgent waits for Internet Identity or Plug Wallet authentication before creating backend actors
+  - **Connection failure handling**: Display "Failed to create backend actor" errors with specific retry instructions and fallback mechanisms only after 120-second timeout
+  - **Complete backend reconnection process**: Reinitialize all five backend canisters (LandCanister, GovernanceCanister, CyberTokenCanister, AssetCanister, MarketplaceCanister) connections from the frontend with full redeployment validation
+  - **Canister availability verification**: Test each canister connection individually before proceeding with initialization
+  - **Fallback actor creation**: Implement secondary actor creation paths when primary initialization fails
+  - **Connection state monitoring**: Continuously monitor backend connection health and automatically reconnect when needed
+  - **Smooth startup under poor network conditions**: Persistent retry mechanisms ensure initialization completes even with network instability
+  - **Progressive backoff for network polling**: Use progressive backoff (1s, 2s, 4s, 8s, 16s, 32s, 64s) for network status checks to prevent overwhelming the network during poor connectivity
+  - **Connection stability monitoring**: Monitor connection health continuously and trigger automatic reconnection when instability is detected
+  - **Complete actor reinitialization system**: Rebuild all actor connections from scratch to restore canister visibility and fix offline status issues
+  - **Network reinitialization protocol**: Full network connection refresh and gateway synchronization to restore Connected status
+  - **Enhanced connection diagnostics**: Real-time monitoring and reporting of connection status for all canisters with visual indicators
+  - **Canister health verification**: Perform comprehensive health checks for AssetCanister (bd3sg-teaaa-aaaaa-qaaba-cai) and LandCanister (br5f7-7uaaa-aaaaa-qaaca-cai)
+  - **Gateway status restoration**: Restore Connected status for all gateways and canisters through complete reinitialization
+  - `isInitializing` state to track initialization progress with timeout tracking
+  - `isInitialized` state to confirm completion
+  - Visual loading animation with text "Preparing profile and land data..." during initialization with progress feedback
+  - All data-fetching calls (`getLandData`, `getCallerUserProfile`) execute only after `initializeAccessControl()` completes successfully
+  - Proper state checks in `useActorWithInit` and dependent hooks like `useActor`
+  - Dashboard rendering blocked until initialization is complete
+  - Smooth transition from initialization to dashboard display without hang or stuck states
+  - Error boundary implementation with explicit error handling for failed initialization
+  - Display "Error loading profile or land data" message when initialization or data fetching fails after 120-second timeout
+  - Console error output for debugging API exceptions and unresolved promises
+- Ensure `getLandData()` and `getCallerUserProfile()` work reliably after initialization
+- Safe handling for users without existing role or land data - automatically initialize both
+- Prevent access errors during first-time user setup
+- Clear loading indicator in `App.tsx` showing "Preparing profile and land data..." while initialization is in progress with timeout feedback
+- **All asynchronous calls in React components use proper `await` keyword inside `async` functions wrapped in `try...catch` blocks**
+- **Frontend notification system using Toaster for caught errors during initial data fetch with clear error messages like "Failed to load land data" or "Initialization timeout"**
+- **React hooks `useActorWithInit`, `useActor`, and components like `Dashboard.tsx`, `LandDashboard.tsx`, and `ProfileSetup.tsx` properly handle initialization promises and catch backend errors before rendering dependent UI state**
+
+## Complete Actor Reinitialization System
+- **Execute complete rebuild of all frontend-backend actor connections** to restore canister visibility and fix offline status issues:
+  - **Full actor system reinitialization**: Rebuild all actor hooks and connection logic from scratch
+  - **Fresh HttpAgent initialization**: Create new HttpAgent instances with updated gateway configuration
+  - **Reinitialize all canister actor instances**: Clean state initialization for all backend canisters
+  - **Verify all actor methods**: Ensure proper binding and accessibility after reinitialization
+  - **Network environment stabilization**: Establish clean connections within stable network environment
+  - **Eliminate DISCONNECTED errors**: Proper connection sequencing to prevent offline status
+  - **Connection stability verification**: Test connection reliability under various network conditions
+- **Enhanced network reinitialization protocol**:
+  - **Gateway synchronization**: Ensure all connections use `https://ic0.app` as primary gateway
+  - **Connection health monitoring**: Real-time monitoring of all canister connections
+  - **Automatic detection and recovery**: Identify and recover from connection issues
+  - **Comprehensive logging**: Debug connection problems with detailed logging
+  - **Visual connection indicators**: Show connection status for each canister in UI
+  - **Restore Connected status**: Full network refresh to restore proper gateway and canister connectivity
+- **Canister health verification system**:
+  - **AssetCanister health checks**: Verify bd3sg-teaaa-aaaaa-qaaba-cai connectivity and status
+  - **LandCanister health checks**: Verify br5f7-7uaaa-aaaaa-qaaca-cai connectivity and status
+  - **Cycle balance monitoring**: Check canister resource availability
+  - **Memory and compute validation**: Ensure canisters have sufficient resources
+  - **Deployment consistency**: Verify WASM versions and configuration alignment
+  - **Gateway connectivity tests**: Validate connection to ic0.app
+  - **Automated recovery protocols**: Self-healing mechanisms for detected issues
+
+## Network Configuration
+- **Enhanced Internet Computer mainnet configuration with updated primary gateway and automatic failover**:
+  - **`VITE_DFX_NETWORK` permanently set to `"ic"` for all builds (draft and live)**
+  - **Updated gateway priority with `https://ic0.app` as primary gateway and automatic failover to multiple stable public IC boundary nodes**:
+    - **Primary: `https://ic0.app`**
+    - **Secondary: `https://boundary.ic0.app`**
+    - **Tertiary: `https://icp-api.io`**
+  - **Gateway health monitoring**: Continuous monitoring of boundary node connectivity and automatic switching to most stable endpoint
+  - **HttpAgent initialization uses updated primary gateway `https://ic0.app` with 120-second timeout**
+  - **Enhanced connection stability validation**: Test multiple boundary nodes and select the most responsive one during initialization
+  - **Ensure initialization handshake uses live Internet Computer boundary node to prevent connection freezes**
+  - **Async error handling**: Robust asynchronous error trapping and retry scheduling to handle early "Network failed" exceptions gracefully without bypassing retry logic
+  - **Complete network reinitialization**: Execute full network connection refresh to restore Connected status
+  - **Environment configuration synchronization**: Align all network settings across frontend and backend
+- **Asset Canister ID embedding with permanent configuration**:
+  - **Permanently embed correct Asset Canister Principal ID `bd3sg-teaaa-aaaaa-qaaba-cai` in `VITE_ASSET_CANISTER_ID`**
+  - **Embed Asset Canister ID in both draft and live environment configurations**
+  - **Remove runtime environment variable dependencies by hardcoding Asset Canister ID in build process**
+  - **Ensure Asset Canister ID matches deployed backend canister on public IC network**
+  - **Validate and permanently attach correct `VITE_ASSET_CANISTER_ID` to prevent localhost connection attempts**
+- **Corrected Land Canister ID configuration**:
+  - **Permanently embed correct Land Canister Principal ID `br5f7-7uaaa-aaaaa-qaaca-cai` in `VITE_LAND_CANISTER_ID`**
+  - **Verify all remaining canister IDs match mainnet deployment configuration**
+  - **Synchronize all environment variables with deployed canister IDs on public IC network**
+  - **Validate canister ID consistency across all frontend configuration files**
+- **Enhanced network diagnostics and validation with connection stability monitoring**:
+  - **Dynamic console logging confirming current network target is `ic`**
+  - **Asset Canister connectivity status logging visible in browser console**
+  - **Real-time network connection validation during app initialization**
+  - **Connection health monitoring with automatic retry for failed connections**
+  - **Network diagnostic information in Admin Panel for authorized users**
+  - **Continuous connection stability monitoring with automatic reconnection triggers**
+  - **Network status polling with progressive backoff to handle intermittent connectivity issues**
+  - **Enhanced connection diagnostics**: Real-time reporting of canister connection status with visual indicators
+  - **Gateway status monitoring**: Track and display connectivity status for all configured gateways
+- **Build configuration stability**:
+  - **Eliminate all runtime environment variable loading for network configuration**
+  - **Hardcode all canister IDs and network settings directly in build process**
+  - **Ensure production builds connect exclusively to public IC network**
+  - **Verify all backend actor creation uses embedded public IC configuration**
+- **Complete backend redeployment and connection refresh**:
+  - **Execute complete backend redeployment routine to activate corrected public network configuration**
+  - **Refresh all canister connections to use stable public IC endpoints**
+  - **Verify full application UI and data loading post-initialization for complete stabilization**
+  - **Full reinitialization**: Cleanly rebuild and redeploy both Asset Canister (bd3sg-teaaa-aaaaa-qaaba-cai) and Land Canister (br5f7-7uaaa-aaaaa-qaaca-cai) to ensure their Wasm modules, candid interfaces, and references are correctly initialized and compatible
+- **Synchronized environment configuration**: Perfect alignment of canister IDs, host URLs, and gateway connections between frontend and backend to eliminate configuration mismatches
+
+## Canister Health Diagnostics
+- **Comprehensive canister health monitoring system** for LandCanister (br5f7-7uaaa-aaaaa-qaaca-cai) and AssetCanister (bd3sg-teaaa-aaaaa-qaaba-cai):
+  - **Canister status verification**: Real-time checks to confirm both canisters are active and reachable on Internet Computer mainnet
+  - **Cycle balance monitoring**: Automated queries to verify current T Cycles available and alert on resource starvation risks
+  - **Memory and compute usage tracking**: Monitor storage limits and compute resource consumption to prevent capacity issues
+  - **Deployment synchronization validation**: Verify WASM versions and inter-canister configuration consistency with deployment hash verification
+  - **Gateway connectivity testing**: Automated network connectivity checks to `https://ic0.app`, `https://boundary.ic0.app`, and `https://icp-api.io` gateways with actor creation validation
+  - **Response time measurement**: Track and report response times for each gateway to identify performance bottlenecks
+  - **HTTP status code validation**: Verify proper HTTP responses (200 OK) from all gateway endpoints
+  - **Automatic restoration protocols**: Self-healing mechanisms to restore or re-initialize affected canister configurations when issues are detected
+  - **Connection status restoration**: Monitor and restore Connected status for all gateways and canisters
+  - **Offline status resolution**: Detect and fix offline canister status through reinitialization protocols
+  - **Gateway stability recommendations**: Provide recommendations for unstable nodes or gateways based on performance metrics
+- **Enhanced diagnostic reporting system**:
+  - **Real-time status dashboard**: Visual indicators showing canister health, cycle balances, and connectivity status
+  - **Automated issue detection**: Proactive monitoring that identifies problems before they impact user experience
+  - **Recovery automation**: Automatic execution of restoration procedures when canister issues are detected
+  - **Detailed logging and alerts**: Comprehensive diagnostic information with specific error codes and resolution steps
+  - **Connection status indicators**: Visual feedback showing Connected/Offline status for each canister and gateway
+  - **Performance metrics display**: Show response times and success rates for each gateway endpoint
+  - **Gateway health scoring**: Rate gateway stability and recommend optimal endpoints
+- **Canister management functions**:
+  - **Health check endpoints**: Backend functions to query canister status, memory usage, and cycle balances
+  - **Configuration validation**: Verify inter-canister references and deployment consistency
+  - **Emergency recovery procedures**: Automated protocols to restore normal operational state
+  - **Performance monitoring**: Track response times and resource utilization patterns
+  - **Connection restoration**: Automated procedures to restore canister visibility and connectivity
+  - **Multi-gateway testing**: Test connectivity across all three gateway endpoints simultaneously
+  - **Network stability assessment**: Evaluate overall network health and provide stability recommendations
+
+## Frontend Features
+
+### Enhanced Asset Health Monitoring System with Detailed Diagnostics
+- **Direct Asset Canister health monitoring** without actor dependencies:
+  - Performs health check using direct `fetch` to `https://bd3sg-teaaa-aaaaa-qaaba-cai.ic0.app/health`
+  - Returns health status: `'CHECKING' | 'HEALTHY' | 'ERROR'`
+  - Implements 2-second initial delay after component mount
+  - Automatic status refresh every 30 seconds
+  - No localStorage or sessionStorage caching for real-time status updates
+  - Visual status indicators with color-coded borders and text
+- **Enhanced diagnostic logging in AdminPanel checkHealth function**:
+  - **Comprehensive response logging**: Log `response.ok`, `response.status`, `response.statusText` to console for detailed debugging
+  - **Response text logging**: Log full `response.text()` content to understand exact health endpoint response
+  - **Enhanced error condition handling**: Replace simple error status with detailed diagnostic information
+  - **Improved status determination logic**: Check both `response.ok` and text content containing "HEALTHY" for accurate status assessment
+  - **Comprehensive try-catch error handling**: Wrap all health check operations in try-catch with detailed error logging using `console.log("💥 Catch блок:", error)` for clear exception visibility
+  - **Detailed console output**: Provide complete diagnostic information to help administrators understand why error status is set even with 200 HTTP status
+
+### Fully Restored Soft Cyberpunk Space Noir UI Design
+- **Complete restoration of "Soft Cyberpunk Space Noir" theme with original color palette**:
+  - **Neon Green (#00ff41)** and **Cyber Blue (#00d4ff)** as primary accent colors
+  - **Deep black (#000000)** and **dark grey (#1a1a1a)** background tones
+  - **Dark purple-black (#0a0a0f)** as primary background color
+  - **Glassmorphism effects**: Semi-transparent frosted panels with subtle neon glow borders and rounded corners
+  - **High-contrast readability**: Enhanced font weights and color contrasts for perfect legibility
+  - **Corrected global text color styling**: All default (non-themed) text changed from black to white or light-cyan while preserving existing accent colors (green, purple, magenta, etc.)
+  - **Neon gradients**: Fully restored original gradient effects using cyan (#00ffff), blue (#3399ff), and purple (#9977ff) combinations
+  - **Glowing cosmic reflections**: Restored CSS background effects with cosmic nebula and star field patterns
+  - **Smooth hover effects**: Restored original button animations with gradient borders and glow transitions
+- **Isolated 2D Background Rendering System**: Cosmic and particle backgrounds use separate 2D canvas layers that don't share GPU resources with 3D WebGL contexts
+- **Fully restored ParticleBackground component**: Dynamic particle system with green/blue/purple hues and smooth animations using 2D canvas rendering
+- **Fully restored original button styling**: Cyberpunk-themed buttons with neon glow effects, glassmorphism, and hover animations featuring gradient borders and smooth transitions
+- **Performance optimization**: Minimal impact animations that don't interfere with R3F dynamic scenes
+- **Visual harmony**: Seamless integration with existing 3D visualization components and dynamic biome backgrounds
+
+### Compact Top-Right Header Bar
+- **Always-visible minimalist header bar** positioned in the top-right corner consolidating key metrics and controls:
+  - **Collection Mastery Display**: Shows `[Star Icon] 25/45` format with **accurate real-time count** of unique collected modifiers from `getMyModifications()` 
+  - **Land Count Display**: Shows `[Land Icon] 3` format displaying total number of owned lands from user's land collection
+  - **Connect Wallet Button**: Integrated for quick access to Plug Wallet connection
+  - **Glassmorphism styling**: Semi-transparent frosted background with subtle glow borders
+  - **Responsive design**: Adapts to different screen sizes while maintaining visibility
+
+### Landing Page
+- **Fully restored login section with Internet Identity integration**:
+  - Hero section with animated 3D rotating cube using React Three Fiber
+  - "GET YOUR GENESIS PLOT" headline
+  - "Connect Internet Identity" button with proper AuthClient initialization
+  - Loading state with visual feedback during authentication process
+  - Login section renders correctly above the 3D background
+- **Isolated 2D Background System**: Cosmic animated background uses separate 2D canvas layer that doesn't share GPU resources with 3D WebGL contexts
+- Smooth animations using Framer Motion
+- Glassmorphism panels for content sections
+- **3D container maintains fixed height (≈ 70 rem)** to preserve original visual proportions
+
+### Land Selector Component
+- **Multi-land navigation interface** enabling users to switch between owned lands:
+  - Dropdown selector showing all owned lands with LandID and coordinates
+  - Directional arrow controls for sequential land browsing
+  - Current land indicator with "Land X of Y" format
+  - Visual preview thumbnails showing biome type for each land
+- **Dynamic land data rendering** based on currently selected land:
+  - All dashboard components update to reflect selected land's data
+  - 3D visualization switches to selected land's biome and modifiers
+  - Upgrade and claim buttons operate on currently selected land
+- **Seamless land switching** with smooth transitions and state persistence
+- **Glassmorphism styling** consistent with overall UI theme
+- **Responsive design** for desktop and mobile interfaces
+
+### My Land Dashboard
+- **Fixed Dashboard container height configuration**: Dashboard component uses `min-h-screen` instead of `h-full` to ensure proper viewport height inheritance and prevent container collapse
+- Dashboard header with "Connect Wallet" button for Plug Wallet integration (now integrated in compact header bar)
+- Connected Plug Principal ID display and "Disconnect Wallet" option
+- **Enhanced CBR Balance Display with Comprehensive Error Handling, Audit Compliance, and Detailed Logging**: 
+  - **Asynchronous call to `CyberTokenCanister`'s `icrc1_balance_of` method using connected Plug Wallet or Internet Identity principal with proper `await` keyword**
+  - **Comprehensive `try...catch` blocks wrapping all balance fetch operations with specific error handling for network failures, canister errors, and timeout conditions**
+  - **Raw `Nat` response conversion using `formatTokenBalance` utility from `tokenUtils.ts` that divides by `1e8` with proper decimal formatting using `toFixed(2)` to `toFixed(4)` precision and validation of numeric conversion**
+  - **Detailed console logging for all balance operations: `console.log("Getting CBR balance for Principal:", principal)` and `console.log("CBR balance response:", response, "Formatted:", formattedBalance)`**
+  - **Enhanced error logging with specific error codes and undefined actor responses: `console.error("CBR balance fetch error - Error code:", error.code, "Actor response:", actor)`**
+  - **Fallback UI displaying "Balance unavailable" when fetch fails with detailed console logging of error messages and stack traces**
+  - **Error toast notifications for failed balance fetches with specific error messages like "Failed to get CBR balance", "Network timeout", or "Canister unavailable"**
+  - **Loading state indicator while balance is being fetched with timeout handling**
+  - **Automatic retry mechanism for failed balance requests with progressive backoff**
+  - **React Query invalidation triggers for immediate balance refresh after successful transactions**
+  - **Clear error handling and toast logging when response is null, 0, or encounters network errors with readable status messages**
+  - **Debug button or console function to manually refresh and log current on-chain CBR balance for validation**
+  - **Reactive balance updates immediately after claiming daily rewards or completing token transactions**
+  - **Remove redundant "Raw: 0 e8s" display line, keeping only the main formatted CBR balance**
+  - Displayed in dedicated "CBR BALANCE" card with cyberpunk styling
+- **Collection Mastery Progress**: Dynamic "Collection Mastery: [X]/45" metric using `getMyModifications()` from `LandCanister` to count unique modifier IDs and compute real-time progress out of 45 total available modifiers with cyberpunk visual styling in header bar only
+- **Land Collection Display**: Shows total number of owned lands and current selection status
+- **Land Information Card** displaying currently selected land information after login and initialization:
+  - Coordinates (latitude and longitude)
+  - Biome type (one of 7 valid biomes: `FOREST_VALLEY`, `ISLAND_ARCHIPELAGO`, `SNOW_PEAK`, `DESERT_DUNE`, `VOLCANIC_CRAG`, `MYTHIC_VOID`, `MYTHIC_AETHER`)
+  - Current upgrade level (0-5) displayed as small unobtrusive text within the card
+  - Last claim time
+  - **LandID display instead of customizable plot name**
+  - Base token multiplier (displays +25% for MYTHIC_VOID and MYTHIC_AETHER lands)
+  - **Attached modifiers display**: Shows list of modifier instances currently attached to the selected land with their names, rarity tiers, and multiplier values
+- **Enhanced "Get 100 CBR" button with comprehensive error handling, audit compliance, detailed logging, and visible cooldown timer** for currently selected land:
+  - **Button text changed to "Get 100 CBR"**
+  - **Visible cooldown timer showing remaining time until next claim (24-hour cooldown)**
+  - Disabled state when cooldown active with timer display
+  - Applies base token multiplier for MYTHIC_VOID and MYTHIC_AETHER lands
+  - Uses Plug wallet for transaction signing
+  - **Detailed logging for claim operations: `console.log("Claiming rewards for land:", landId, "Principal:", principal)` and `console.log("Claim result:", result)`**
+  - **Enhanced error handling with specific error messages for insufficient funds or transfer failures**
+  - **Immediate balance refresh upon successful claim completion with React Query invalidation**
+  - **Clear confirmation message display when tokens are successfully claimed with updated balance visible**
+- "UPGRADE PLOT" button for spending tokens to increase upgrade level of currently selected land
+  - Shows upgrade cost and current token balance
+  - Disabled when insufficient tokens or max level reached
+  - Uses Plug wallet for transaction signing
+  - **Enhanced error handling with specific error messages and balance refresh**
+- "CREATE NEW LAND" button for creating additional lands
+  - Shows LandToken requirement and availability
+  - Disabled when no LandTokens available
+  - Uses Plug wallet for transaction signing
+- "FIND" button that opens a new browser tab linking to currently selected land's coordinates on OpenStreetMap
+- **Enhanced Modal-based Map System with CDN Physics Engine and Optimized Rendering**:
+  - **"VIEW CYBER MAP" button** styled with cyberpunk aesthetics (border: `1px solid #00FFFF`, color `#00FFFF`, glow shadows, `Orbitron`/monospace font)
+  - **Cyberpunk modal overlay** with backdrop `rgba(0,0,0,0.95)` and `backdrop-filter: blur(5px)`
+  - **Glowing close button** `[X]` in top-right corner with `#FF0033` color
+  - **Modal lifecycle management**: Fully mount map on open and unmount on close to reset VRAM
+  - **HTML5 Canvas 2D rendering engine** using image source: `https://raw.githubusercontent.com/dobr312/cyberland/refs/heads/main/LandMap/IMG_8296.webp`
+  - **CDN-based physics engine** using imports from `https://esm.sh/react-spring` and `https://esm.sh/@use-gesture/react` for pinch-to-zoom and pan
+  - **Fixed animation loop activation**: Ensure `animate` function is invoked manually with `requestAnimationFrame(animate);` immediately after its definition
+  - **Motion blur prevention**: Inside the render loop, before any drawing operations, insert `ctx.clearRect(0, 0, canvas.width, canvas.height);` to fully clear each frame before rendering
+  - **Synchronized momentum physics**: Inside the loop, extract current spring values using `const currentX = x.get(); const currentY = y.get(); const currentS = scale.get();` for rendering the image and beams. In `useGesture`, remove `immediate: true` and set spring config `{ mass: 1, tension: 120, friction: 14 }` to enable realistic sliding momentum
+  - **Clean UI without drag text**: Completely remove the "Drag to pan" text container from the return structure
+  - **Proper image loading with onload event**: Show black background until image is ready, only start rendering once loaded
+  - **120 Hz requestAnimationFrame loop**: Continuously draw using reactive values from react-spring for smooth physics
+  - **Corrected coordinate calculation**: `startX = -(ownerLand.coordinates.lon * 5.68)`, `startY = (ownerLand.coordinates.lat * 5.68)`
+  - **Enhanced physics configuration**: `useSpring` with proper momentum and inertia slide effects
+  - **Clean UI**: Canvas fills entire screen (`fixed inset-0`), close button in top-right (`z-[10000]`, `top-10`, `right-10`)
+  - **Auto-centering for owner's land**: Map automatically centers on the user's first owned land at startup with fixed multiplier of 5.68
+  - **Zoom controls**: Clamped 0.5× – 3.0× zoom range with rubberband effects
+  - **Biome grid system** for coordinate range (-500 → 500):
+    - MYTHIC_VOID & MYTHIC_AETHER: radius < 150
+    - ISLAND_ARCHIPELAGO: X < –100, Y > 0
+    - FOREST_VALLEY: X < –120, –400 < Y < 0
+    - SNOW_PEAK: X < –150, Y < –400
+    - DESERT_DUNE: X > 100, Y > –200
+    - VOLCANIC_CRAG: X > 150, Y < –200
+  - **Enhanced beam rendering**: Owner lands show enhanced beams with biome-colored glow effects (shadowBlur: 50, lineWidth: 4), others show subtle white beams (opacity: 0.2, shadowBlur: 20, lineWidth: 1)
+  - **Full-screen modal wrapper**: Fixed inset-0 positioning with z-index 9999 for complete screen coverage
+  - **Hardware acceleration** with `will-change: transform` and `requestAnimationFrame` optimization
+  - **60 FPS performance** with optimized rendering only when modal is visible
+- **Modifier Management Section**:
+  - **Player Inventory Display**: Shows unassigned modifier instances owned by the player with their names, rarity tiers, and multiplier values
+  - **"APPLY MODIFIER" buttons**: For each unassigned modifier instance, allows attaching it to the currently selected land using `applyModifier(modifierInstanceId, landId)` function
+  - **Visual feedback**: Clear indication when modifiers are successfully attached to lands
+  - **Real-time updates**: Inventory and attached modifiers lists update immediately after applying modifiers
+- **Admin Debug Panel** (visible only to authorized users):
+  - **"CHECK CANISTER BALANCE" button** that calls `getCanisterTokenBalance()` and displays the result
+  - Shows canister's own CBR token balance for debugging and audit purposes
+  - Console logging of canister balance results for developer verification
+- **Cyberpunk-style navigation icons** replacing textual menu labels while preserving layout and design
+- Glassmorphism styling for all dashboard panels and cards
+- **Enhanced biome prop passing to CubeVisualization component with reactive data propagation and safe initialization**:
+  - **Dashboard component passes the current land's biome string (e.g., "FOREST_VALLEY", "MYTHIC_VOID") as a prop to CubeVisualization**
+  - **CubeVisualization component uses `useMemo(() => biomeModelMap[biome], [biome])` for stable, reactive computation of `modelUrl`**
+  - **Conditional rendering prevents CyberCube from mounting until `modelUrl` is valid (non-null and non-empty)**
+  - **Enhanced fallback logic**: If biome is missing or undefined, log detailed warning to console and render CSS placeholder "3D model unavailable"
+  - **Direct biome prop passing**: When biome exists, pass it directly to enable proper CyberCube rendering with updated Raw GitHub model URLs
+  - **Comprehensive console logging**: Add detailed warning logs when biome is missing: `console.warn("Biome missing for CubeVisualization, showing fallback")`
+  - **Detailed biome and modelUrl logging**: Add `console.log('[Biome Check]', biome)` and `console.log('[Model URL]', modelUrl)` for visual verification
+  - **Safe fallback display ("model not loaded") when `modelUrl` is undefined or still loading without breaking the render loop**
+
+### Enhanced 3D Terrain Visualization System with Sunset Environment Lighting
+- **Fixed KTX2 Model Loading Architecture in LandModel.tsx**:
+  - **LandModel.tsx component implements proper KTX2 initialization with corrected asset path handling**:
+    - Creates new directory `frontend/src/assets/basis/` containing `basis_transcoder.js` and `basis_transcoder.wasm` files
+    - **Uses Vite asset URL imports for proper path resolution**:
+      - `import basisJs from '@/assets/basis/basis_transcoder.js?url';`
+      - `import basisWasm from '@/assets/basis/basis_transcoder.wasm?url';`
+    - **Corrected KTX2Loader initialization with proper transcoder path**:
+      - Uses `useThree()` hook to obtain active WebGL context (`gl`)
+      - Creates `KTX2Loader` instance with `useMemo` for stable initialization
+      - Sets transcoder path using `loader.setTranscoderPath(basisJs.replace(/basis_transcoder\.js$/, ''));`
+      - Calls `loader.detectSupport(gl)` with active renderer context
+      - Returns memoized loader instance dependent on `gl` context
+    - **Enhanced GLTFLoader configuration**:
+      - Uses `useLoader(GLTFLoader, modelUrl, (loader) => { loader.setKTX2Loader(ktx2Loader); })` for proper loader setup
+      - Guards against `null` or `undefined` `modelUrl` with early return to prevent crashes
+      - Logs confirmation with detailed diagnostics after successful loading
+      - Renders only if `gltf.scene` exists: `<primitive object={gltf.scene} />`
+    - **Proper WASM MIME type handling**: Ensures `.wasm` file is served with `application/wasm` MIME type through Vite asset URL handling
+    - **Maintains existing optimizations**: Preserves Canvas, FPS optimizations, frameloop, DPR, and camera behavior unchanged
+    - **Comprehensive error handling**: Detailed console logging for transcoder initialization and model loading failures
+  - **Enhanced Material Traversal Logic in LandModel.tsx**:
+    - **Import `useRef` from React** if not already imported
+    - **Define `const isInitialized = useRef(false);` inside the component**
+    - **Enhanced guard clause in useEffect handling model processing**: `if (!gltf || !gltf.scene || isInitialized.current) return;`
+    - **Complete material traversal with enhanced logic**:
+      - For each mesh (`obj.isMesh && obj.material`):
+        - Set `obj.frustumCulled = true` for performance optimization
+        - Use `const material = obj.material as THREE.MeshStandardMaterial;`
+        - **Preserve existing albedo remap**: If `material.color.r >= 0.8 && material.color.g >= 0.8 && material.color.b >= 0.8`, set `material.color.setScalar(0.7)` to prevent overexposed white patches
+        - **Preserve selective emissive**: Compute average emissive intensity:
+          - Calculate brightness: `const emissiveAvg = (material.emissive.r + material.emissive.g + material.emissive.b) / 3;`
+          - If `emissiveAvg < 0.1`, set `material.emissive.setHex(0x000000)` and `material.emissiveIntensity = 0` to remove baked light
+          - Otherwise, set `material.emissiveIntensity = 2.0` to keep or enhance true neon/lava emissive elements
+        - **Preserve light map removal**: Set `material.lightMap = null` and `material.lightMapIntensity = 0`
+        - **Biome-aware envMapIntensity adjustment**:
+          - If `modelUrl` includes `"VOID"` or `obj.name` includes `"VOID"`, set `material.envMapIntensity = 0.8`
+          - Else, set `material.envMapIntensity = 0.3`
+        - **Do not modify `material.roughness` or `material.metalness` - preserve GLB export values**
+        - Set `material.needsUpdate = true` at the end of the loop
+    - **Execute Box3 and camera auto-fit logic once inside the guarded block**
+    - **After processing, set `isInitialized.current = true;` to lock further updates and prevent redundant GPU/CPU computations**
+  - **CubeVisualization.tsx**: Determines `modelUrl` based on current biome using `useMemo(() => biomeModelMap[biome], [biome])`
+  - **Conditional LandModel rendering**: Only renders `<LandModel />` when `modelUrl` is valid (non-null and non-empty)
+  - **Single loader usage**: Uses only `useLoader(GLTFLoader, modelUrl, loaderCallback)` when `modelUrl` is valid
+  - **No fallback meshes**: Skips rendering when `modelUrl` or `gltf.scene` are missing
+  - **Clean error handling**: Missing model URL leaves Canvas empty without errors or crashes
+- **Enhanced BIOME_MODEL_MAP Configuration**:
+  - **FOREST_VALLEY**: "https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/FOREST_VALLEY_KTX2.glb"
+  - **ISLAND_ARCHIPELAGO**: "https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/ISLAND_ARCHIPELAGO.glb"
+  - **SNOW_PEAK**: "https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/SNOW_PEAK.glb"
+  - **DESERT_DUNE**: "https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/DESERT_DUNE.glb"
+  - **VOLCANIC_CRAG**: "https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/VOLCANIC_CRAG.glb"
+  - **MYTHIC_VOID**: "https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/MYTHIC_VOID.glb"
+  - **MYTHIC_AETHER**: "https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/MYTHIC_AETHER.glb"
+- **React Three Fiber Integration**:
+  - **Single Canvas instance**: Only one R3F Canvas active to prevent context conflicts
+  - **Proper Suspense boundaries**: `<Suspense fallback={<div>Loading model...</div>}>` wraps 3D content
+  - **Context-aware loading**: All model loading uses Canvas-provided WebGL context
+  - **KTX2 and standard GLB support**: Handles both compressed and standard model formats
+- **Sunset Environment Lighting Canvas Configuration**:
+  - **Canvas settings**: `<Canvas camera={{ position: [0, 0, 6], fov: 45 }}>`
+  - **Enhanced renderer parameters in `onCreated` callback**:
+    - `gl.outputColorSpace = THREE.SRGBColorSpace` for proper color space handling
+    - **`gl.toneMapping = THREE.ACESFilmicToneMapping` for cinematic rendering**
+    - **`gl.toneMappingExposure = 0.6` for sunset environment lighting**
+    - `gl.antialias = true` for smooth edge rendering
+    - `gl.powerPreference = 'high-performance'` for optimal GPU usage
+  - **OrbitControls**: Single `<OrbitControls makeDefault />` instance inside Canvas
+  - **Mobile optimization**: `dpr={[1, 1.5]}` and proper performance settings
+  - **Sunset Environment Lighting Setup**:
+    - **Environment**: `<Environment preset="sunset" environmentIntensity={0.5} />` for warm sunset environmental reflections
+    - **Hemisphere Light**: `<hemisphereLight intensity={1.2} color="#ffffff" groundColor="#222222" />` for natural sky-ground illumination
+    - **Key Light**: `<directionalLight name="KeyLight" position={[15, 15, 10]} intensity={2.5 * Math.PI} color="#ffffff" castShadow={false} />` for main illumination with physical light calibration
+    - **Sun Light**: `<directionalLight name="SunLight" position={[-10, 20, -15]} intensity={1.0 * Math.PI} color="#ffaa33" castShadow={false} />` for warm accent lighting with physical light calibration
+- **Auto-Fit Camera System**:
+  - **One-time execution**: Uses `fittedRef` to prevent repeated auto-fit operations
+  - **Bounding sphere method**: Ensures models fill ~70% of viewport
+  - **Optimal positioning**: Calculates camera distance based on model size
+  - **Preserved controls**: OrbitControls remain active after initial positioning
+- **Error Handling and Fallback**:
+  - **Safe rendering**: Returns `null` when `modelUrl` or `gltf.scene` invalid
+  - **No crashes**: Missing models result in empty Canvas without errors
+  - **External error display**: Error messages shown in UI components below Canvas
+  - **Console logging**: Detailed debugging information in browser console
+- **Performance Optimization**:
+  - **Memory management**: Proper disposal of GPU resources on unmount
+  - **Context stability**: Continuous WebGL context health monitoring
+  - **Resource cleanup**: Efficient cleanup of all 3D resources
+  - **Quality adjustment**: Automatic quality reduction when GPU resources limited
+  - **No real-time shadows**: All lights have `castShadow={false}` for optimal performance
+  - **Performance lock system**: Prevents redundant GPU/CPU computations through initialization guard
+- **Vite Configuration for WASM Support**:
+  - **Ensure `vite.config.ts` properly handles `.wasm` files with correct MIME type `application/wasm`**
+  - **Asset URL imports work correctly for both `.js` and `.wasm` files in the basis directory**
+  - **Proper static asset serving configuration for transcoder files**
+
+### Discovery Tab
+- "DISCOVERY" tab with enhanced cyberpunk/glitch UI styling and glassmorphism panels
+- Three-tiered loot cache system with distinct action buttons/cards:
+  - **Common Cache (Tier 1)**: Shows "100 CBR / 200 Charge" cost with 0.05% LandToken drop chance
+  - **Rare Cache (Tier 2)**: Shows higher CBR and Charge costs with 0.2% LandToken drop chance
+  - **Legendary Cache (Tier 3)**: Shows premium CBR and Charge costs with 0.5% LandToken drop chance
+- Payment method selector with toggle/radio buttons for "Pay CBR" and "Pay ICP" options
+- **Enhanced "DISCOVER CACHE" buttons with comprehensive transaction handling, audit compliance, and detailed logging**:
+  - **Proper async/await pattern for `discoverLootCache(tier)` function calls with explicit error handling**
+  - **Comprehensive try-catch blocks with specific error handling for insufficient funds, transfer errors, and unauthorized access**
+  - **Detailed logging for discovery operations: `console.log("Discovering cache tier:", tier, "Principal:", principal)` and `console.log("Discovery result:", result)`**
+  - **Error toast notifications displaying readable error messages like "Insufficient CBR balance", "Transfer error", or "Unauthorized transaction" with backend error message propagation**
+  - **Loading states during transaction processing with visual feedback and timeout handling**
+  - **Immediate UI updates and balance refresh upon successful cache discovery with React Query invalidation**
+  - **Frontend error capture and formatting of backend error messages for user-friendly display**
+  - Shows CBR token cost or ICP cost based on selected payment method
+  - Shows charge unit requirements for each tier
+  - Disabled when insufficient resources
+  - Uses Plug wallet for payment transaction signing
+- Inventory section displaying all user's loot caches:
+  - Cache ID, tier, and discovery timestamp
+  - Unlock timer showing remaining time (4-hour delay)
+  - "OPEN CACHE" button (enabled after delay or with charge cost)
+  - Tier visualization for opened caches showing modification rarity
+  - Uses Plug wallet for cache opening transactions
+  - **Enhanced error handling for cache opening operations with user-facing error messages**
+- Consumable items inventory section:
+  - Display Energy Boosters with amount values
+  - Display Consumable Buffs with type and duration information
+  - Display LandTokens with current count and rarity indicator
+  - "USE BUFF" buttons to call `useConsumableBuff(item_id)` using Plug wallet
+  - Real-time updates when buffs are consumed
+- Visual feedback for successful cache discovery and opening
+- Real-time updates of cache status and inventory
+- Dynamic UI updates after discovering caches or consuming buffs
+- Glassmorphism styling for all discovery panels and cache cards
+
+### Collection Tab
+- "COLLECTION" tab with enhanced cyberpunk/glitch UI styling and glassmorphism panels
+- Static modifier catalog display using `PLANNED_MODIFIER_CATALOG` array from JS/TS file
+- Grid layout displaying 45+ modifier entries with:
+  - Modifier name and ID
+  - Rarity tier visual indicators (1-4)
+  - Asset URL preview or placeholder
+  - Visual rarity cues with Tailwind CSS:
+    - Tier 1 (Common): neutral border
+    - Tier 2 (Rare): blue glow effect
+    - Tier 3 (Legendary): purple glow effect
+    - Tier 4 (Mythic): gold/neon glow effect
+- Framer Motion animations for hover effects and fade-in transitions
+- Cyberpunk design consistency with glassmorphism styling
+- Accessible from main navigation for visual verification
+- Placeholder content before backend modifier data integration
+
+### Leaderboard Tab
+- "LEADERBOARD" tab with enhanced cyberpunk/glitch UI styling and glassmorphism panels
+- Displays ranked list of top lands using `getTopLands()` data:
+  - Rank number with neon styling
+  - LandID (instead of customizable plot names)
+  - Upgrade level with visual indicators
+  - CBR token balance with real-time updates and proper decimal formatting
+  - Total land count for each user
+- Sorting by upgrade level first, then by token balance for ties
+- Configurable limit for number of entries displayed
+- Auto-refresh functionality to keep rankings current
+
+### Marketplace Tab
+- "MARKETPLACE" tab with enhanced cyberpunk neon styling and glassmorphism panels
+- Displays all active listings for both Land NFTs and Modifiers with:
+  - Asset type indicator (Land or Modifier)
+  - Land coordinates and biome information (using 7 valid biome names) for land listings
+  - Modifier name and rarity tier for modifier listings
+  - LandID and upgrade level for land listings
+  - Listing price in CBR tokens with proper decimal formatting
+  - Seller principal information
+  - **Enhanced "BUY ITEM" button with comprehensive transaction handling, audit compliance, and detailed logging**:
+    - **Proper async/await pattern for `buy_item()` function calls with explicit error handling**
+    - **Comprehensive try-catch blocks with specific error handling for insufficient funds, transfer errors, and item unavailability**
+    - **Detailed logging for purchase operations: `console.log("Purchasing item:", itemId, "Principal:", principal)` and `console.log("Purchase result:", result)`**
+    - **Error toast notifications with readable messages like "Insufficient CBR balance", "Item no longer available", or "Purchase failed" with backend error message capture and formatting**
+    - **Loading states during purchase processing with visual feedback**
+    - **Immediate balance and listing refresh upon successful purchase with React Query invalidation**
+    - **Frontend error propagation system that captures backend error messages and displays user-facing notifications**
+    - Uses Plug wallet for transaction signing
+  - "CANCEL LISTING" button for user's own listings using Plug wallet
+- Filtering controls for marketplace browsing:
+  - Asset type filter (Land, Modifier, All)
+  - Rarity tier filter for modifiers (Tier 1-4)
+  - Price range filter with min/max CBR input fields
+  - Real-time filtering updates without page reload
+- List asset functionality:
+  - "LIST MY LAND" button to create new land listings for currently selected land
+  - "LIST MY MODIFIER" button to create new modifier listings from user's collection
+  - Input field for setting sale price in CBR tokens
+  - Calls `list_item()` on MarketplaceCanister using Plug wallet
+- Buy functionality that calls `buy_item()` on MarketplaceCanister using Plug wallet
+- Real-time updates when assets are bought, listed, or delisted
+- Visual feedback for successful transactions and error handling with specific error messages
+- Display of user's own active listings with management options
+- Glassmorphism styling for all marketplace panels and listing cards
+
+### Governance Tab
+- "GOVERNANCE" tab with enhanced cyberpunk/glitch UI styling and glassmorphism panels
+- Staking interface:
+  - Display current staked CBR token balance with proper decimal formatting
+  - Input field and "STAKE TOKENS" button to call `stakeTokens()` using Plug wallet
+  - Visual confirmation of staking transactions
+- Proposal display:
+  - List of active proposals with title, description, and voting status
+  - Voting interface with "YES" and "NO" buttons using Plug wallet for vote signing
+  - Vote weight display based on staked token balance
+  - Real-time vote count and percentage displays
+- Create proposal interface:
+  - Text inputs for proposal title and description
+  - "CREATE PROPOSAL" button to submit new proposals using Plug wallet
+  - Validation for minimum stake requirements
+- Real-time updates of proposal status and voting results
+- Display of user's voting history and current stakes
+
+### Visual Design
+- **Fully restored "Soft Cyberpunk Space Noir" theme**: Neon Green (#00ff41) and Cyber Blue (#00d4ff) accents with deep black/dark grey backgrounds
+- **Isolated 2D Background System**: Cosmic animated background uses separate 2D canvas layer that doesn't share GPU resources with 3D WebGL contexts
+- **Fully restored glassmorphism panels**: Semi-transparent frosted glass effect with subtle neon glow borders and rounded corners
+- **Fully restored original button styling**: Cyberpunk-themed buttons with neon glow effects and hover animations
+- **Compact top-right header integration**: Minimalist header bar with key metrics and wallet connection
+- **Enhanced font and readability**: High-contrast typography with improved legibility across all panels
+- **Corrected global text color styling**: All default (non-themed) text changed from black to white or light-cyan while preserving existing accent colors (green, purple, magenta, etc.)
+- **Cyberpunk-style navigation icons**: Replace textual menu labels with themed icons while preserving layout and design
+- Orbitron or JetBrains Mono fonts
+- Glitch UI details and enhanced neon lighting effects
+- Tailwind CSS and Framer Motion for consistent cyberpunk styling with glassmorphism
+- Responsive design for desktop and mobile
+- All UI text displayed in Russian language
+- Perfect visual harmony with R3F dynamic scenes
+
+## Backend Architecture
+
+### AssetCanister (3D Model Hosting with GLB Support)
+- **Enhanced memory capacity configuration**: **500 MB memory allocation** for handling large GLB files and multiple asset storage
+- Dedicated canister for hosting 3D model assets (.glb, .obj files) for the 45+ modifiers and biome textures
+- **Health check endpoint**: `http_request` method that responds to `/health` requests with 200 status code for canister health monitoring
+- **Enhanced GLB model support with proper MIME type handling and extended timeout configuration**:
+  - **MIME type validation** for "model/gltf-binary" during GLB file uploads
+  - **File extension validation** ensuring only `.glb` files are accepted for 3D models
+  - **Binary data handling** optimized for GLB file format specifications
+  - **Persistent storage** using stable memory for all uploaded GLB models with orthogonal persistence
+  - **Stable URL generation** ensuring GLB models remain accessible across canister upgrades
+  - **Extended timeout handling**: **120-second (2-minute) timeout** for large GLB file uploads to prevent connection drops during 50MB transfers
+  - **Enhanced compute resource allocation**: Sufficient cycles and memory allocation to handle large blob uploads without performance degradation
+- Batch upload script with dfx command for uploading all 3D model assets and biome textures
+- Stable URL generation for AssetCanister-hosted models ensuring URLs remain consistent post-deployment
+- Asset management functions:
+  - **Enhanced `uploadAsset(filename: Text, data: Blob)` with GLB validation and extended timeout**:
+    - **MIME type verification** for "model/gltf-binary" when filename ends with ".glb"
+    - **File size validation** with appropriate limits for 3D model files
+    - **Binary data integrity checks** to ensure valid GLB file structure
+    - **Persistent storage** with orthogonal persistence guaranteeing data survives canister upgrades
+    - **Extended timeout handling**: **120-second timeout** for large file processing
+  - **`emergencyAdmin()` method for temporary admin assignment**:
+    - **Temporary admin assignment**: When GovernanceCanister is unavailable, allows caller to become temporary admin
+    - **Fallback authorization**: Provides backup access when primary governance system is offline
+    - **Security validation**: Includes appropriate security checks and logging for emergency access
+    - **Text confirmation return**: Returns clear text confirmation of temporary admin status assignment
+    - **Limited scope**: Emergency admin has restricted permissions compared to full governance access
+    - **Audit trail**: All emergency admin actions are logged for security audit purposes
+  - `batchUploadAssets(assets: [(Text, Blob)])` for bulk asset uploads with extended timeout support
+  - `getAssetUrl(filename: Text)` returns stable URL for accessing uploaded assets
+  - `listAssets()` returns array of all uploaded asset filenames including GLB models
+  - **`listGLBModels()` specialized function** returning only GLB model filenames and URLs
+  - **`getCycleBalance()` function** returns current cycle balance of the AssetCanister for monitoring purposes
+  - **`getCanisterStatus()` function** returns comprehensive canister health information including memory usage and compute statistics
+  - **`testGatewayConnectivity()` function** tests connectivity across all three gateways (`ic0.app`, `boundary.ic0.app`, `icp-api.io`) and returns response times and status codes
+  - **`getNetworkHealthReport()` function** provides comprehensive network health assessment including gateway performance metrics and stability recommendations
+- **Persistent storage using stable memory** for asset data with orthogonal persistence model
+- Authorization system ensuring only GovernanceCanister and authorized admin can manage assets
+- Integration with LandCanister for providing model URLs to modification system
+- **Public IC network deployment configuration** with stable public URLs in format `https://bd3sg-teaaa-aaaaa-qaaba-cai.raw.ic0.app/[LAND_TYPE].glb`
+- Production-ready asset serving with proper CORS headers and content-type handling for GLB files
+- **Enhanced performance optimization for large file handling**:
+  - **Sufficient cycle allocation** to handle 50MB GLB uploads without running out of compute resources
+  - **Memory management optimization** for processing large binary blobs
+  - **Connection stability improvements** to prevent timeout failures during extended upload operations
+  - **Network request optimization** with proper buffering and streaming for large file transfers
+- Biome texture hosting for skybox and environment assets:
+  - `forest-valley-skybox.png` for forest valley biome backgrounds
+  - `island-archipelago-skybox.png` for island archipelago biome backgrounds
+  - `snow-peak-skybox.png` for snow peak biome backgrounds
+  - `desert-dune-skybox.png` for desert dune biome backgrounds
+  - `volcanic-crag-skybox.png` for volcanic crag biome backgrounds
+  - `mythic-void-celestial-sphere.png` for MYTHIC_VOID biome animated backgrounds
+  - `mythic-aether-celestial-sphere.png` for MYTHIC_AETHER biome animated backgrounds
+- **Critical AssetCanister redeployment and interface regeneration with performance optimizations**:
+  - **Complete canister rebuild**: Redeploy AssetCanister with proper function declarations and extended timeout support
+  - **Candid interface regeneration**: Generate new `.did` file ensuring proper function exports
+  - **Frontend actor binding update**: Update frontend to import regenerated `.did` interface
+  - **Function visibility verification**: Confirm functions appear in generated Candid interface and are callable from frontend
+  - **Principal access control maintenance**: Keep strict access controls in place
+  - **File size validation preservation**: Maintain appropriate file size limits
+  - **Extended timeout implementation**: Deploy with **120-second timeout** configuration for large file handling
+  - **Performance optimization deployment**: Ensure sufficient compute resources and cycle allocation for large blob processing
+  - **Public IC network deployment**: Deploy to public Internet Computer network with stable connectivity and enhanced performance
+  - **Full reinitialization**: Cleanly rebuild and redeploy Asset Canister (bd3sg-teaaa-aaaaa-qaaba-cai) to ensure Wasm modules, candid interfaces, and references are correctly initialized and compatible
+  - **Connection restoration**: Restore canister visibility and Connected status through complete reinitialization
+  - **Health endpoint verification**: Ensure `/health` endpoint is accessible and returns 200 status code
+
+### CyberTokenCanister (ICRC-1 Token)
+- Implements ICRC-1 fungible token standard
+- Token details:
+  - Name: CYBER
+  - Symbol: CBR
+  - Decimals: 8
+  - Total Supply: 1,000,000,000 tokens
+- Required ICRC-1 methods:
+  - **`icrc1_balance_of(account: Account)` returns token balance without access control restrictions for user-visible balance requests**
+  - **`icrc1_transfer(args: TransferArgs)` transfers tokens between accounts with proper Principal ID validation and fee handling**
+  - `icrc1_metadata()` returns token metadata
+  - `icrc1_total_supply()` returns total token supply
+- **Enhanced token transfer operations with comprehensive error handling, audit compliance, and detailed logging:**
+  - **Proper Principal ID validation for source and destination accounts**
+  - **Correct fee calculation and inclusion in transfer amounts to prevent underpayment**
+  - **Detailed `Debug.print` statements for all transfer operations: `Debug.print("Token transfer from: " # debug_show(from) # " to: " # debug_show(to) # " amount: " # debug_show(amount))`**
+  - **Enhanced `TransferResult` handling ensuring `#Ok` cases properly update balances with logging: `Debug.print("Transfer successful, new balance: " # debug_show(newBalance))`**
+  - **Custom error messages for insufficient funds, bad fee calculations, and generic transfer errors with detailed logging**
+  - **Transaction error propagation to frontend logs with readable error descriptions**
+- **Enhanced privileged `mint(to: Principal, amount: Nat)` function with comprehensive logging:**
+  - **Callable only by LandCanister with proper authorization validation**
+  - **Detailed logging for mint operations: `Debug.print("Minting " # debug_show(amount) # " tokens to Principal: " # debug_show(to))`**
+  - **Success confirmation logging: `Debug.print("Mint successful, new balance: " # debug_show(newBalance))`**
+  - **Error handling and logging for failed mint operations**
+- **New diagnostic query method `getCanisterTokenBalance(): async Nat`:**
+  - **Returns the CBR token balance owned by the CyberTokenCanister itself**
+  - **Used for debugging and audit purposes to verify canister's own token holdings**
+  - **Accessible for administrative debugging and balance verification**
+  - **Includes proper error handling and logging for balance retrieval**
+- Persistent storage using OrderedMap for account balances
+- Authorization system ensuring only LandCanister can mint new tokens
+- GovernanceCanister configured as controller for administrative oversight
+
+### LandCanister (Main Application Logic)
+- **Enhanced memory capacity configuration**: **500 MB memory allocation** for handling large datasets and initialization stability
+- **Updated ModifierInstance type** containing:
+  - modifierInstanceId (Nat, unique identifier for each instance)
+  - modifierType (Text, type/name of the modifier)
+  - rarity_tier (Nat, 1-4)
+  - multiplier_value (Float)
+  - model_url (Text, URL to 3D model asset from AssetCanister for visualization)
+- **Updated LandData type** containing:
+  - principal (Principal)
+  - coordinates with lat and lon (Float)
+  - biome (Text, restricted to 7 valid values: `FOREST_VALLEY`, `ISLAND_ARCHIPELAGO`, `SNOW_PEAK`, `DESERT_DUNE`, `VOLCANIC_CRAG`, `MYTHIC_VOID`, `MYTHIC_AETHER`)
+  - upgradeLevel (Nat, default 0, max 5)
+  - lastClaimTime (Time)
+  - decorationURL (?Text, optional on-chain hosted SVG or 3D asset URL)
+  - baseTokenMultiplier (Float, 1.25 for MYTHIC_VOID and MYTHIC_AETHER lands, 1.0 for others)
+  - **cycleCharge (Nat, current charge units available - automatically accumulates over time)**
+  - chargeCap (Nat, maximum charge units that can be accumulated, set to 1000)
+  - lastChargeUpdate (Time, timestamp of last charge calculation)
+  - landId (Nat, unique identifier for each land)
+  - **attachedModifications ([ModifierInstance], array of modifier instances attached to this specific land)**
+- LandToken type containing:
+  - token_id (Nat, unique identifier)
+  - rarity (Text, "RARE" for standard LandTokens)
+- Modifier type containing:
+  - mod_id (Nat)
+  - rarity_tier (Nat)
+  - name (Text)
+  - multiplier_value (Float)
+  - asset_url (Text)
+- EnergyBooster type containing:
+  - amount (Nat)
+- ConsumableBuff type containing:
+  - type (Text)
+  - duration (Nat)
+- LootCache type containing:
+  - cache_id (Nat)
+  - tier (Nat, 1-3 for Common/Rare/Legendary)
+  - owner (Principal)
+  - discovered_at (Time)
+  - is_opened (Bool)
+- Reference to CyberTokenCanister Principal ID for inter-canister calls
+- Reference to ICP Ledger canister Principal ID for ICP payment processing
+- Reference to GovernanceCanister Principal ID for administrative access control
+- Reference to AssetCanister Principal ID for 3D model URL retrieval
+- **Multi-land ownership system with Map<Principal, [LandData]> storage structure**
+- **Enhanced biome assignment function with strict validation:**
+  - **`getBiomeFromCoordinates(lat: Float, lon: Float) : Text` helper function:**
+    - **Deterministically maps coordinates to one of the 7 valid biomes only**
+    - **Uses coordinate-based hashing or zone logic to return exclusively: `FOREST_VALLEY`, `ISLAND_ARCHIPELAGO`, `SNOW_PEAK`, `DESERT_DUNE`, `VOLCANIC_CRAG`, `MYTHIC_VOID`, `MYTHIC_AETHER`**
+    - **Includes 0.5% random chance for `MYTHIC_VOID` or `MYTHIC_AETHER` assignment**
+    - **All other coordinate ranges map to the 5 standard biomes**
+    - **No fallback to unauthorized biome values**
+    - **Standalone function using only standard Motoko math operators**
+- **Fixed `updateCharge(data: LandData) : LandData` helper function with enhanced safety and automatic charge accumulation:**
+  - **Calculates elapsed time since `data.lastChargeUpdate` with strict bounds checking and overflow prevention**
+  - **Uses simplified elapsed time computation to prevent infinite loops or numeric overflow conditions**
+  - **Includes `assert` statements to ensure elapsed time calculations are within reasonable bounds (e.g., assert elapsed_seconds < 86400 * 365)**
+  - **Increases `data.cycleCharge` by 1 unit per minute elapsed with runtime bounds validation**
+  - **Ensures accumulated `cycleCharge` never exceeds `chargeCap` (1000 units maximum) and never goes negative with explicit bounds validation**
+  - **Caps `data.cycleCharge` at `data.chargeCap` with explicit bounds validation and `assert` statements**
+  - **Updates `data.lastChargeUpdate` to current time with validation**
+  - **Returns updated LandData with new charge values or traps with clear error message on failure**
+  - **Executes synchronously and terminates without exceptions or uses `Debug.trap("Charge calculation failed")` for fail-fast error handling**
+  - **Automatically called whenever land data is accessed to ensure charge accumulation works properly**
+- **Enhanced land minting logic with strict biome validation:**
+  - **After generating deterministic coordinates, calls `getBiomeFromCoordinates(lat, lon)`**
+  - **Validates returned biome is one of the 7 authorized values before assignment**
+  - **Sets baseTokenMultiplier to 1.25 for MYTHIC_VOID and MYTHIC_AETHER lands, 1.0 for others**
+  - **Assigns only validated biome values to the `biome` field in LandData**
+  - **Ensures biome assignment is deterministic and permanently stored**
+  - **Sets chargeCap to 1000 for all new lands**
+  - **Includes data migration logic to cleanse any existing lands with unauthorized biome values, remapping them to `FOREST_VALLEY` as default**
+- `initializeAccessControl()` method for setting up user access and data on first login with error handling
+- **`getLandData()` returns current user's land collection as [LandData], creating first land deterministically if collection is empty, with biome validation ensuring only authorized values, wrapped in comprehensive try-catch with `Debug.trap("Land data retrieval failed")` for fail-fast error handling**
+- **`getLandDataQuery()` query function with try-catch error handling, biome validation, and `Debug.trap()` statements for error propagation and fail-fast behavior**
+- `getCallerUserProfile()` returns user profile information with error handling
+- `getUserModifications()` function returns array of user's modifications sorted by rarity tier (highest first) with AssetCanister URLs
+- **`getMyModifications()` function returns array of user's collected modifications for Collection Mastery progress calculation with optimized persistent storage access and fail-fast error handling**
+- **`mintLand()` function for creating additional lands:**
+  - **Requires valid LandToken from user's inventory**
+  - **Consumes one LandToken upon successful land creation**
+  - **Generates new deterministic coordinates and biome for additional land**
+  - **Assigns unique landId to each new land**
+  - **Adds new LandData to user's land collection**
+  - **Returns new land information or error if no LandTokens available**
+- **Enhanced `claimRewards(landId: Nat)` function with comprehensive error handling, audit compliance, and detailed logging:**
+  - **Calls `updateCharge()` to refresh charge units before processing for specified land**
+  - **Requires at least 10 units of Cycle Charge to execute**
+  - **Enforces 24-hour cooldown (86,400 seconds) since lastClaimTime for specified land**
+  - **Deducts 10 units of Cycle Charge when successfully executed**
+  - **Calculates reward as 100 * (upgradeLevel + 1) * baseTokenMultiplier tokens for specified land**
+  - **Enhanced inter-canister call to CyberTokenCanister's mint function with comprehensive logging:**
+    - **Detailed logging before mint call: `Debug.print("Claiming rewards for landId: " # debug_show(landId) # " Principal: " # debug_show(caller) # " Amount: " # debug_show(rewardAmount))`**
+    - **Verification that tokens are minted to the caller's Principal ID (not LandCanister): `Debug.print("Minting to caller Principal: " # debug_show(caller))`**
+    - **Success confirmation logging: `Debug.print("Mint successful for claim, tokens credited to user: " # debug_show(rewardAmount))`**
+    - **Failure logging with specific error details: `Debug.print("Mint failed for claim: " # debug_show(error))`**
+    - **Error handling and logging for failed mint operations with specific error messages**
+    - **Verification that the correct Principal is used for the minting call (caller) to ensure user's balance updates in the token canister**
+  - **Updates lastClaimTime in specified LandData**
+  - **Returns remaining cooldown time if not ready or insufficient charge**
+  - **Comprehensive error handling with detailed logging for all failure cases**
+- `upgradePlot(landId: Nat, cost: Nat)` function:
+  - Calls `updateCharge()` to refresh charge units before processing for specified land
+  - Verifies user's token balance via inter-canister call
+  - Deducts cost through token transfer and increments upgradeLevel (max 5) for specified land
+  - Returns status message
+- **New `applyModifier(modifierInstanceId: Nat, landId: Nat)` function:**
+  - **Validates that the caller owns the specified land (landId belongs to caller)**
+  - **Finds the modifier instance in the player's inventory using modifierInstanceId**
+  - **Removes the modifier instance from playerInventory**
+  - **Appends the modifier instance to attachedModifications array of the specified land**
+  - **Returns confirmation of successful modifier application or error if validation fails**
+  - **Uses Plug wallet for transaction signing**
+- **Enhanced `discoverLootCache(tier: Nat)` function with comprehensive error handling, audit compliance, and detailed logging:**
+  - **Accepts desired cache tier (1-3) as input parameter**
+  - **Calls `updateCharge()` to refresh charge units before processing**
+  - **Enforces tier-specific cycle charge deduction for all tiers with proper validation**
+  - **Supports dual payment logic with CBR and ICP payment methods**
+  - **Enhanced CBR payment processing with detailed error handling, audit compliance, and comprehensive logging:**
+    - **Validates user has sufficient CBR balance before attempting transfer with proper Principal ID verification**
+    - **Uses correct Principal IDs for transfer: caller's Principal as source, LootBoxCanister Principal as destination**
+    - **Calculates transfer amount correctly accounting for ICRC-1 transfer fees (typically 10,000 units) to prevent underpayment**
+    - **Detailed logging for discovery operations: `Debug.print("Discovering cache tier: " # debug_show(tier) # " Principal: " # debug_show(caller) # " CBR Cost: " # debug_show(cbrCost))`**
+    - **Implements comprehensive error handling with detailed `Debug.print` statements for debugging transfer failures**
+    - **Returns descriptive error messages like "InsufficientFunds", "TransferError", "Unauthorized", or "FeeCalculationError" instead of silent failures**
+    - **Uses proper try-catch blocks with `Result<LootCache, Text>` return type for error propagation**
+    - **Includes detailed error logging for failure cases: `Debug.print("CBR Transfer Failed: " # debug_show(error))`**
+    - **Validates transfer completion before proceeding with cache creation**
+  - **Creates new LootCache record only after successful payment verification**
+  - **Implements proper rollback mechanisms if any step fails**
+  - **Never hangs silently - always returns either success result or descriptive error string**
+  - **Enhanced error logging with specific messages for each failure point in the transaction flow**
+- **Enhanced `processCache(cache_id: Nat)` function:**
+  - Validates cache exists and belongs to caller
+  - Enforces 4-hour delay from discovered_at time or allows charge cost bypass
+  - Implements tier-specific drop table logic:
+    - Tier 1 (Common Cache): 70% Common Modifiers, 30% Rare Modifiers, CBR tokens, 0.05% LandToken
+    - Tier 2 (Rare Cache): includes ~3% chance for ConsumableBuff, ~1% chance for EnergyBooster, CBR tokens, 0.2% LandToken
+    - Tier 3 (Legendary Cache): increased drop chances for Buffs, Boosters, CBR tokens, 0.5% LandToken
+  - **Generates ModifierInstance objects with unique modifierInstanceId using nextModifierInstanceId counter**
+  - **Adds generated modifier instances to playerInventory instead of direct land attachment**
+  - Randomly generates appropriate rewards based on cache tier including CBR token amounts
+  - Sets appropriate multiplier_value based on tier
+  - Assigns model_url from AssetCanister based on rarity tier for 3D visualization
+  - Makes inter-canister call to AssetCanister to retrieve stable model URLs
+  - Marks cache as opened (is_opened = true)
+  - Persists reward records tied to caller's Principal
+  - Returns the generated reward record
+- `useConsumableBuff(item_id: Nat)` function:
+  - Validates buff exists and belongs to caller
+  - Temporarily increases user's token multiplier for 24-hour duration
+  - Removes the used buff from user's inventory
+  - Updates user's active buff status and expiration time
+  - Returns confirmation of buff activation
+- `getTopLands(limit: Nat)` function:
+  - Returns ranked array of lands sorted by upgradeLevel (highest first)
+  - Ties resolved by CBR token balance (descending)
+  - Uses secure inter-canister calls to CyberTokenCanister.icrc1_balance_of()
+  - Returns top limit entries with principal, landId, upgradeLevel, token balance, and land count
+- **Administrative modifier management with optimized persistent storage access:**
+  - **`adminSetAllModifiers(modifier_list: [Modifier])` function:**
+    - **Restricted to GovernanceCanister Principal ID only via AccessControl system**
+    - **Stores the complete provided modifier_list (45+ entries expected) into persistent storage with optimized serialization**
+    - **Uses stable variable or OrderedMap for persistent modifier data storage with quick access patterns**
+    - **Enables centralized DAO-controlled modifier configuration management**
+    - **Returns confirmation of successful modifier data upload or traps with clear error message**
+    - **Includes `assert` statements to ensure modifier data integrity and prevent blocking operations during login**
+  - **Authorization validation ensures only GovernanceCanister can invoke administrative functions**
+  - **Persistent modifier storage accessible by other functions like `processCache()` with efficient deserialization**
+- **Enhanced NFT functionality for marketplace integration:**
+  - **`transferLand(to: Principal, landId: Nat)` function for NFT transfers of specific lands:**
+    - **Transfers land ownership including all attached modifiers to the new owner**
+    - **Preserves attachedModifications array when land changes ownership**
+    - **Updates land ownership records and maintains modifier attachment integrity**
+  - `getLandOwner(landId: Nat)` function to verify ownership of specific lands
+  - Authorization checks ensuring only land owners can transfer their specific NFTs
+- ICP Ledger integration for production payment handling:
+  - Inter-canister call interfaces for ICP transfer operations
+  - Balance checking and transaction verification methods
+  - Proper error handling for ICP payment failures
+  - Secure validation of ICP payment completion before proceeding with cache creation
+- **`getCycleBalance()` function** returns current cycle balance of the LandCanister for monitoring purposes
+- **`getCanisterStatus()` function** returns comprehensive canister health information including memory usage, compute statistics, and deployment hash
+- **`testGatewayConnectivity()` function** tests connectivity across all three gateways (`ic0.app`, `boundary.ic0.app`, `icp-api.io`) and returns response times and status codes
+- **`getNetworkHealthReport()` function** provides comprehensive network health assessment including gateway performance metrics and stability recommendations
+- **Enhanced orthogonally persistent storage using OrderedMap collections:**
+  - Principal to [LandData] mapping for multi-land ownership
+  - **landModifiers: OrderedMap.Map<Nat, [ModifierInstance]> for land-specific modifier attachments**
+  - **playerInventory: OrderedMap.Map<Principal, [ModifierInstance]> for unassigned modifier instances**
+  - **nextModifierInstanceId: Nat mutable counter for generating unique modifier instance IDs**
+  - Principal to LootCache array mapping
+  - Principal to EnergyBooster array mapping
+  - Principal to ConsumableBuff array mapping
+  - Principal to [LandToken] mapping for LandToken inventory
+  - Modifier data storage for administrative configuration
+- Land generation based on hashed principal for deterministic results
+- Safe initialization for new users without existing role or land data
+- **Cycle Charge system persists across canister upgrades using Motoko's orthogonal persistence model with automatic charge accumulation over time**
+- **All login-related public query and update functions wrapped in comprehensive try-catch blocks with `Debug.trap()` statements for fail-fast error handling**
+- **Biome integrity enforcement with validation functions that reject any unauthorized biome values and cleanse existing data**
+- **Enhanced error handling for all token transaction functions to prevent silent failures and provide descriptive error messages with detailed logging**
+- **Comprehensive audit compliance for token transfer operations with proper Principal ID validation, fee handling, and error propagation**
+- GovernanceCanister configured as controller for administrative oversight
+- **Full reinitialization**: Cleanly rebuild and redeploy Land Canister (br5f7-7uaaa-aaaaa-qaaca-cai) to ensure Wasm modules, candid interfaces, and references are correctly initialized and compatible
+- **Connection restoration**: Restore canister visibility and Connected status through complete reinitialization
+
+### LootBoxCanister (Loot Cache Management)
+- Manages loot cache system with secure CBR token accumulation and withdrawal
+- Accumulates CBR tokens from loot cache purchases and operations
+- `withdraw_cbr(amount: Nat)` function:
+  - Restricted to canister controller (owner Principal ID) only
+  - Implements assertion check to validate caller is the authorized controller
+  - Transfers specified CBR token amount from canister to controller's wallet
+  - Makes secure inter-canister call to CyberTokenCanister for token transfer
+  - Returns confirmation of successful withdrawal or error if insufficient balance
+  - Includes proper error handling for failed transfers
+- Persistent storage for accumulated CBR token balance
+- Authorization system ensuring only controller can withdraw accumulated tokens
+- Integration with CyberTokenCanister for secure token transfers
+- GovernanceCanister configured as controller for administrative oversight
+
+### MarketplaceCanister (P2P NFT and Modifier Trading)
+- Facilitates secure P2P trading of both Land NFTs and Modifiers for CBR tokens with atomic swap logic
+- ItemType enum containing:
+  - Land (for Land NFT listings)
+  - Modifier (for Modifier listings)
+- Listing data structure containing:
+  - listingId (Nat, unique identifier)
+  - itemId (Nat, specific asset identifier - landId for lands, modifierInstanceId for modifiers)
+  - itemType (ItemType, Land or Modifier)
+  - seller (Principal)
+  - price (Nat, in CBR tokens)
+  - isActive (Bool, listing status)
+- `list_item(item_id: Nat, item_type: ItemType, price: Nat)` function:
+  - Verifies caller owns the specified asset (Land or ModifierInstance) via LandCanister
+  - Transfers specific asset from seller to marketplace principal for escrow
+  - Creates active listing with unique ID, asset type, and seller information
+  - Returns listing ID for tracking
+- **Enhanced `buy_item(listing_id: Nat)` function with comprehensive error handling, audit compliance, and detailed logging:**
+  - **Executes atomic swap transferring specific asset to buyer and CBR payment to seller**
+  - **Enhanced CBR transfer validation with proper Principal ID handling, audit compliance, and comprehensive logging:**
+    - **Uses correct Principal IDs: buyer's Principal as source, seller's Principal as destination**
+    - **Calculates transfer amount correctly accounting for ICRC-1 transfer fees to prevent underpayment**
+    - **Validates buyer has sufficient CBR balance including fees before attempting transfer**
+    - **Detailed logging for purchase operations: `Debug.print("Marketplace purchase - Buyer: " # debug_show(buyer) # " Seller: " # debug_show(seller) # " Amount: " # debug_show(amount))`**
+    - **Implements comprehensive error handling with detailed `Debug.print` statements for transaction debugging**
+    - **Returns descriptive error messages like "InsufficientFunds", "TransferError", "ItemUnavailable", or "FeeCalculationError"**
+    - **Uses proper try-catch blocks with `Result<Text, Text>` return type for error propagation**
+    - **Includes detailed error logging: `Debug.print("Marketplace Purchase Failed: " # debug_show(error))`**
+  - **Implements proper rollback handling if any transfer step fails**
+  - **Never hangs silently - always provides clear transaction outcome**
+  - **Handles both Land NFT and ModifierInstance transfers based on listing item type**
+  - **For land sales: transfers land with all attached modifiers to new owner**
+  - **For modifier sales: removes modifier instance from any land's attachedModifications before transfer**
+  - **Preserves asset consistency throughout the transaction**
+  - **Marks listing as inactive after successful purchase**
+  - **Enhanced error logging with specific messages for each failure point in the purchase flow**
+- `cancelListing(listingId: Nat)` function:
+  - Allows seller to delist their specific asset and return it to their ownership
+  - Verifies caller is the original seller
+  - Transfers specific asset back from marketplace to seller based on item type
+  - Marks listing as inactive
+- `getActiveListings()` query function:
+  - Returns array of all active listings with asset details
+  - Includes seller information, price, asset type, and asset metadata
+  - Provides filtering support for frontend display
+- `getUserListings(user: Principal)` query function:
+  - Returns all listings (active and inactive) for a specific user
+  - Includes both Land and ModifierInstance listings
+- Persistent storage for active listings and transaction history
+- Authorization system ensuring only valid asset owners can list their specific NFTs or ModifierInstances
+- Inter-canister communication with LandCanister for asset operations and CyberTokenCanister for payments
+- GovernanceCanister configured as controller for administrative oversight
+
+### GovernanceCanister (Decentralized Governance)
+- Manages decentralized project governance with CBR token-weighted voting
+- Staker data structure containing:
+  - principal (Principal)
+  - stakedAmount (Nat, locked CBR tokens)
+  - stakingTime (Time, when tokens were staked)
+- Proposal data structure containing:
+  - proposalId (Nat, unique identifier)
+  - title (Text)
+  - description (Text)
+  - creator (Principal)
+  - creationTime (Time)
+  - votingDeadline (Time)
+  - yesVotes (Nat, weighted vote count)
+  - noVotes (Nat, weighted vote count)
+  - isActive (Bool, proposal status)
+- `stakeTokens(amount: Nat)` function:
+  - Locks user's CBR tokens for governance participation
+  - Makes inter-canister call to CyberTokenCanister for token transfer to governance canister
+  - Updates staker balance and voting power
+  - Returns confirmation of successful staking
+- `createProposal(title: Text, description: Text)` function:
+  - Validates caller has minimum staked tokens for proposal creation
+  - Creates new proposal with unique ID and 7-day voting period
+  - Stores proposal with creator information and timestamps
+  - Returns proposal ID for tracking
+- `vote(proposalId: Nat, choice: Bool)` function:
+  - Validates proposal exists and is still active (within voting deadline)
+  - Prevents double voting by the same principal
+  - Weights votes by caller's staked CBR token balance
+  - Updates proposal vote counts (yesVotes or noVotes)
+  - Returns confirmation of vote recording
+- `getActiveProposals()` query function:
+  - Returns array of all active proposals with voting statistics
+  - Includes vote counts, percentages, and time remaining
+- `getProposalDetails(proposalId: Nat)` query function:
+  - Returns detailed information for a specific proposal
+  - Includes voting history and current status
+- `getStakerInfo(user: Principal)` query function:
+  - Returns staking information for a specific user
+  - Includes staked amount and voting power
+- `closeProposal(proposalId: Nat)` function:
+  - Administrative function to close expired proposals
+  - Calculates final voting results and marks proposal as inactive
+- Persistent storage for staker balances, proposals, and voting records
+- Proposal lifecycle management with time-based voting periods
+- Inter-canister communication with CyberTokenCanister for token staking operations
+- Administrative control over all other canisters as their designated controller
