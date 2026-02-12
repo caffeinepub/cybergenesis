@@ -1,5 +1,5 @@
-import { Suspense, useMemo } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Suspense, useMemo, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import LandModel from './LandModel';
@@ -17,6 +17,29 @@ const BIOME_MODEL_MAP: Record<string, string> = {
   MYTHIC_VOID: 'https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/MYTHIC_VOID.glb',
   MYTHIC_AETHER: 'https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/MYTHIC_AETHER.glb',
 };
+
+function KeyLightSync() {
+  const keyLight = useRef<THREE.DirectionalLight>(null);
+
+  useFrame(({ camera }) => {
+    if (keyLight.current) {
+      keyLight.current.position.set(
+        camera.position.x + 10,
+        camera.position.y + 15,
+        camera.position.z + 10
+      );
+    }
+  });
+
+  return (
+    <directionalLight
+      ref={keyLight}
+      name="KeyLight"
+      intensity={Math.PI * 2.2}
+      color="#ffffff"
+    />
+  );
+}
 
 export default function CubeVisualization({ biome }: CubeVisualizationProps) {
   const modelUrl = useMemo(() => {
@@ -45,30 +68,27 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
         powerPreference: 'high-performance',
       }}
       onCreated={({ gl }) => {
-        gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMappingExposure = 0.6;
       }}
     >
       <Suspense fallback={null}>
         <LandModel modelUrl={modelUrl} />
         
-        {/* Sunset Environment Lighting Setup */}
-        <Environment preset="sunset" environmentIntensity={0.5} />
-        <hemisphereLight intensity={1.2} color="#ffffff" groundColor="#222222" />
-        <directionalLight
-          name="KeyLight"
-          position={[15, 15, 10]}
-          intensity={2.5 * Math.PI}
-          color="#ffffff"
-          castShadow={false}
+        {/* V.10.1.PBR Lighting Configuration */}
+        <Environment preset="sunset" environmentIntensity={1.0} />
+        <hemisphereLight 
+          intensity={1.05} 
+          color="#f7f7f7" 
+          groundColor="#3a3a3a" 
         />
+        <KeyLightSync />
         <directionalLight
           name="SunLight"
           position={[-10, 20, -15]}
-          intensity={1.0 * Math.PI}
-          color="#ffaa33"
-          castShadow={false}
+          intensity={Math.PI * 0.5}
+          color="#ffe4b5"
         />
         
         <OrbitControls makeDefault />

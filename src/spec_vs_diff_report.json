@@ -1,0 +1,47 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-12T22:31:07.245Z",
+  "summary": "REQ-1 and REQ-2 are largely implemented (Canvas renderer calibration, lighting balance, key light camera-sync, LandModel updateMatrixWorld+Box3 safety, guarded traversal, glow list emissive behavior, and envMapIntensity rules). However, REQ-1’s HemisphereLight uses `color` instead of the explicitly-required `skyColor` prop. Additionally, several unrelated/non-requested files appear to have been changed/added, violating the “strictly limited changes” constraint and immutable-path constraint.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "HemisphereLight must use intensity={1.05} with skyColor=\"#f7f7f7\" and groundColor=\"#3a3a3a\" (skyColor prop explicitly required).",
+      "reason": "CubeVisualization uses `<hemisphereLight ... color=\"#f7f7f7\" groundColor=\"#3a3a3a\" />` rather than the explicitly specified `skyColor` prop.",
+      "evidence": [
+        "frontend/src/components/CubeVisualization.tsx"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Modified an immutable frontend hook file that was explicitly constrained to not be edited.",
+      "reason": "BuildRequest constraints forbid edits to `frontend/src/hooks/useInternetIdentity.ts`, but the diff lists it as modified.",
+      "evidence": [
+        "frontend/src/hooks/useInternetIdentity.ts"
+      ]
+    },
+    {
+      "description": "Added a new `project_state.json` file that is not requested by any requirement.",
+      "reason": "BuildRequest requirements only target CubeVisualization.tsx and LandModel.tsx changes plus stability constraints; no requirement requests adding project metadata files.",
+      "evidence": [
+        "project_state.json"
+      ]
+    },
+    {
+      "description": "Unrelated broad UI/style/component changes beyond the V.10.1.PBR scope.",
+      "reason": "The BuildRequest explicitly says to keep changes strictly limited to implementing the V.10.1.PBR prompt requirements and not introduce unrelated refactors; the diff summary lists extensive changes across many non-target files (e.g., App, pages, map, animations, CSS).",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    }
+  ],
+  "confidence": 0.74,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/components/CubeVisualization.tsx",
+    "frontend/src/components/LandModel.tsx",
+    "frontend/src/hooks/useInternetIdentity.ts",
+    "project_state.json"
+  ]
+}

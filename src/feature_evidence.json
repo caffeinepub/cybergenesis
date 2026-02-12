@@ -1,0 +1,69 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-update-frontend-src-components-cubevisualization-tsx-to-match-the-v-10-1-pbr-canvas-and-lighting-specification-set-renderer-tone-mapping-to-three-acesfilmictonemapping-outputcolorspace-to-three-srgbcolorspace-and-tonemappingexposure-to-0-6-in-the-canvas-oncreated-hook-adjust-light-balance-to-keylight-intensity-math-pi-2-2-color-ffffff-sunlight-intensity-math-pi-0-5-color-ffe4b5-hemispherelight-intensity-1-05-skycolor-f7f7f7-groundcolor-3a3a3a-set-environment-preset-sunset-environmentintensity-1-0-and-implement-keylight-camera-sync-using-useframe-so-the-keylight-position-is-set-every-frame-to-camera-x-10-camera-y-15-camera-z-10",
+      "featureTitle": "Update frontend/src/components/CubeVisualization.tsx to match the V.10.1.PBR Canvas and lighting specification: set renderer tone mapping to THREE.ACESFilmicToneMapping, outputColorSpace to THREE.SRGBColorSpace, and toneMappingExposure to 0.6 in the Canvas onCreated hook; adjust light balance to KeyLight intensity={Math.PI * 2.2} color=\"#ffffff\", SunLight intensity={Math.PI * 0.5} color=\"#ffe4b5\", HemisphereLight intensity={1.05} skyColor=\"#f7f7f7\" groundColor=\"#3a3a3a\"; set <Environment preset=\"sunset\" environmentIntensity={1.0} />; and implement KeyLight camera sync using useFrame so the KeyLight position is set every frame to (camera.x + 10, camera.y + 15, camera.z + 10).",
+      "files": [
+        "frontend/src/components/CubeVisualization.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-frontend-src-components-landmodel-tsx-to-match-the-v-10-1-pbr-material-traversal-and-camera-fit-safety-rules-call-gltf-scene-updatematrixworld-before-computing-the-box3-perform-material-traversal-only-inside-a-guard-if-gltf-scene-isobject3d-implement-the-emissive-glow-list-behavior-based-on-object-material-name-containing-any-of-mythic-void-mythic-aether-forest-valley-desert-dune-island-archipelago-volcanic-crag-if-m-map-exists-set-m-emissivemap-m-map-set-m-emissive-to-white-and-m-emissiveintensity-to-2-0-implement-per-biome-envmapintensity-rules-based-on-name-aether-void-forest-desert-island-2-0-volcanic-crag-1-3-otherwise-default-1-0-enforce-the-pbr-guard-do-not-manually-set-m-roughness-or-m-metalness-when-m-roughnessmap-exists-and-remove-any-m-needsupdate-true-assignments-from-inside-the-traversal-loop-for-performance",
+      "featureTitle": "Update frontend/src/components/LandModel.tsx to match the V.10.1.PBR material traversal and camera-fit safety rules: call gltf.scene.updateMatrixWorld() before computing the Box3; perform material traversal only inside a guard `if (gltf.scene?.isObject3D) { ... }`; implement the emissive \"Glow List\" behavior based on object/material name containing any of MYTHIC_VOID, MYTHIC_AETHER, FOREST_VALLEY, DESERT_DUNE, ISLAND_ARCHIPELAGO, VOLCANIC_CRAG (if m.map exists set m.emissiveMap = m.map; set m.emissive to white and m.emissiveIntensity to 2.0); implement per-biome envMapIntensity rules based on name (AETHER/VOID/FOREST/DESERT/ISLAND -> 2.0; VOLCANIC_CRAG -> 1.3; otherwise default 1.0); enforce the PBR guard (do not manually set m.roughness or m.metalness when m.roughnessMap exists); and remove any `m.needsUpdate = true` assignments from inside the traversal loop for performance.",
+      "files": [
+        "frontend/src/components/LandModel.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-apply-the-global-stability-constraints-from-v-10-1-pbr-across-the-3d-renderer-components-involved-in-this-task-ensure-no-light-uses-castshadow-true-remove-any-such-props-rather-than-enabling-shadows-and-ensure-no-manual-gl-dispose-is-added-in-any-cleanup-logic-related-to-cubevisualization-landmodel",
+      "featureTitle": "Apply the global stability constraints from V.10.1.PBR across the 3D renderer components involved in this task: ensure no light uses castShadow={true} (remove any such props rather than enabling shadows), and ensure no manual gl.dispose() is added in any cleanup logic related to CubeVisualization/LandModel.",
+      "files": [
+        "frontend/src/components/CubeVisualization.tsx",
+        "frontend/src/components/LandModel.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

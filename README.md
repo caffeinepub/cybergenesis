@@ -1,2 +1,3 @@
-# cybergenesis
-Exported from Caffeine project: Full draft rollback and rebuild to version 321 (Jan 18)
+## 
+
+To run app build and run docker image: `docker build -t app . docker run -it --network host app`

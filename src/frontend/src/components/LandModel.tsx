@@ -16,7 +16,6 @@ export default function LandModel({ modelUrl }: LandModelProps) {
   // Initialize KTX2Loader with CDN-hosted basis transcoder
   const ktx2Loader = useMemo(() => {
     const loader = new KTX2Loader();
-    // Use CDN-hosted basis transcoder from three.js examples
     loader.setTranscoderPath('https://cdn.jsdelivr.net/npm/three@0.176.0/examples/jsm/libs/basis/');
     loader.detectSupport(gl);
     return loader;
@@ -36,45 +35,56 @@ export default function LandModel({ modelUrl }: LandModelProps) {
 
     console.log('[LandModel] Processing model:', modelUrl);
 
-    // Complete material traversal with enhanced logic
-    gltf.scene.traverse((obj: any) => {
-      if (obj.isMesh && obj.material) {
-        obj.frustumCulled = true;
-        const m = obj.material as THREE.MeshStandardMaterial;
+    // SAFETY: Call updateMatrixWorld BEFORE Box3 calculation
+    gltf.scene.updateMatrixWorld();
 
-        // 1. Preserve existing albedo remap: Fix overexposed white patches
-        if (m.color.r >= 0.8 && m.color.g >= 0.8 && m.color.b >= 0.8) {
-          m.color.setScalar(0.7);
+    // V.10.1.PBR Material Logic
+    if (gltf.scene?.isObject3D) {
+      gltf.scene.traverse((obj: any) => {
+        if (obj.isMesh && obj.material) {
+          obj.frustumCulled = true;
+          const m = obj.material as THREE.MeshStandardMaterial;
+
+          // Glow List: Emissive 2.0 for specific biomes
+          const name = (obj.name || '').toUpperCase();
+          const isGlowBiome = 
+            name.includes('MYTHIC_VOID') ||
+            name.includes('MYTHIC_AETHER') ||
+            name.includes('FOREST_VALLEY') ||
+            name.includes('DESERT_DUNE') ||
+            name.includes('ISLAND_ARCHIPELAGO') ||
+            name.includes('VOLCANIC_CRAG');
+
+          if (isGlowBiome) {
+            if (m.map) {
+              m.emissiveMap = m.map;
+            }
+            m.emissive = new THREE.Color(0xffffff);
+            m.emissiveIntensity = 2.0;
+          }
+
+          // Environment Intensity (Reflection Boost)
+          if (
+            name.includes('MYTHIC_AETHER') ||
+            name.includes('MYTHIC_VOID') ||
+            name.includes('FOREST_VALLEY') ||
+            name.includes('DESERT_DUNE') ||
+            name.includes('ISLAND_ARCHIPELAGO')
+          ) {
+            m.envMapIntensity = 2.0;
+          } else if (name.includes('VOLCANIC_CRAG')) {
+            m.envMapIntensity = 1.3;
+          } else {
+            m.envMapIntensity = 1.0;
+          }
+
+          // PBR Guard: Do NOT manually set roughness/metalness if roughnessMap exists
+          // Let textures drive the surface
         }
+      });
+    }
 
-        // 2. Preserve selective emissive: Remove baked light or enhance true neon/lava elements
-        const emissiveAvg = (m.emissive.r + m.emissive.g + m.emissive.b) / 3;
-        if (emissiveAvg < 0.1) {
-          // Remove baked light
-          m.emissive.setHex(0x000000);
-          m.emissiveIntensity = 0;
-        } else {
-          // Keep or enhance true neon/lava emissive elements
-          m.emissiveIntensity = 2.0;
-        }
-
-        // 3. Preserve light map removal
-        m.lightMap = null;
-        m.lightMapIntensity = 0;
-
-        // 4. Biome-aware envMapIntensity adjustment
-        if (modelUrl.includes('VOID') || obj.name.includes('VOID')) {
-          m.envMapIntensity = 0.8;
-        } else {
-          m.envMapIntensity = 0.3;
-        }
-
-        // Do not modify roughness or metalness - preserve GLB export values
-        m.needsUpdate = true;
-      }
-    });
-
-    // Execute Box3 and camera auto-fit logic once inside the guarded block
+    // Execute Box3 and camera auto-fit logic once
     if (!fittedRef.current && camera instanceof THREE.PerspectiveCamera) {
       const box = new THREE.Box3().setFromObject(gltf.scene);
       const center = box.getCenter(new THREE.Vector3());
@@ -92,9 +102,8 @@ export default function LandModel({ modelUrl }: LandModelProps) {
       console.log('[LandModel] Camera auto-fit completed');
     }
 
-    // After processing, set isInitialized.current = true to lock further updates
     isInitialized.current = true;
-    console.log('[LandModel] Model processing completed and locked');
+    console.log('[LandModel] V.10.1.PBR processing completed and locked');
   }, [gltf, camera, modelUrl]);
 
   if (!gltf || !gltf.scene) {

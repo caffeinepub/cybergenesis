@@ -1,0 +1,74 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-12T22:31:07.249Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 3,
+    "implemented": 3,
+    "items": [
+      {
+        "id": "REQ-1",
+        "summary": "Update frontend/src/components/CubeVisualization.tsx to match the V.10.1.PBR Canvas and lighting specification: set renderer tone mapping to THREE.ACESFilmicToneMapping, outputColorSpace to THREE.SRGBColorSpace, and toneMappingExposure to 0.6 in the Canvas onCreated hook; adjust light balance to KeyLight intensity={Math.PI * 2.2} color=\"#ffffff\", SunLight intensity={Math.PI * 0.5} color=\"#ffe4b5\", HemisphereLight intensity={1.05} skyColor=\"#f7f7f7\" groundColor=\"#3a3a3a\"; set <Environment preset=\"sunset\" environmentIntensity={1.0} />; and implement KeyLight camera sync using useFrame so the KeyLight position is set every frame to (camera.x + 10, camera.y + 15, camera.z + 10).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/CubeVisualization.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/CubeVisualization.tsx"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Update frontend/src/components/LandModel.tsx to match the V.10.1.PBR material traversal and camera-fit safety rules: call gltf.scene.updateMatrixWorld() before computing the Box3; perform material traversal only inside a guard `if (gltf.scene?.isObject3D) { ... }`; implement the emissive \"Glow List\" behavior based on object/material name containing any of MYTHIC_VOID, MYTHIC_AETHER, FOREST_VALLEY, DESERT_DUNE, ISLAND_ARCHIPELAGO, VOLCANIC_CRAG (if m.map exists set m.emissiveMap = m.map; set m.emissive to white and m.emissiveIntensity to 2.0); implement per-biome envMapIntensity rules based on name (AETHER/VOID/FOREST/DESERT/ISLAND -> 2.0; VOLCANIC_CRAG -> 1.3; otherwise default 1.0); enforce the PBR guard (do not manually set m.roughness or m.metalness when m.roughnessMap exists); and remove any `m.needsUpdate = true` assignments from inside the traversal loop for performance.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LandModel.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LandModel.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Apply the global stability constraints from V.10.1.PBR across the 3D renderer components involved in this task: ensure no light uses castShadow={true} (remove any such props rather than enabling shadows), and ensure no manual gl.dispose() is added in any cleanup logic related to CubeVisualization/LandModel.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/CubeVisualization.tsx",
+          "frontend/src/components/LandModel.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/CubeVisualization.tsx",
+          "frontend/src/components/LandModel.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "backend/blob-storage/Mixin.mo",
+    "backend/blob-storage/Storage.mo",
+    "build-request.json",
+    "build-template/Dockerfile",
+    "build-template/LICENSE",
+    "build-template/README.md",
+    "build-template/deploy.sh",
+    "build-template/icp.yaml",
+    "build-template/src/backend/canister.yaml",
+    "build-template/src/frontend/canister.yaml",
+    "caffeine.lock.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/components/CubeVisualization.tsx",
+    "frontend/src/components/LandModel.tsx",
+    "frontend/src/config.ts",
+    "frontend/src/hooks/useInternetIdentity.ts",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}
