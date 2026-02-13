@@ -1,18 +1,40 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T15:33:33.514Z",
+  "generatedAt": "2026-02-13T19:52:04.017Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 1,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In `frontend/src/components/CubeVisualization.tsx`, inside the `BloomEffect` component’s `useFrame` callback, call `gl.setClearAlpha(0)` every frame to force the WebGL renderer to keep a transparent clear alpha even after GLTF/Bloom initialization resets it. Place this call within the existing `if (composerRef.current)` block and ensure it executes before `composerRef.current.render()`.",
+        "summary": "In `frontend/src/components/CubeVisualization.tsx`, implement a shader-based radial gradient background using an inverted sphere (skybox) mesh so the scene background is a deep purple/blue glow in the center fading to black at the edges, without using any external CSS or texture assets.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/CubeVisualization.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/CubeVisualization.tsx"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Update the scene initialization in `CubeVisualization.tsx` so the shader background mesh is visible by setting `scene.background = null`, and set fog to black using `scene.fog = new THREE.FogExp2(0x000000, 0.003)` to preserve floor fade-out behavior.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/CubeVisualization.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/CubeVisualization.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Preserve the existing renderer tone mapping exposure configuration: do not change `gl.toneMappingExposure` from `0.6` in `CubeVisualization.tsx`.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"

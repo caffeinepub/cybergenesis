@@ -1,20 +1,35 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Project investigating/fixing three.js canvas transparency: background turns black after GLTF model loads when Bloom/EffectComposer is enabled; fix requested to force clear alpha each frame.",
+  "summary": "Implement a shader-based radial gradient background (purple center to black edges) in a Three.js scene without changing toneMappingExposure, preserving a dark/moody model look with bloom.",
   "architectural_notes": [
-    "When using EffectComposer/UnrealBloomPass with a transparent canvas, force renderer alpha each frame (e.g., call gl.setClearAlpha(0) in useFrame) to prevent postprocessing/GLTF load from resetting clearAlpha to 1."
+    "Background visuals should be implemented via a dedicated mesh + ShaderMaterial (no CSS/textures) to avoid affecting model lighting; do not change gl.toneMappingExposure (must remain 0.6).",
+    "Ensure scene.background is null so the shader background mesh is visible; keep fog enabled and aligned with edge color (black) for floor fade-out."
   ],
-  "known_issues": [
-    "Canvas background briefly shows site gradient, then turns black once GLTF model finishes loading when Bloom postprocessing is enabled (transparency lost)."
-  ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-in-frontend-src-components-cubevisualization-tsx-inside-the-bloomeffect-component-s-useframe-callback-call-gl-setclearalpha-0-every-frame-to-force-the-webgl-renderer-to-keep-a-transparent-clear-alpha-even-after-gltf-bloom-initialization-resets-it-place-this-call-within-the-existing-if-composerref-current-block-and-ensure-it-executes-before-composerref-current-render",
-      "title": "In `frontend/src/components/CubeVisualization.tsx`, inside the `BloomEffect` component’s `useFrame` callback, call `gl.setClearAlpha(0)` every frame to force the WebGL renderer to keep a transparent clear alpha even after GLTF/Bloom initialization resets it. Place this call within the existing `if (composerRef.current)` block and ensure it executes before `composerRef.current.render()`.",
+      "id": "feature-in-frontend-src-components-cubevisualization-tsx-implement-a-shader-based-radial-gradient-background-using-an-inverted-sphere-skybox-mesh-so-the-scene-background-is-a-deep-purple-blue-glow-in-the-center-fading-to-black-at-the-edges-without-using-any-external-css-or-texture-assets",
+      "title": "In `frontend/src/components/CubeVisualization.tsx`, implement a shader-based radial gradient background using an inverted sphere (skybox) mesh so the scene background is a deep purple/blue glow in the center fading to black at the edges, without using any external CSS or texture assets.",
       "reqIds": [
         "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-scene-initialization-in-cubevisualization-tsx-so-the-shader-background-mesh-is-visible-by-setting-scene-background-null-and-set-fog-to-black-using-scene-fog-new-three-fogexp2-0x000000-0-003-to-preserve-floor-fade-out-behavior",
+      "title": "Update the scene initialization in `CubeVisualization.tsx` so the shader background mesh is visible by setting `scene.background = null`, and set fog to black using `scene.fog = new THREE.FogExp2(0x000000, 0.003)` to preserve floor fade-out behavior.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-preserve-the-existing-renderer-tone-mapping-exposure-configuration-do-not-change-gl-tonemappingexposure-from-0-6-in-cubevisualization-tsx",
+      "title": "Preserve the existing renderer tone mapping exposure configuration: do not change `gl.toneMappingExposure` from `0.6` in `CubeVisualization.tsx`.",
+      "reqIds": [
+        "REQ-3"
       ],
       "version": 1
     }
@@ -22,12 +37,13 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Fix canvas background turning black after GLTF loads when Bloom/EffectComposer is enabled by adding gl.setClearAlpha(0) in useFrame.",
+      "summary": "Add inverted background sphere (skybox) using ShaderMaterial to render a radial gradient (purple center → black edges) in CubeVisualization.tsx; keep gl.toneMappingExposure at 0.6; set scene.background=null; update fog to black (FogExp2 0x000000, 0.003).",
       "reqIds": [],
-      "status": "in_progress"
+      "status": "pending"
     }
   ],
-  "projectName": "Fix Three.js canvas transparency by forcing clear alpha each frame",
+  "gameProjectType": "3d",
+  "projectName": "Implement shader-based radial gradient background sphere in CubeVisualization",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

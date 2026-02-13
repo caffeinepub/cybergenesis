@@ -44,40 +44,95 @@ function KeyLightSync() {
   );
 }
 
+function BackgroundSphere() {
+  const meshRef = useRef<THREE.Mesh>(null);
+
+  useEffect(() => {
+    if (!meshRef.current) return;
+
+    // Create inverted sphere geometry
+    const geometry = new THREE.SphereGeometry(50, 32, 32);
+    geometry.scale(-1, 1, 1); // Invert so we see the inside
+
+    // Custom shader material for radial gradient
+    const material = new THREE.ShaderMaterial({
+      vertexShader: `
+        varying vec2 vUv;
+        
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        
+        void main() {
+          // Calculate radial distance from UV center (0.5, 0.5)
+          vec2 center = vec2(0.5, 0.5);
+          float distance = length(vUv - center);
+          
+          // Define gradient colors
+          vec3 centerColor = vec3(0.1, 0.1, 0.25); // Deep Purple/Blue
+          vec3 edgeColor = vec3(0.0, 0.0, 0.0);    // Pure Black
+          
+          // Mix colors based on distance
+          vec3 color = mix(centerColor, edgeColor, distance * 1.5);
+          
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `,
+      side: THREE.BackSide,
+      depthWrite: false,
+    });
+
+    meshRef.current.geometry = geometry;
+    meshRef.current.material = material;
+
+    console.log('[Background Sphere] Shader-based radial gradient sky-sphere created');
+
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, []);
+
+  return <mesh ref={meshRef} renderOrder={-1} />;
+}
+
+function SceneSetup() {
+  const { scene } = useThree();
+
+  useEffect(() => {
+    // REQ-2: Set scene.background to null so shader sphere is visible
+    scene.background = null;
+    
+    // REQ-2: Update fog to black to match gradient edges
+    scene.fog = new THREE.FogExp2(0x000000, 0.003);
+    
+    console.log('[Scene Setup] Background set to null, fog updated to black (0x000000) for shader sky-sphere');
+  }, [scene]);
+
+  return null;
+}
+
 function BloomEffect() {
   const { gl, scene, camera, size } = useThree();
   const composerRef = useRef<EffectComposer | null>(null);
   const renderPassRef = useRef<RenderPass | null>(null);
   const bloomPassRef = useRef<UnrealBloomPass | null>(null);
-  const renderTargetRef = useRef<THREE.WebGLRenderTarget | null>(null);
 
   useEffect(() => {
-    // REQ-1: Create explicit HDR render target with RGBA + HalfFloat + no stencil
-    const renderTarget = new THREE.WebGLRenderTarget(size.width, size.height, {
-      format: THREE.RGBAFormat,
-      type: THREE.HalfFloatType,
-      stencilBuffer: false,
-    });
+    // Ensure renderer uses opaque clear alpha
+    gl.setClearAlpha(1);
     
-    // REQ-1: Manual Property Injection (Bypassing the Filter)
-    renderTarget.texture.premultiplyAlpha = false;
-    renderTarget.texture.needsUpdate = true;
-    
-    renderTargetRef.current = renderTarget;
-
-    // Initialize EffectComposer with the HDR render target
-    const composer = new EffectComposer(gl, renderTarget);
-    
-    // REQ-2: Composer Alpha Configuration
+    // Initialize EffectComposer with default settings
+    const composer = new EffectComposer(gl);
     composer.renderToScreen = true;
-    
     composerRef.current = composer;
 
-    // DEFINITIVE TRANSPARENCY FIX - Force RenderPass to use transparent clear
+    // Standard RenderPass with default clearing behavior
     const renderPass = new RenderPass(scene, camera);
-    renderPass.clear = true;
-    renderPass.clearColor = new THREE.Color(0x000000); // Force black color
-    renderPass.clearAlpha = 0; // Force TOTAL transparency
     renderPassRef.current = renderPass;
     composer.addPass(renderPass);
 
@@ -91,7 +146,7 @@ function BloomEffect() {
     bloomPassRef.current = bloomPass;
     composer.addPass(bloomPass);
 
-    console.log('[Transparent HDR Bloom] UnrealBloomPass initialized with RGBA+HalfFloat target, manual alpha injection, composer.renderToScreen=true, RenderPass clearAlpha=0, threshold=1.1, strength=0.35, radius=0.35');
+    console.log('[Stable Bloom] UnrealBloomPass initialized with shader background, threshold=1.1, strength=0.35, radius=0.35');
 
     return () => {
       // Cleanup on unmount
@@ -107,19 +162,14 @@ function BloomEffect() {
         composerRef.current.dispose();
         composerRef.current = null;
       }
-      if (renderTargetRef.current) {
-        renderTargetRef.current.dispose();
-        renderTargetRef.current = null;
-      }
-      console.log('[Transparent HDR Bloom] Composer and render target disposed');
+      console.log('[Stable Bloom] Composer disposed');
     };
   }, [gl, scene, camera, size.width, size.height]);
 
   // Handle resize
   useEffect(() => {
-    if (composerRef.current && renderTargetRef.current) {
+    if (composerRef.current) {
       composerRef.current.setSize(size.width, size.height);
-      renderTargetRef.current.setSize(size.width, size.height);
       
       // Update bloom pass resolution to 50% of new size
       if (bloomPassRef.current) {
@@ -128,17 +178,9 @@ function BloomEffect() {
     }
   }, [size]);
 
-  // REQ-3: Strict Frame Clearing - Clear to transparent every frame before composer render
-  useFrame(({ gl }) => {
+  // Clean render loop - only composer.render(), no manual clearing
+  useFrame(() => {
     if (composerRef.current) {
-      // Clear the WebGL renderer to 100% transparency (alpha 0)
-      gl.setClearColor(0x000000, 0);
-      gl.clear(true, true, true);
-      
-      // CRITICAL FIX: Force clear alpha to 0 every frame to prevent GLTF/Bloom from resetting it to 1
-      gl.setClearAlpha(0);
-      
-      // Render the composer
       composerRef.current.render();
     }
   }, 1);
@@ -203,16 +245,25 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
         gl={{
           antialias: true,
           powerPreference: 'high-performance',
-          alpha: true,
+          alpha: false,
         }}
         onCreated={({ gl }) => {
-          // Keep existing tone mapping configuration
+          // REQ-3: Keep tone mapping configuration unchanged
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMappingExposure = 0.6;
+          
+          // Ensure opaque clear alpha is set (default behavior)
+          gl.setClearAlpha(1);
         }}
       >
         <Suspense fallback={null}>
+          {/* REQ-2: Apply null background and black fog to scene */}
+          <SceneSetup />
+          
+          {/* REQ-1: Shader-based radial gradient background sphere */}
+          <BackgroundSphere />
+          
           <LandModel modelUrl={modelUrl} />
           
           {/* V.10.1.PBR Lighting Configuration */}
@@ -232,7 +283,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           
           <OrbitControls makeDefault />
           
-          {/* Native UnrealBloomPass Implementation with Transparency + Anti-Ghosting */}
+          {/* Native UnrealBloomPass with shader background */}
           <BloomEffect />
         </Suspense>
       </Canvas>

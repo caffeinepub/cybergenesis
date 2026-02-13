@@ -1,22 +1,53 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Three.js canvas transparency by forcing clear alpha each frame",
+  "title": "Shader-based radial gradient sky-sphere background in CubeVisualization",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Force Three.js renderer clear alpha to remain transparent every frame while Bloom/EffectComposer is rendering.",
+      "summary": "Implement a shader-based radial gradient background using an inverted sphere mesh rendered behind the scene in CubeVisualization (no CSS/texture assets).",
       "acceptanceCriteria": [
-        "`frontend/src/components/CubeVisualization.tsx` contains `gl.setClearAlpha(0)` inside `BloomEffect`’s `useFrame` handler.",
-        "The change does not remove or disable the existing transparency clear steps (`gl.setClearColor(0x000000, 0)` and `gl.clear(true, true, true)`) and does not remove `<Canvas gl={{ ..., alpha: true }}>`.",
-        "When a GLTF model finishes loading and Bloom/EffectComposer is active, the canvas background remains transparent (no black background appears behind the model).",
-        "Fullscreen toggle behavior remains unchanged."
+        "A large inverted sphere with radius 50 and 32x32 segments is created and rendered as the background (camera is inside the sphere).",
+        "The background color is produced via `THREE.ShaderMaterial` (not `scene.background` colors, CSS gradients, or image textures).",
+        "The fragment shader computes radial distance from UV center (0.5, 0.5) and mixes from centerColor (0.1,0.1,0.25) to edgeColor (0,0,0) using `distance * 1.5`.",
+        "The model lighting/appearance remains dark/moody and bloom remains functional; only the background appearance changes."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Within the BloomEffect component’s existing useFrame callback, add `gl.setClearAlpha(0)` inside the `if (composerRef.current)` block and ensure it runs before `composerRef.current.render()`. Keep existing `gl.setClearColor(0x000000, 0)`, `gl.clear(true, true, true)`, and the Canvas `gl={{ ..., alpha: true }}` configuration unchanged, and do not alter fullscreen toggle logic."
+          "description": "Replace the current solid scene background approach with a dedicated background mesh: create a `THREE.SphereGeometry(50, 32, 32)`, invert it via `geometry.scale(-1, 1, 1)`, and render it with `THREE.ShaderMaterial` that implements the required radial UV-distance mix (centerColor vec3(0.1,0.1,0.25) to edgeColor vec3(0,0,0) using `distance * 1.5`). Ensure the background sphere renders behind all other objects and does not alter existing lighting/bloom configuration."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Update scene initialization so the shader background mesh is visible (scene.background null) and fog is black FogExp2 to preserve fade-out behavior.",
+      "acceptanceCriteria": [
+        "After scene setup runs, `scene.background` is `null` (not a `THREE.Color`).",
+        "After scene setup runs, `scene.fog` is `THREE.FogExp2` with color 0x000000 and density 0.003.",
+        "The background sphere remains visible behind all other scene objects and is not replaced/overridden by a solid scene background color."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/CubeVisualization.tsx",
+          "operation": "modify",
+          "description": "Adjust `SceneSetup` (or equivalent scene init logic) to set `scene.background = null` so the shader sky-sphere is visible, and set `scene.fog = new THREE.FogExp2(0x000000, 0.003)` to keep the floor fade-out behavior aligned with the black gradient edge."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Keep renderer toneMappingExposure unchanged at 0.6 in CubeVisualization.",
+      "acceptanceCriteria": [
+        "`gl.toneMappingExposure` remains explicitly set to `0.6` in the Canvas `onCreated` handler.",
+        "No other code path overrides `gl.toneMappingExposure` to a different value at runtime."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/CubeVisualization.tsx",
+          "operation": "modify",
+          "description": "Verify the Canvas `onCreated` handler continues to explicitly set `gl.toneMappingExposure = 0.6` and that no new background-related logic modifies tone mapping exposure at runtime."
         }
       ]
     }

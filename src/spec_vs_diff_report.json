@@ -1,43 +1,29 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T15:33:33.511Z",
-  "summary": "REQ-1 cannot be verified from the provided diff snippet: the shown portion of `CubeVisualization.tsx` modifies `BloomEffect`'s `useEffect` initialization (EffectComposer/render target/RenderPass), but does not show the required `gl.setClearAlpha(0)` call inside `BloomEffect`’s `useFrame` callback before `composerRef.current.render()`. The diff also includes unrequested changes to metadata/summary files and additional postprocessing/renderer configuration not asked for in the BuildRequest.",
+  "generatedAt": "2026-02-13T19:52:04.014Z",
+  "summary": "REQ-1 and REQ-2 appear implemented in CubeVisualization.tsx via an inverted SphereGeometry(50,32,32) using a ShaderMaterial radial gradient (centerColor→edgeColor using distance*1.5) plus scene.background=null and FogExp2(0x000000,0.003). REQ-3 cannot be verified from the provided truncated diff because gl.toneMappingExposure=0.6 is not shown.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "In `frontend/src/components/CubeVisualization.tsx`, inside the `BloomEffect` component’s `useFrame` callback, call `gl.setClearAlpha(0)` every frame within the existing `if (composerRef.current)` block and before `composerRef.current.render()`.",
-      "reason": "The provided truncated excerpt of `frontend/src/components/CubeVisualization.tsx` shows `BloomEffect` setup in `useEffect` but does not include (or provide evidence of) a `useFrame` handler containing `gl.setClearAlpha(0)` before `composerRef.current.render()`. With the diff truncated, this requirement cannot be confirmed as implemented.",
+      "id": "REQ-3",
+      "requirement": "Preserve the existing renderer tone mapping exposure configuration: do not change `gl.toneMappingExposure` from `0.6` in `CubeVisualization.tsx`.",
+      "reason": "The diff excerpt for `frontend/src/components/CubeVisualization.tsx` is truncated before the Canvas `onCreated` handler (or any renderer configuration) is shown, so there is no direct evidence that `gl.toneMappingExposure` remains explicitly set to `0.6` and is not overridden elsewhere in the file.",
       "evidence": [
-        "frontend/src/components/CubeVisualization.tsx (truncated excerpt shows `useEffect` composer setup but no `useFrame` callback or `gl.setClearAlpha(0)` call)"
+        "frontend/src/components/CubeVisualization.tsx (truncated before renderer/toneMappingExposure setup)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added/changed EffectComposer initialization to use an explicit HDR `WebGLRenderTarget` (RGBA + HalfFloat), manually set `premultiplyAlpha`, and set `composer.renderToScreen = true`.",
-      "reason": "BuildRequest only asked to force `gl.setClearAlpha(0)` each frame in `useFrame` and to keep existing transparency steps; it did not request changing render target formats, premultiplyAlpha handling, or composer screen rendering settings.",
+      "description": "Added console logging for background sphere creation and scene setup.",
+      "reason": "The BuildRequest does not request any logging behavior; it only specifies visual/background/shader and scene init requirements.",
       "evidence": [
-        "frontend/src/components/CubeVisualization.tsx (creates `new THREE.WebGLRenderTarget(... { format: RGBAFormat, type: HalfFloatType ... })`, sets `renderTarget.texture.premultiplyAlpha = false`, `composer.renderToScreen = true`)"
-      ]
-    },
-    {
-      "description": "Changed/added RenderPass clear configuration (`renderPass.clear = true`, `renderPass.clearColor = black`, `renderPass.clearAlpha = 0`) as a 'DEFINITIVE TRANSPARENCY FIX'.",
-      "reason": "Not requested; the specified fix was to call `gl.setClearAlpha(0)` every frame in `useFrame` while keeping existing clear steps, not to reconfigure RenderPass clearing behavior.",
-      "evidence": [
-        "frontend/src/components/CubeVisualization.tsx (`renderPass.clear = true`, `renderPass.clearColor = new THREE.Color(0x000000)`, `renderPass.clearAlpha = 0`)"
-      ]
-    },
-    {
-      "description": "Updated `project_state.json` (project tracking metadata) and `frontend-file-summaries.txt` (large descriptive summary of many unrelated UI/features).",
-      "reason": "BuildRequest is narrowly scoped to a Three.js transparency fix in `CubeVisualization.tsx` and explicitly lists constraints/non-goals about not changing UI/layout/auth/networking; updating these metadata/summary files is not requested by the spec.",
-      "evidence": [
-        "project_state.json",
-        "frontend-file-summaries.txt"
+        "frontend/src/components/CubeVisualization.tsx: console.log('[Background Sphere] ...')",
+        "frontend/src/components/CubeVisualization.tsx: console.log('[Scene Setup] ...')"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.67,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/components/CubeVisualization.tsx",
