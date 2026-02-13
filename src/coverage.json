@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T00:18:27.137Z",
+  "generatedAt": "2026-02-13T15:33:33.514Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,8 +11,8 @@
     "implemented": 1,
     "items": [
       {
-        "id": "REQ-4",
-        "summary": "In frontend/src/components/CubeVisualization.tsx, implement Bloom using native Three.js examples modules (EffectComposer + RenderPass + UnrealBloomPass from three/examples/jsm) instead of any @react-three/postprocessing-based solution. Use a 50% internal resolution for the UnrealBloomPass (new THREE.Vector2(window.innerWidth/2, window.innerHeight/2)) for performance. Calibrate Bloom to threshold=1.1, strength=0.35, radius=0.35. Keep renderer toneMappingExposure synced to 0.6 (do not change existing tone mapping/output color space configuration). Integrate composer rendering so the scene is rendered via composer.render (i.e., composer output replaces direct gl.render) and manage the composer lifecycle with React hooks; add unmount cleanup that calls dispose() on composer, renderPass, and bloomPass. Do not change any existing light settings or other V.10.1.PBR calibration in this component beyond adding/removing Bloom-related code.",
+        "id": "REQ-1",
+        "summary": "In `frontend/src/components/CubeVisualization.tsx`, inside the `BloomEffect` component’s `useFrame` callback, call `gl.setClearAlpha(0)` every frame to force the WebGL renderer to keep a transparent clear alpha even after GLTF/Bloom initialization resets it. Place this call within the existing `if (composerRef.current)` block and ensure it executes before `composerRef.current.render()`.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"

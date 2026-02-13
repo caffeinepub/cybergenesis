@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-implement-bloom-using-native-three-js-examples-modules-effectcomposer-renderpass-unrealbloompass-from-three-examples-jsm-instead-of-any-react-three-postprocessing-based-solution-use-a-50-internal-resolution-for-the-unrealbloompass-new-three-vector2-window-innerwidth-2-window-innerheight-2-for-performance-calibrate-bloom-to-threshold-1-1-strength-0-35-radius-0-35-keep-renderer-tonemappingexposure-synced-to-0-6-do-not-change-existing-tone-mapping-output-color-space-configuration-integrate-composer-rendering-so-the-scene-is-rendered-via-composer-render-i-e-composer-output-replaces-direct-gl-render-and-manage-the-composer-lifecycle-with-react-hooks-add-unmount-cleanup-that-calls-dispose-on-composer-renderpass-and-bloompass-do-not-change-any-existing-light-settings-or-other-v-10-1-pbr-calibration-in-this-component-beyond-adding-removing-bloom-related-code",
-      "featureTitle": "In frontend/src/components/CubeVisualization.tsx, implement Bloom using native Three.js examples modules (EffectComposer + RenderPass + UnrealBloomPass from three/examples/jsm) instead of any @react-three/postprocessing-based solution. Use a 50% internal resolution for the UnrealBloomPass (new THREE.Vector2(window.innerWidth/2, window.innerHeight/2)) for performance. Calibrate Bloom to threshold=1.1, strength=0.35, radius=0.35. Keep renderer toneMappingExposure synced to 0.6 (do not change existing tone mapping/output color space configuration). Integrate composer rendering so the scene is rendered via composer.render (i.e., composer output replaces direct gl.render) and manage the composer lifecycle with React hooks; add unmount cleanup that calls dispose() on composer, renderPass, and bloomPass. Do not change any existing light settings or other V.10.1.PBR calibration in this component beyond adding/removing Bloom-related code.",
+      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-inside-the-bloomeffect-component-s-useframe-callback-call-gl-setclearalpha-0-every-frame-to-force-the-webgl-renderer-to-keep-a-transparent-clear-alpha-even-after-gltf-bloom-initialization-resets-it-place-this-call-within-the-existing-if-composerref-current-block-and-ensure-it-executes-before-composerref-current-render",
+      "featureTitle": "In `frontend/src/components/CubeVisualization.tsx`, inside the `BloomEffect` component’s `useFrame` callback, call `gl.setClearAlpha(0)` every frame to force the WebGL renderer to keep a transparent clear alpha even after GLTF/Bloom initialization resets it. Place this call within the existing `if (composerRef.current)` block and ensure it executes before `composerRef.current.render()`.",
       "files": [
         "frontend/src/components/CubeVisualization.tsx"
       ],
@@ -18,7 +18,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-4"
+        "REQ-1"
       ],
       "confidence": "high"
     }

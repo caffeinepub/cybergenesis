@@ -1,46 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Implement native UnrealBloomPass Bloom in CubeVisualization using three/examples/jsm",
+  "title": "Fix Three.js canvas transparency by forcing clear alpha each frame",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-4",
-      "text": "In frontend/src/components/CubeVisualization.tsx, implement Bloom using native Three.js examples modules (EffectComposer + RenderPass + UnrealBloomPass from three/examples/jsm) instead of any @react-three/postprocessing-based solution. Use a 50% internal resolution for the UnrealBloomPass (new THREE.Vector2(window.innerWidth/2, window.innerHeight/2)) for performance. Calibrate Bloom to threshold=1.1, strength=0.35, radius=0.35. Keep renderer toneMappingExposure synced to 0.6 (do not change existing tone mapping/output color space configuration). Integrate composer rendering so the scene is rendered via composer.render (i.e., composer output replaces direct gl.render) and manage the composer lifecycle with React hooks; add unmount cleanup that calls dispose() on composer, renderPass, and bloomPass. Do not change any existing light settings or other V.10.1.PBR calibration in this component beyond adding/removing Bloom-related code.",
+      "id": "REQ-1",
+      "text": "In `frontend/src/components/CubeVisualization.tsx`, inside the `BloomEffect` component’s `useFrame` callback, call `gl.setClearAlpha(0)` every frame to force the WebGL renderer to keep a transparent clear alpha even after GLTF/Bloom initialization resets it. Place this call within the existing `if (composerRef.current)` block and ensure it executes before `composerRef.current.render()`.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-20"
         ],
         "quotes": [
-          "Good, let's use three/examples/jsm already built into Three.js.",
-          "Replace @react-three/postprocessing Bloom with native Three.js examples UnrealBloomPass in CubeVisualisation.tsx: import EffectComposer/RenderPass/UnrealBloomPass from three/examples/jsm; init bloomPass with new THREE.Vector2(window.innerWidth/2, window.innerHeight/2); set threshold=1.1 strength=0.35 radius=0.35; keep toneMappingExposure=0.6; integrate via useEffect/useFrame so composer.render replaces gl.render; dispose composer/renderPass/bloomPass on unmount; do not change existing lights/PBR calibration.",
-          "1. Yes",
-          "2. Yes, only that if it exists, do not touch anything else.",
-          "3. Confirmed, we only work on integrating and tuning bloom, do not touch anything else anywhere.",
-          "Внедряй"
+          "Давай фикс. Внедряй gl.setClearAlpha(0) в useFrame. Жду результат."
         ]
       },
       "acceptanceCriteria": [
-        "CubeVisualization.tsx contains imports for EffectComposer, RenderPass, and UnrealBloomPass from three/examples/jsm (and does not rely on @react-three/postprocessing for Bloom).",
-        "UnrealBloomPass is created with resolution new THREE.Vector2(window.innerWidth/2, window.innerHeight/2) (or equivalent 50% resolution logic).",
-        "Bloom parameters are set to threshold=1.1, strength=0.35, radius=0.35.",
-        "Renderer exposure remains 0.6 and stays consistent with the existing onCreated configuration (no changes to current tone mapping/output color space setup).",
-        "The render loop renders through composer.render so Bloom is visible (composer output replaces direct renderer output).",
-        "On component unmount, composer, renderPass, and bloomPass are disposed without calling gl.dispose().",
-        "Lighting values and configuration in CubeVisualization (hemisphereLight color/intensity, KeyLightSync, SunLight, Environment) remain unchanged."
+        "`frontend/src/components/CubeVisualization.tsx` contains `gl.setClearAlpha(0)` inside `BloomEffect`’s `useFrame` handler.",
+        "The change does not remove or disable the existing transparency clear steps (`gl.setClearColor(0x000000, 0)` and `gl.clear(true, true, true)`) and does not remove `<Canvas gl={{ ..., alpha: true }}>`.",
+        "When a GLTF model finishes loading and Bloom/EffectComposer is active, the canvas background remains transparent (no black background appears behind the model).",
+        "Fullscreen toggle behavior remains unchanged."
       ]
     }
   ],
   "constraints": [
-    "Frontend immutable paths must not be edited (per SYSTEM_CONTEXT).",
-    "Do not introduce new npm dependencies; Bloom must use modules available within Three.js (three/examples/jsm).",
-    "Do not modify non-Bloom rendering calibration or light settings in CubeVisualization.tsx.",
-    "Do not add any manual gl.dispose() cleanup logic."
+    "Do not edit files under `frontend/src/components/ui` (compose them instead).",
+    "Do not modify immutable frontend hook files: `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useInternetIdentity.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`.",
+    "Keep the current UI styles/layout and the existing stable native fullscreen logic unchanged."
   ],
   "nonGoals": [
-    "No changes to LandModel.tsx behavior or materials as part of this task.",
-    "No changes to backend (Motoko) logic or canister interfaces.",
-    "No additional post-processing effects beyond the specified Bloom."
+    "Do not redesign the page or change the site/theme background.",
+    "Do not change bloom strength/radius/threshold tuning except as required for the transparency fix.",
+    "Do not introduce new authentication, networking, or backend changes for this fix."
   ],
   "imageRequirements": {
     "required": [],
