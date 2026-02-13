@@ -1,17 +1,21 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "3D React/Three.js app: implement V.10.1.PBR “Final Visual Reconstruction & Stability Lock” for 7 biomes via lighting/canvas calibration in CubeVisualisation.tsx and PBR material traversal adjustments in LandModel.tsx (version 321 baseline).",
+  "projectStateVersion": 11,
+  "summary": "3D React/Three.js app: continue V.10.1.PBR visual stability work, but replace the blocked @react-three/postprocessing Bloom with a native Three.js UnrealBloomPass implementation from three/examples/jsm inside CubeVisualisation.tsx (50% internal resolution for mobile perf; threshold=1.1, strength=0.35, radius=0.35; keep toneMappingExposure=0.6; use composer.render in the render loop with proper disposal on unmount).",
   "architectural_notes": [
     "Renderer calibration: ACESFilmicToneMapping + SRGBColorSpace with toneMappingExposure=0.6 to prevent over-bright/\"white milk\" at high metalness.",
     "Lighting architecture: key light position synced to camera each frame (useFrame) with specified key/sun/hemi intensities and environment preset=\"sunset\" envIntensity=1.0.",
     "GLTF material policy: call gltf.scene.updateMatrixWorld() before Box3; traverse materials to set emissive/emissiveMap/emissiveIntensity for specified biome name matches; set envMapIntensity by biome; do not override roughness/metalness when roughnessMap exists; avoid m.needsUpdate in traversal loop.",
-    "Stability/perf policy: disable shadows on lights; do not manually call gl.dispose() during cleanup."
+    "Stability/perf policy: disable shadows on lights; do not manually call gl.dispose() during cleanup.",
+    "Environment constraint: cannot install new npm deps (e.g., @react-three/postprocessing); prefer built-in Three.js modules (three/examples/jsm) to avoid imports being removed/rollback during build.",
+    "Native Bloom architecture: use EffectComposer + RenderPass + UnrealBloomPass (three/examples/jsm); run composer.render() in the render loop (replacing default render) and dispose composer/pass resources on unmount; use 50% internal resolution for mobile perf (Vector2(innerWidth/2, innerHeight/2))."
   ],
   "known_issues": [
-    "Platform draft rollback/rebuild to version 321 intermittently fails with \"AI couldn't implement that\" (non-code/platform limitation)."
+    "Platform draft rollback/rebuild to version 321 intermittently fails with \"AI couldn't implement that\" (non-code/platform limitation).",
+    "Published draft/build may not reflect intended code changes (e.g., EffectComposer/Bloom imports/block missing from CubeVisualization.tsx after rebuild), indicating a potential platform/build pipeline inconsistency.",
+    "Platform/environment cannot install or persist new npm dependencies (e.g., @react-three/postprocessing); builds may silently remove unsupported imports/rollback files, so Bloom must use Three.js built-in examples modules instead."
   ],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-update-frontend-src-components-cubevisualization-tsx-to-match-the-v-10-1-pbr-canvas-and-lighting-specification-set-renderer-tone-mapping-to-three-acesfilmictonemapping-outputcolorspace-to-three-srgbcolorspace-and-tonemappingexposure-to-0-6-in-the-canvas-oncreated-hook-adjust-light-balance-to-keylight-intensity-math-pi-2-2-color-ffffff-sunlight-intensity-math-pi-0-5-color-ffe4b5-hemispherelight-intensity-1-05-skycolor-f7f7f7-groundcolor-3a3a3a-set-environment-preset-sunset-environmentintensity-1-0-and-implement-keylight-camera-sync-using-useframe-so-the-keylight-position-is-set-every-frame-to-camera-x-10-camera-y-15-camera-z-10",
@@ -36,6 +40,14 @@
         "REQ-3"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-components-cubevisualization-tsx-implement-bloom-using-native-three-js-examples-modules-effectcomposer-renderpass-unrealbloompass-from-three-examples-jsm-instead-of-any-react-three-postprocessing-based-solution-use-a-50-internal-resolution-for-the-unrealbloompass-new-three-vector2-window-innerwidth-2-window-innerheight-2-for-performance-calibrate-bloom-to-threshold-1-1-strength-0-35-radius-0-35-keep-renderer-tonemappingexposure-synced-to-0-6-do-not-change-existing-tone-mapping-output-color-space-configuration-integrate-composer-rendering-so-the-scene-is-rendered-via-composer-render-i-e-composer-output-replaces-direct-gl-render-and-manage-the-composer-lifecycle-with-react-hooks-add-unmount-cleanup-that-calls-dispose-on-composer-renderpass-and-bloompass-do-not-change-any-existing-light-settings-or-other-v-10-1-pbr-calibration-in-this-component-beyond-adding-removing-bloom-related-code",
+      "title": "In frontend/src/components/CubeVisualization.tsx, implement Bloom using native Three.js examples modules (EffectComposer + RenderPass + UnrealBloomPass from three/examples/jsm) instead of any @react-three/postprocessing-based solution. Use a 50% internal resolution for the UnrealBloomPass (new THREE.Vector2(window.innerWidth/2, window.innerHeight/2)) for performance. Calibrate Bloom to threshold=1.1, strength=0.35, radius=0.35. Keep renderer toneMappingExposure synced to 0.6 (do not change existing tone mapping/output color space configuration). Integrate composer rendering so the scene is rendered via composer.render (i.e., composer output replaces direct gl.render) and manage the composer lifecycle with React hooks; add unmount cleanup that calls dispose() on composer, renderPass, and bloomPass. Do not change any existing light settings or other V.10.1.PBR calibration in this component beyond adding/removing Bloom-related code.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -54,6 +66,12 @@
     {
       "id": "AR-3",
       "summary": "Global stability changes: remove all castShadow={true} from lights and ensure no manual gl.dispose() in cleanup.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Replace @react-three/postprocessing Bloom with native Three.js examples UnrealBloomPass in CubeVisualisation.tsx: import EffectComposer/RenderPass/UnrealBloomPass from three/examples/jsm; init bloomPass with new THREE.Vector2(window.innerWidth/2, window.innerHeight/2); set threshold=1.1 strength=0.35 radius=0.35; keep toneMappingExposure=0.6; integrate via useEffect/useFrame so composer.render replaces gl.render; dispose composer/renderPass/bloomPass on unmount; do not change existing lights/PBR calibration.",
       "reqIds": [],
       "status": "pending"
     }

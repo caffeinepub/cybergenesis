@@ -1,7 +1,10 @@
-import { Suspense, useMemo, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useMemo, useRef, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import LandModel from './LandModel';
 
 interface CubeVisualizationProps {
@@ -39,6 +42,74 @@ function KeyLightSync() {
       color="#ffffff"
     />
   );
+}
+
+function BloomEffect() {
+  const { gl, scene, camera, size } = useThree();
+  const composerRef = useRef<EffectComposer | null>(null);
+  const renderPassRef = useRef<RenderPass | null>(null);
+  const bloomPassRef = useRef<UnrealBloomPass | null>(null);
+
+  useEffect(() => {
+    // Initialize EffectComposer
+    const composer = new EffectComposer(gl);
+    composerRef.current = composer;
+
+    // Add RenderPass
+    const renderPass = new RenderPass(scene, camera);
+    renderPassRef.current = renderPass;
+    composer.addPass(renderPass);
+
+    // Add UnrealBloomPass with 50% resolution for mobile GPU performance
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2),
+      0.35, // strength
+      0.35, // radius
+      1.1   // threshold
+    );
+    bloomPassRef.current = bloomPass;
+    composer.addPass(bloomPass);
+
+    console.log('[Native Bloom] UnrealBloomPass initialized with threshold=1.1, strength=0.35, radius=0.35');
+
+    return () => {
+      // Cleanup on unmount
+      if (bloomPassRef.current) {
+        bloomPassRef.current.dispose();
+        bloomPassRef.current = null;
+      }
+      if (renderPassRef.current) {
+        renderPassRef.current.dispose();
+        renderPassRef.current = null;
+      }
+      if (composerRef.current) {
+        composerRef.current.dispose();
+        composerRef.current = null;
+      }
+      console.log('[Native Bloom] Composer disposed');
+    };
+  }, [gl, scene, camera]);
+
+  // Handle resize
+  useEffect(() => {
+    if (composerRef.current) {
+      composerRef.current.setSize(size.width, size.height);
+      
+      // Update bloom pass resolution to 50% of new size
+      if (bloomPassRef.current) {
+        bloomPassRef.current.resolution.set(size.width / 2, size.height / 2);
+      }
+    }
+  }, [size]);
+
+  // Render loop
+  useFrame(() => {
+    if (composerRef.current) {
+      composerRef.current.render();
+    }
+  }, 1);
+
+  return null;
 }
 
 export default function CubeVisualization({ biome }: CubeVisualizationProps) {
@@ -92,6 +163,9 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
         />
         
         <OrbitControls makeDefault />
+        
+        {/* Native UnrealBloomPass Implementation */}
+        <BloomEffect />
       </Suspense>
     </Canvas>
   );

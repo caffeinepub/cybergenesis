@@ -1,62 +1,25 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "V.10.1.PBR visual reconstruction and stability lock for CubeVisualization and LandModel",
+  "title": "Native UnrealBloomPass Bloom in CubeVisualization (three/examples/jsm)",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Align CubeVisualization Canvas renderer settings, lighting balance, environment intensity, and KeyLight camera-sync to V.10.1.PBR spec.",
+      "id": "REQ-4",
+      "summary": "Replace any postprocessing Bloom with native Three.js EffectComposer + RenderPass + UnrealBloomPass in CubeVisualization, rendering via composer.render with 50% bloom internal resolution, tuned parameters, and proper disposal.",
       "acceptanceCriteria": [
-        "In CubeVisualization.tsx, Canvas.onCreated sets gl.toneMapping = THREE.ACESFilmicToneMapping, gl.outputColorSpace = THREE.SRGBColorSpace, and gl.toneMappingExposure = 0.6.",
-        "KeyLight is referenced via a ref and its position is updated each frame using useFrame to follow the camera with the exact offsets (+10, +15, +10).",
-        "The rendered scene uses Environment preset \"sunset\" with environmentIntensity exactly 1.0.",
-        "HemisphereLight uses intensity 1.05 with skyColor \"#f7f7f7\" and groundColor \"#3a3a3a\".",
-        "KeyLight intensity equals Math.PI * 2.2 and SunLight intensity equals Math.PI * 0.5, with colors matching the prompt (#ffffff and #ffe4b5 respectively)."
+        "CubeVisualization.tsx contains imports for EffectComposer, RenderPass, and UnrealBloomPass from three/examples/jsm (and does not rely on @react-three/postprocessing for Bloom).",
+        "UnrealBloomPass is created with resolution new THREE.Vector2(window.innerWidth/2, window.innerHeight/2) (or equivalent 50% resolution logic).",
+        "Bloom parameters are set to threshold=1.1, strength=0.35, radius=0.35.",
+        "Renderer exposure remains 0.6 and stays consistent with the existing onCreated configuration (no changes to current tone mapping/output color space setup).",
+        "The render loop renders through composer.render so Bloom is visible (composer output replaces direct renderer output).",
+        "On component unmount, composer, renderPass, and bloomPass are disposed without calling gl.dispose().",
+        "Lighting values and configuration in CubeVisualization (hemisphereLight color/intensity, KeyLightSync, SunLight, Environment) remain unchanged."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Implement V.10.1.PBR Canvas and lighting spec: ensure Canvas.onCreated sets ACESFilmic tone mapping, SRGB outputColorSpace, and exposure 0.6; update Environment preset=\"sunset\" environmentIntensity to 1.0; update HemisphereLight intensity and colors (skyColor #f7f7f7, groundColor #3a3a3a); update KeyLight/SunLight intensities and colors per spec; add KeyLight camera-sync via a ref and useFrame to set position each frame to (camera.x+10, camera.y+15, camera.z+10)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Update LandModel material traversal safeguards, Glow List emissive behavior, envMapIntensity rules, and performance/PBR guards per V.10.1.PBR.",
-      "acceptanceCriteria": [
-        "LandModel calls gltf.scene.updateMatrixWorld() before creating/using THREE.Box3().setFromObject(gltf.scene).",
-        "Material traversal logic is wrapped in a `if (gltf.scene?.isObject3D)` guard.",
-        "For meshes whose name matches the Glow List biome tags, emissiveMap is set from map when present, emissive color is set to white, and emissiveIntensity is exactly 2.0.",
-        "envMapIntensity is set to 2.0 for MYTHIC_AETHER/MYTHIC_VOID/FOREST_VALLEY/DESERT_DUNE/ISLAND_ARCHIPELAGO name matches, 1.3 for VOLCANIC_CRAG, and 1.0 otherwise (e.g., SNOW_PEAK).",
-        "No `m.needsUpdate = true` exists inside the traverse loop.",
-        "The code does not introduce manual roughness/metalness overrides when roughnessMap is present."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/LandModel.tsx",
-          "operation": "modify",
-          "description": "Implement V.10.1.PBR LandModel safety and material rules: call gltf.scene.updateMatrixWorld() before Box3 camera-fit calculation; wrap traversal logic in `if (gltf.scene?.isObject3D) { ... }`; in traversal implement Glow List emissive behavior based on object/material name containing any of MYTHIC_VOID, MYTHIC_AETHER, FOREST_VALLEY, DESERT_DUNE, ISLAND_ARCHIPELAGO, VOLCANIC_CRAG (if m.map exists set m.emissiveMap = m.map; set emissive white and emissiveIntensity 2.0); implement envMapIntensity mapping (AETHER/VOID/FOREST/DESERT/ISLAND -> 2.0; VOLCANIC_CRAG -> 1.3; default 1.0); enforce PBR guard by avoiding any manual roughness/metalness overrides when roughnessMap exists; remove any `m.needsUpdate = true` assignments from inside the traversal loop."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Apply V.10.1.PBR stability constraints: remove castShadow usage on lights and avoid any manual renderer disposal in related components.",
-      "acceptanceCriteria": [
-        "No directional/spot/point lights in CubeVisualization (and related components touched by this change) have castShadow set to true.",
-        "No cleanup code in these components calls gl.dispose()."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/CubeVisualization.tsx",
-          "operation": "modify",
-          "description": "Ensure global stability constraints: remove any castShadow props from lights (do not set castShadow={true}); confirm no cleanup logic introduces manual gl.dispose() for CubeVisualization."
-        },
-        {
-          "path": "frontend/src/components/LandModel.tsx",
-          "operation": "modify",
-          "description": "Ensure global stability constraints in LandModel changes: do not add any manual gl.dispose() in effect cleanup; keep changes limited to V.10.1.PBR requirements."
+          "description": "Implement native Three.js postprocessing bloom using EffectComposer + RenderPass + UnrealBloomPass imported from three/examples/jsm; add a small internal component/hook (e.g., within this file) that uses @react-three/fiber's useThree + useFrame to initialize the composer, set UnrealBloomPass resolution to new THREE.Vector2(window.innerWidth/2, window.innerHeight/2), set threshold=1.1/strength=0.35/radius=0.35, and replace direct rendering with composer.render. Keep the existing gl toneMapping/outputColorSpace setup unchanged and keep gl.toneMappingExposure synced to 0.6. Manage composer lifecycle with React hooks (create on mount, update size on resize, and dispose composer/renderPass/bloomPass on unmount); do not add gl.dispose() cleanup. Do not modify any lights or other V.10.1.PBR calibration beyond bloom-related code. Verify the component's usage instructions before implementing."
         }
       ]
     }
