@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Add a shader-based radial gradient background to the CubeVisualization scene using an inverted sphere mesh, without using CSS or texture assets.
+**Goal:** Perform a brute-force 3D background visibility diagnostic in `CubeVisualization` to ensure the background sphere is not being clipped and is clearly visible.
 
 **Planned changes:**
-- In `frontend/src/components/CubeVisualization.tsx`, create a large inverted `THREE.SphereGeometry(50, 32, 32)` background mesh rendered from inside the sphere.
-- Use `THREE.ShaderMaterial` to produce a radial gradient in the fragment shader based on UV distance from (0.5, 0.5), blending from deep purple/blue at the center `(0.1, 0.1, 0.25)` to black at the edges `(0, 0, 0)` using `distance * 1.5`.
-- Update scene setup so `scene.background = null` and set `scene.fog = new THREE.FogExp2(0x000000, 0.003)` to preserve floor fade-out behavior.
-- Preserve the existing renderer tone mapping exposure: keep `gl.toneMappingExposure` set to `0.6`.
+- Update `SceneSetup` in `frontend/src/components/CubeVisualization.tsx` to set `camera.far = 2000` for a `THREE.PerspectiveCamera`, then call `camera.updateProjectionMatrix()`.
+- Modify the `BackgroundSphere` implementation in `frontend/src/components/CubeVisualization.tsx` to bypass the custom shader and render with a solid red `<meshBasicMaterial color="red" side={THREE.BackSide} fog={false} />`.
+- Increase the `BackgroundSphere` `SphereGeometry` radius from `50` to `500` while keeping the geometry inverted and preserving `renderOrder={-1}` and `frustumCulled={false}`.
 
-**User-visible outcome:** The cube scene displays a moody purple/blue glow centered behind the model that fades to black at the edges, while lighting, bloom, and floor fog behavior remain consistent.
+**User-visible outcome:** The 3D scene renders with a large, solid red background sphere that should be clearly visible behind the scene, enabling straightforward verification that camera far-plane clipping and shader/fog issues are not hiding the background.

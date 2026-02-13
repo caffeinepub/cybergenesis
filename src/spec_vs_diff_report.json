@@ -1,29 +1,41 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T19:52:04.014Z",
-  "summary": "REQ-1 and REQ-2 appear implemented in CubeVisualization.tsx via an inverted SphereGeometry(50,32,32) using a ShaderMaterial radial gradient (centerColor→edgeColor using distance*1.5) plus scene.background=null and FogExp2(0x000000,0.003). REQ-3 cannot be verified from the provided truncated diff because gl.toneMappingExposure=0.6 is not shown.",
-  "missing_requirements": [
-    {
-      "id": "REQ-3",
-      "requirement": "Preserve the existing renderer tone mapping exposure configuration: do not change `gl.toneMappingExposure` from `0.6` in `CubeVisualization.tsx`.",
-      "reason": "The diff excerpt for `frontend/src/components/CubeVisualization.tsx` is truncated before the Canvas `onCreated` handler (or any renderer configuration) is shown, so there is no direct evidence that `gl.toneMappingExposure` remains explicitly set to `0.6` and is not overridden elsewhere in the file.",
-      "evidence": [
-        "frontend/src/components/CubeVisualization.tsx (truncated before renderer/toneMappingExposure setup)"
-      ]
-    }
-  ],
+  "generatedAt": "2026-02-13T21:59:14.041Z",
+  "summary": "All three requested diagnostic changes (camera far plane, red MeshBasicMaterial background sphere, radius=500 inverted geometry with renderOrder/frustumCulled settings) appear implemented in CubeVisualization.tsx. However, the diff also includes additional, unrequested diagnostic/scene changes and non-code metadata edits beyond the scope constraints.",
+  "missing_requirements": [],
   "hallucinated_features": [
     {
-      "description": "Added console logging for background sphere creation and scene setup.",
-      "reason": "The BuildRequest does not request any logging behavior; it only specifies visual/background/shader and scene init requirements.",
+      "description": "Changed scene fog settings (sets FogExp2 density to 0.002) as part of SceneSetup diagnostic.",
+      "reason": "BuildRequest only asked to set camera.far=2000 and updateProjectionMatrix; it did not request modifying fog.",
       "evidence": [
-        "frontend/src/components/CubeVisualization.tsx: console.log('[Background Sphere] ...')",
-        "frontend/src/components/CubeVisualization.tsx: console.log('[Scene Setup] ...')"
+        "frontend/src/components/CubeVisualization.tsx (SceneSetup: `scene.fog = new THREE.FogExp2(0x000000, 0.002);`)"
+      ]
+    },
+    {
+      "description": "Explicitly forces `scene.background = null` in SceneSetup.",
+      "reason": "Not requested by REQ-1/2/3; could be considered extra diagnostic behavior outside the specified brute-force changes.",
+      "evidence": [
+        "frontend/src/components/CubeVisualization.tsx (SceneSetup: `scene.background = null;`)"
+      ]
+    },
+    {
+      "description": "Added/modified extensive post-processing/bloom/renderer clear-alpha setup (EffectComposer, RenderPass, UnrealBloomPass, gl.setClearAlpha(1)) within CubeVisualization.",
+      "reason": "BuildRequest non-goals/constraints say to avoid adding new rendering features or unrelated refactors; post-processing changes are not part of the requested brute-force background diagnostic requirements.",
+      "evidence": [
+        "frontend/src/components/CubeVisualization.tsx (imports EffectComposer/RenderPass/UnrealBloomPass; BloomEffect uses `gl.setClearAlpha(1)` and initializes composer/passes)"
+      ]
+    },
+    {
+      "description": "Modified non-requested project metadata/state files (frontend-file-summaries.txt and project_state.json).",
+      "reason": "BuildRequest requires keeping changes limited to implementing the diagnostic in CubeVisualization.tsx; updating summary/state files is not requested.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "project_state.json"
       ]
     }
   ],
-  "confidence": 0.67,
+  "confidence": 0.78,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/components/CubeVisualization.tsx",

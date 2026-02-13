@@ -50,68 +50,46 @@ function BackgroundSphere() {
   useEffect(() => {
     if (!meshRef.current) return;
 
-    // Create inverted sphere geometry
-    const geometry = new THREE.SphereGeometry(50, 32, 32);
+    // DIAGNOSTIC: Increase radius from 50 to 500
+    const geometry = new THREE.SphereGeometry(500, 32, 32);
     geometry.scale(-1, 1, 1); // Invert so we see the inside
 
-    // Custom shader material for radial gradient
-    const material = new THREE.ShaderMaterial({
-      vertexShader: `
-        varying vec2 vUv;
-        
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-        
-        void main() {
-          // Calculate radial distance from UV center (0.5, 0.5)
-          vec2 center = vec2(0.5, 0.5);
-          float distance = length(vUv - center);
-          
-          // Define gradient colors
-          vec3 centerColor = vec3(0.1, 0.1, 0.25); // Deep Purple/Blue
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);    // Pure Black
-          
-          // Mix colors based on distance
-          vec3 color = mix(centerColor, edgeColor, distance * 1.5);
-          
-          gl_FragColor = vec4(color, 1.0);
-        }
-      `,
-      side: THREE.BackSide,
-      depthWrite: false,
-    });
-
     meshRef.current.geometry = geometry;
-    meshRef.current.material = material;
 
-    console.log('[Background Sphere] Shader-based radial gradient sky-sphere created');
+    console.log('[DIAGNOSTIC] BackgroundSphere created with radius=500, inverted geometry');
 
     return () => {
       geometry.dispose();
-      material.dispose();
     };
   }, []);
 
-  return <mesh ref={meshRef} renderOrder={-1} />;
+  // DIAGNOSTIC: Replace shader with red meshBasicMaterial
+  return (
+    <mesh ref={meshRef} renderOrder={-1} frustumCulled={false}>
+      <meshBasicMaterial color="red" side={THREE.BackSide} fog={false} />
+    </mesh>
+  );
 }
 
 function SceneSetup() {
-  const { scene } = useThree();
+  const { scene, camera } = useThree();
 
   useEffect(() => {
-    // REQ-2: Set scene.background to null so shader sphere is visible
+    // DIAGNOSTIC: Set camera far plane to 2000
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.far = 2000;
+      camera.updateProjectionMatrix();
+      console.log('[DIAGNOSTIC] Camera far plane set to 2000 and projection matrix updated');
+    }
+
+    // Set scene.background to null so sphere is visible
     scene.background = null;
     
-    // REQ-2: Update fog to black to match gradient edges
-    scene.fog = new THREE.FogExp2(0x000000, 0.003);
+    // Reduce fog density to 0.002
+    scene.fog = new THREE.FogExp2(0x000000, 0.002);
     
-    console.log('[Scene Setup] Background set to null, fog updated to black (0x000000) for shader sky-sphere');
-  }, [scene]);
+    console.log('[DIAGNOSTIC] Scene setup complete - background=null, fog=0.002, camera.far=2000');
+  }, [scene, camera]);
 
   return null;
 }
@@ -146,7 +124,7 @@ function BloomEffect() {
     bloomPassRef.current = bloomPass;
     composer.addPass(bloomPass);
 
-    console.log('[Stable Bloom] UnrealBloomPass initialized with shader background, threshold=1.1, strength=0.35, radius=0.35');
+    console.log('[Stable Bloom] UnrealBloomPass initialized with diagnostic red background, threshold=1.1, strength=0.35, radius=0.35');
 
     return () => {
       // Cleanup on unmount
@@ -248,7 +226,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           alpha: false,
         }}
         onCreated={({ gl }) => {
-          // REQ-3: Keep tone mapping configuration unchanged
+          // Keep tone mapping configuration unchanged at 0.6 exposure
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMappingExposure = 0.6;
@@ -258,10 +236,10 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
         }}
       >
         <Suspense fallback={null}>
-          {/* REQ-2: Apply null background and black fog to scene */}
+          {/* DIAGNOSTIC: Apply camera.far=2000, null background and black fog to scene */}
           <SceneSetup />
           
-          {/* REQ-1: Shader-based radial gradient background sphere */}
+          {/* DIAGNOSTIC: Red meshBasicMaterial background sphere with radius=500 and frustumCulled=false */}
           <BackgroundSphere />
           
           <LandModel modelUrl={modelUrl} />
@@ -283,7 +261,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           
           <OrbitControls makeDefault />
           
-          {/* Native UnrealBloomPass with shader background */}
+          {/* Native UnrealBloomPass with diagnostic red background */}
           <BloomEffect />
         </Suspense>
       </Canvas>

@@ -1,53 +1,49 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Shader-based radial gradient sky-sphere background in CubeVisualization",
+  "title": "Brute-force 3D background diagnostic (camera far=2000, red basic material, sphere radius=500)",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Implement a shader-based radial gradient background using an inverted sphere mesh rendered behind the scene in CubeVisualization (no CSS/texture assets).",
+      "summary": "Configure the active PerspectiveCamera far plane to 2000 in SceneSetup and update its projection matrix so the diagnostic background sphere is not clipped.",
       "acceptanceCriteria": [
-        "A large inverted sphere with radius 50 and 32x32 segments is created and rendered as the background (camera is inside the sphere).",
-        "The background color is produced via `THREE.ShaderMaterial` (not `scene.background` colors, CSS gradients, or image textures).",
-        "The fragment shader computes radial distance from UV center (0.5, 0.5) and mixes from centerColor (0.1,0.1,0.25) to edgeColor (0,0,0) using `distance * 1.5`.",
-        "The model lighting/appearance remains dark/moody and bloom remains functional; only the background appearance changes."
+        "When rendering `CubeVisualization`, the active PerspectiveCamera has `far` set to 2000 and the projection matrix is updated (verified via console/logging or runtime inspection)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Replace the current solid scene background approach with a dedicated background mesh: create a `THREE.SphereGeometry(50, 32, 32)`, invert it via `geometry.scale(-1, 1, 1)`, and render it with `THREE.ShaderMaterial` that implements the required radial UV-distance mix (centerColor vec3(0.1,0.1,0.25) to edgeColor vec3(0,0,0) using `distance * 1.5`). Ensure the background sphere renders behind all other objects and does not alter existing lighting/bloom configuration."
+          "description": "Update `SceneSetup` to access the current `camera` from `useThree()`, detect when it is a `THREE.PerspectiveCamera`, set `camera.far = 2000`, and call `camera.updateProjectionMatrix()` as part of the diagnostic setup (keeping changes limited to this diagnostic only)."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Update scene initialization so the shader background mesh is visible (scene.background null) and fog is black FogExp2 to preserve fade-out behavior.",
+      "summary": "Bypass the custom shader background and render the diagnostic BackgroundSphere using a solid red MeshBasicMaterial with BackSide and fog disabled.",
       "acceptanceCriteria": [
-        "After scene setup runs, `scene.background` is `null` (not a `THREE.Color`).",
-        "After scene setup runs, `scene.fog` is `THREE.FogExp2` with color 0x000000 and density 0.003.",
-        "The background sphere remains visible behind all other scene objects and is not replaced/overridden by a solid scene background color."
+        "`BackgroundSphere` uses `THREE.MeshBasicMaterial` (via `meshBasicMaterial`) with solid red color, `side=THREE.BackSide`, and `fog={false}`.",
+        "The custom `THREE.ShaderMaterial` background gradient is not used during this diagnostic test."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Adjust `SceneSetup` (or equivalent scene init logic) to set `scene.background = null` so the shader sky-sphere is visible, and set `scene.fog = new THREE.FogExp2(0x000000, 0.003)` to keep the floor fade-out behavior aligned with the black gradient edge."
+          "description": "Modify `BackgroundSphere` to bypass the current `THREE.ShaderMaterial` creation and instead render the sphere using a JSX `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />` for the diagnostic test, ensuring the shader material is not instantiated/used."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Keep renderer toneMappingExposure unchanged at 0.6 in CubeVisualization.",
+      "summary": "Increase diagnostic BackgroundSphere geometry radius from 50 to 500 while keeping the sphere inverted and always rendered behind the scene.",
       "acceptanceCriteria": [
-        "`gl.toneMappingExposure` remains explicitly set to `0.6` in the Canvas `onCreated` handler.",
-        "No other code path overrides `gl.toneMappingExposure` to a different value at runtime."
+        "`BackgroundSphere` creates an inverted `THREE.SphereGeometry` with radius 500.",
+        "The sphere remains `renderOrder={-1}` and `frustumCulled={false}` so it is always drawn behind the scene."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Verify the Canvas `onCreated` handler continues to explicitly set `gl.toneMappingExposure = 0.6` and that no new background-related logic modifies tone mapping exposure at runtime."
+          "description": "Change the `THREE.SphereGeometry` radius in `BackgroundSphere` from `50` to `500` and keep the inversion (`geometry.scale(-1, 1, 1)`), while preserving `renderOrder={-1}` and `frustumCulled={false}` on the mesh."
         }
       ]
     }

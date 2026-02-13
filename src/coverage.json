@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T19:52:04.017Z",
+  "generatedAt": "2026-02-13T21:59:14.044Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,7 +12,7 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In `frontend/src/components/CubeVisualization.tsx`, implement a shader-based radial gradient background using an inverted sphere (skybox) mesh so the scene background is a deep purple/blue glow in the center fading to black at the edges, without using any external CSS or texture assets.",
+        "summary": "In `frontend/src/components/CubeVisualization.tsx`, update `SceneSetup` to also configure the scene camera for the diagnostic test by setting `camera.far = 2000` (when the camera is a `THREE.PerspectiveCamera`) and calling `camera.updateProjectionMatrix()` so the background sphere cannot be clipped by the far plane.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"
@@ -23,7 +23,7 @@
       },
       {
         "id": "REQ-2",
-        "summary": "Update the scene initialization in `CubeVisualization.tsx` so the shader background mesh is visible by setting `scene.background = null`, and set fog to black using `scene.fog = new THREE.FogExp2(0x000000, 0.003)` to preserve floor fade-out behavior.",
+        "summary": "In `frontend/src/components/CubeVisualization.tsx`, modify the `BackgroundSphere` diagnostic implementation to bypass the custom shader material entirely and instead render the sphere with `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />`.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"
@@ -34,7 +34,7 @@
       },
       {
         "id": "REQ-3",
-        "summary": "Preserve the existing renderer tone mapping exposure configuration: do not change `gl.toneMappingExposure` from `0.6` in `CubeVisualization.tsx`.",
+        "summary": "In `frontend/src/components/CubeVisualization.tsx`, increase the background sphere size for the diagnostic test by changing the `SphereGeometry` radius from `50` to `500` (keeping the geometry inverted so the inside is visible).",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"

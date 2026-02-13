@@ -1,33 +1,34 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Implement a shader-based radial gradient background (purple center to black edges) in a Three.js scene without changing toneMappingExposure, preserving a dark/moody model look with bloom.",
+  "summary": "3D scene/app where the background sphere is rendering black; user wants a brute-force diagnostic change (camera far plane, basic red material, larger sphere) applied to isolate whether the blocker is camera/clipping/parent render vs shader/fog math.",
   "architectural_notes": [
-    "Background visuals should be implemented via a dedicated mesh + ShaderMaterial (no CSS/textures) to avoid affecting model lighting; do not change gl.toneMappingExposure (must remain 0.6).",
-    "Ensure scene.background is null so the shader background mesh is visible; keep fog enabled and aligned with edge color (black) for floor fade-out."
+    "Background is rendered via a large inverted sphere (BackSide); debugging focuses on camera far plane/clipping vs shader/fog causing black output."
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Background remains black; need to diagnose whether cause is camera far plane/scene hierarchy blocking render vs shader math/fog."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-in-frontend-src-components-cubevisualization-tsx-implement-a-shader-based-radial-gradient-background-using-an-inverted-sphere-skybox-mesh-so-the-scene-background-is-a-deep-purple-blue-glow-in-the-center-fading-to-black-at-the-edges-without-using-any-external-css-or-texture-assets",
-      "title": "In `frontend/src/components/CubeVisualization.tsx`, implement a shader-based radial gradient background using an inverted sphere (skybox) mesh so the scene background is a deep purple/blue glow in the center fading to black at the edges, without using any external CSS or texture assets.",
+      "id": "feature-in-frontend-src-components-cubevisualization-tsx-update-scenesetup-to-also-configure-the-scene-camera-for-the-diagnostic-test-by-setting-camera-far-2000-when-the-camera-is-a-three-perspectivecamera-and-calling-camera-updateprojectionmatrix-so-the-background-sphere-cannot-be-clipped-by-the-far-plane",
+      "title": "In `frontend/src/components/CubeVisualization.tsx`, update `SceneSetup` to also configure the scene camera for the diagnostic test by setting `camera.far = 2000` (when the camera is a `THREE.PerspectiveCamera`) and calling `camera.updateProjectionMatrix()` so the background sphere cannot be clipped by the far plane.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-the-scene-initialization-in-cubevisualization-tsx-so-the-shader-background-mesh-is-visible-by-setting-scene-background-null-and-set-fog-to-black-using-scene-fog-new-three-fogexp2-0x000000-0-003-to-preserve-floor-fade-out-behavior",
-      "title": "Update the scene initialization in `CubeVisualization.tsx` so the shader background mesh is visible by setting `scene.background = null`, and set fog to black using `scene.fog = new THREE.FogExp2(0x000000, 0.003)` to preserve floor fade-out behavior.",
+      "id": "feature-in-frontend-src-components-cubevisualization-tsx-modify-the-backgroundsphere-diagnostic-implementation-to-bypass-the-custom-shader-material-entirely-and-instead-render-the-sphere-with-meshbasicmaterial-color-red-side-three-backside-fog-false",
+      "title": "In `frontend/src/components/CubeVisualization.tsx`, modify the `BackgroundSphere` diagnostic implementation to bypass the custom shader material entirely and instead render the sphere with `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />`.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-preserve-the-existing-renderer-tone-mapping-exposure-configuration-do-not-change-gl-tonemappingexposure-from-0-6-in-cubevisualization-tsx",
-      "title": "Preserve the existing renderer tone mapping exposure configuration: do not change `gl.toneMappingExposure` from `0.6` in `CubeVisualization.tsx`.",
+      "id": "feature-in-frontend-src-components-cubevisualization-tsx-increase-the-background-sphere-size-for-the-diagnostic-test-by-changing-the-spheregeometry-radius-from-50-to-500-keeping-the-geometry-inverted-so-the-inside-is-visible",
+      "title": "In `frontend/src/components/CubeVisualization.tsx`, increase the background sphere size for the diagnostic test by changing the `SphereGeometry` radius from `50` to `500` (keeping the geometry inverted so the inside is visible).",
       "reqIds": [
         "REQ-3"
       ],
@@ -37,13 +38,13 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add inverted background sphere (skybox) using ShaderMaterial to render a radial gradient (purple center → black edges) in CubeVisualization.tsx; keep gl.toneMappingExposure at 0.6; set scene.background=null; update fog to black (FogExp2 0x000000, 0.003).",
+      "summary": "Apply brute-force diagnostic changes to fix black background (set camera.far=2000, swap background to red MeshBasicMaterial with fog=false, increase background sphere radius to 500) to isolate rendering blocker",
       "reqIds": [],
-      "status": "pending"
+      "status": "in_progress"
     }
   ],
   "gameProjectType": "3d",
-  "projectName": "Implement shader-based radial gradient background sphere in CubeVisualization",
+  "projectName": "Apply brute-force 3D background diagnostic: camera far=2000, red basic material, sphere radius=500",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

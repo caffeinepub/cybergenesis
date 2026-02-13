@@ -1,82 +1,68 @@
 {
   "kind": "build_request",
-  "title": "Implement shader-based radial gradient background sphere in CubeVisualization",
-  "priority": "normal",
+  "title": "Apply brute-force 3D background diagnostic: camera far=2000, red basic material, sphere radius=500",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In `frontend/src/components/CubeVisualization.tsx`, implement a shader-based radial gradient background using an inverted sphere (skybox) mesh so the scene background is a deep purple/blue glow in the center fading to black at the edges, without using any external CSS or texture assets.",
+      "text": "In `frontend/src/components/CubeVisualization.tsx`, update `SceneSetup` to also configure the scene camera for the diagnostic test by setting `camera.far = 2000` (when the camera is a `THREE.PerspectiveCamera`) and calling `camera.updateProjectionMatrix()` so the background sphere cannot be clipped by the far plane.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4",
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "Instead of changing global lighting, create a Background Mesh with a ShaderMaterial.",
-          "Create a large sphere: `const geometry = new THREE.SphereGeometry(50, 32, 32);`",
-          "Invert it so we see the inside: `geometry.scale(-1, 1, 1);`",
-          "Fragment Shader: Calculate radial distance from UV center (0.5, 0.5).",
-          "Center Color: `vec3(0.1, 0.1, 0.25)` (Deep Purple/Blue).",
-          "Edge Color: `vec3(0.0, 0.0, 0.0)` (Pure Black).",
-          "Mix: `mix(centerColor, edgeColor, distance * 1.5)`",
-          "No external CSS or texture assets used."
+          "### DIAGNOSTIC TEST: STOP FOG AND RADIUS ISSUES\n\n1. **Camera Check:** In `SceneSetup`, ensure `camera.far` is set to `2000`. (If it's 50, the sphere is invisible)."
         ]
       },
       "acceptanceCriteria": [
-        "A large inverted sphere with radius 50 and 32x32 segments is created and rendered as the background (camera is inside the sphere).",
-        "The background color is produced via `THREE.ShaderMaterial` (not `scene.background` colors, CSS gradients, or image textures).",
-        "The fragment shader computes radial distance from UV center (0.5, 0.5) and mixes from centerColor (0.1,0.1,0.25) to edgeColor (0,0,0) using `distance * 1.5`.",
-        "The model lighting/appearance remains dark/moody and bloom remains functional; only the background appearance changes."
+        "When rendering `CubeVisualization`, the active PerspectiveCamera has `far` set to 2000 and the projection matrix is updated (verified via console/logging or runtime inspection)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update the scene initialization in `CubeVisualization.tsx` so the shader background mesh is visible by setting `scene.background = null`, and set fog to black using `scene.fog = new THREE.FogExp2(0x000000, 0.003)` to preserve floor fade-out behavior.",
+      "text": "In `frontend/src/components/CubeVisualization.tsx`, modify the `BackgroundSphere` diagnostic implementation to bypass the custom shader material entirely and instead render the sphere with `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />`.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Ensure `scene.background = null` (so the mesh is visible).",
-          "Keep `scene.fog`: Update fog to match the edge color (Black) so the floor fades out properly. `scene.fog = new THREE.FogExp2(0x000000, 0.003);`"
+          "2. **Material Overdrive:** In `BackgroundSphere.tsx`, completely bypass the shader for a second. Change the material to a basic one:\n   `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />`"
         ]
       },
       "acceptanceCriteria": [
-        "After scene setup runs, `scene.background` is `null` (not a `THREE.Color`).",
-        "After scene setup runs, `scene.fog` is `THREE.FogExp2` with color 0x000000 and density 0.003.",
-        "The background sphere remains visible behind all other scene objects and is not replaced/overridden by a solid scene background color."
+        "`BackgroundSphere` uses `THREE.MeshBasicMaterial` (via `meshBasicMaterial`) with solid red color, `side=THREE.BackSide`, and `fog={false}`.",
+        "The custom `THREE.ShaderMaterial` background gradient is not used during this diagnostic test."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Preserve the existing renderer tone mapping exposure configuration: do not change `gl.toneMappingExposure` from `0.6` in `CubeVisualization.tsx`.",
+      "text": "In `frontend/src/components/CubeVisualization.tsx`, increase the background sphere size for the diagnostic test by changing the `SphereGeometry` radius from `50` to `500` (keeping the geometry inverted so the inside is visible).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "DO NOT change `gl.toneMappingExposure`. Keep it at `0.6` to prevent the Bloom on the model from blowing out into white."
+          "3. **Scale:** Increase sphere radius from `50` to `500`."
         ]
       },
       "acceptanceCriteria": [
-        "`gl.toneMappingExposure` remains explicitly set to `0.6` in the Canvas `onCreated` handler.",
-        "No other code path overrides `gl.toneMappingExposure` to a different value at runtime."
+        "`BackgroundSphere` creates an inverted `THREE.SphereGeometry` with radius 500.",
+        "The sphere remains `renderOrder={-1}` and `frustumCulled={false}` so it is always drawn behind the scene."
       ]
     }
   ],
   "constraints": [
-    "Limit changes to the Three.js scene setup in `frontend/src/components/CubeVisualization.tsx`.",
-    "Do not use external CSS gradients, images, or texture assets for the background; the gradient must be produced in a shader.",
-    "Do not change `gl.toneMappingExposure`; it must remain `0.6`.",
-    "Keep the scene lighting configuration as-is; do not alter global lighting to achieve the background effect."
+    "Do not edit files under `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useInternetIdentity.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`, or anything in `frontend/src/components/ui` (immutable paths).",
+    "Keep all changes limited to implementing the requested brute-force diagnostic (no unrelated refactors).",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Changing bloom strength/radius/threshold or other postprocessing parameters.",
-    "Modifying `frontend/src/components/CosmicBackground.tsx` or `frontend/src/components/ParticleBackground.tsx`.",
-    "Adding new backend functionality or canister changes."
+    "Do not attempt to fix or redesign the custom shader math beyond bypassing it for the diagnostic test.",
+    "Do not add new rendering features or post-processing beyond what is required for the diagnostic validation.",
+    "Do not change backend canister logic."
   ],
   "imageRequirements": {
     "required": [],
