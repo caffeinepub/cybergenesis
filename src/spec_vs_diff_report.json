@@ -1,59 +1,32 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-14T08:46:49.446Z",
-  "summary": "REQ-1/2/3 appear implemented in CubeVisualization.tsx (shader colors/falloff, BackSide + fog={false}, FogExp2 deep-space settings). REQ-4 (toneMappingExposure remains 0.6) cannot be verified from the provided truncated diff. Several additional changes (scene.background=null, console logging, gl.clear alpha change, and edits to meta/state summary files) were not requested.",
+  "generatedAt": "2026-02-14T12:46:19.673Z",
+  "summary": "REQ-1 and REQ-3 appear implemented in the shown LandModel.tsx traversal (biome-specific emissiveIntensity set before persisting baseEmissive; dithering enabled on all processed materials). REQ-2 (useFrame pulse logic using group.current.traverse and scaling emissiveIntensity = baseEmissive * pulse) is not evidenced in the truncated diff. The diff also includes modifications outside LandModel.tsx, which were not requested and conflict with the scope constraint.",
   "missing_requirements": [
     {
-      "id": "REQ-4",
-      "requirement": "Preserve renderer tone mapping exposure in `frontend/src/components/CubeVisualization.tsx` at `gl.toneMappingExposure = 0.6` (no change).",
-      "reason": "The diff excerpt is truncated before the relevant section where `gl.toneMappingExposure` would be set/verified; the provided snippet does not show `gl.toneMappingExposure = 0.6` at all, so compliance can’t be confirmed from available evidence.",
+      "id": "REQ-2",
+      "requirement": "Refine the emissive pulse in LandModel.tsx so the useFrame loop uses group.current.traverse(...) and sets material.emissiveIntensity = material.userData.baseEmissive * pulse for meshes with baseEmissive defined.",
+      "reason": "The provided LandModel.tsx diff excerpt shows material setup and baseline storage, but does not show any useFrame implementation or group.current.traverse-based pulsing logic due to truncation; therefore implementation cannot be verified from the evidence.",
       "evidence": [
-        "frontend/src/components/CubeVisualization.tsx (truncated)"
+        "frontend/src/components/LandModel.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Set `scene.background = null` in `SceneSetup`.",
-      "reason": "BuildRequest only asked to update fog to `new THREE.FogExp2(0x05010a, 0.0015)`; it did not request changing `scene.background`.",
+      "description": "Modified additional files outside the requested scope (changes should be scoped to frontend/src/components/LandModel.tsx only).",
+      "reason": "BuildRequest constraints explicitly require keeping changes scoped to LandModel.tsx, but the diff summary reports modifications to two other files.",
       "evidence": [
-        "frontend/src/components/CubeVisualization.tsx"
-      ]
-    },
-    {
-      "description": "Added console logging in `SceneSetup` (`console.log('[Scene Setup] ...')`).",
-      "reason": "Not requested by any requirement or acceptance criteria.",
-      "evidence": [
-        "frontend/src/components/CubeVisualization.tsx"
-      ]
-    },
-    {
-      "description": "Changed renderer clear alpha via `gl.setClearAlpha(1)` in `BloomEffect`.",
-      "reason": "Not requested; BuildRequest explicitly focused on shader, fog, and preserving exposure (and warned against unrelated render/bloom changes).",
-      "evidence": [
-        "frontend/src/components/CubeVisualization.tsx (BloomEffect section, truncated)"
-      ]
-    },
-    {
-      "description": "Modified `frontend-file-summaries.txt`.",
-      "reason": "Not part of any stated requirement; BuildRequest only targets CubeVisualization.tsx shader/fog/exposure preservation.",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Modified `project_state.json` to reflect new project state/requests.",
-      "reason": "Not requested by the BuildRequest requirements; appears to be auxiliary metadata change.",
-      "evidence": [
+        "frontend-file-summaries.txt",
         "project_state.json"
       ]
     }
   ],
-  "confidence": 0.64,
+  "confidence": 0.68,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/CubeVisualization.tsx",
+    "frontend/src/components/LandModel.tsx",
     "project_state.json"
   ]
 }

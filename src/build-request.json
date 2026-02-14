@@ -1,100 +1,74 @@
 {
   "kind": "build_request",
-  "title": "Apply final “Studio Balance” shader + fog tuning in CubeVisualization",
-  "priority": "normal",
+  "title": "LandModel.tsx: Preserve unique per-biome emissive intensity while pulsing",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` fragment shader to use the final “Studio Balance” colors and falloff:\n- Set `centerColor` to `vec3(1.6, 0.4, 3.2)`\n- Keep `edgeColor` as `vec3(0.0, 0.0, 0.0)`\n- Change the mixing falloff to `float d = pow(distance, 1.8);`",
+      "text": "Update `frontend/src/components/LandModel.tsx` material initialization so each biome’s mesh gets its own specific `emissiveIntensity` value set first (e.g., Snow = 2.0, Plains = 1.3), and only after that, persist the per-mesh baseline with `child.material.userData.baseEmissive = child.material.emissiveIntensity` (so the baseline remains unique per biome/mesh).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-7",
-          "msg-9"
+          "msg-4",
+          "msg-6"
         ],
         "quotes": [
-          "Let's apply the final \"Studio Balance\" to CubeVisualization.tsx:\n\n1. **Background Intensity (The Sweet Spot):**\n   In fragmentShader, set colors to:\n   `vec3 centerColor = vec3(1.6, 0.4, 3.2);` // Vivid Violet\n   `vec3 edgeColor = vec3(0.0, 0.0, 0.0);`\n\n2. **Gradient Shape (Sharp Falloff):**\n   Change the mixing line to:\n   `float d = pow(distance, 1.8);`",
-          "Build"
+          "We must preserve the UNIQUE emissive intensity for each biome.",
+          "ensure you set the specific intensity for each biome (e.g., 2.0 for Snow, 1.3 for Plains) FIRST. ONLY AFTER the intensity is set, save it to userData: `child.material.userData.baseEmissive = child.material.emissiveIntensity;`"
         ]
       },
       "acceptanceCriteria": [
-        "`BackgroundSphere` fragment shader uses `vec3 centerColor = vec3(1.6, 0.4, 3.2);` and `vec3 edgeColor = vec3(0.0, 0.0, 0.0);`.",
-        "`BackgroundSphere` falloff uses `float d = pow(distance, 1.8);` and still mixes via `mix(centerColor, edgeColor, d)`.",
-        "App compiles with no TypeScript/ESLint errors after shader edits."
+        "When loading different biome models (e.g., `SNOW_PEAK.glb` vs others), meshes retain distinct baseline emissive brightness values rather than being normalized to a single shared value.",
+        "`userData.baseEmissive` is written after `emissiveIntensity` is assigned for that mesh/material and matches the final assigned baseline value.",
+        "No mesh that should pulse ends up with an incorrect `baseEmissive` due to initialization order."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Ensure `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` material settings remain: `fog={false}` and `side={THREE.BackSide}`.",
+      "text": "Refine the emissive pulse in `frontend/src/components/LandModel.tsx` so the `useFrame` loop uses `group.current.traverse(...)` and sets `material.emissiveIntensity = material.userData.baseEmissive * pulse` for any traversed mesh whose material has `userData.baseEmissive` defined, ensuring the pulse scales each biome’s unique baseline rather than overwriting it.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-7"
+          "msg-4"
         ],
         "quotes": [
-          "3. **BackgroundSphere Properties:**\n   Ensure `fog={false}` and `side={THREE.BackSide}` are still there."
+          "Make sure the pulse logic uses `group.current.traverse` and multiplies the `baseEmissive` (which is now unique for each land)."
         ]
       },
       "acceptanceCriteria": [
-        "`BackgroundSphere` renders with `side={THREE.BackSide}`.",
-        "`BackgroundSphere` shader material has `fog={false}` explicitly set."
+        "The `useFrame` implementation traverses via `group.current.traverse` and multiplies `baseEmissive` by the pulse factor.",
+        "All pulsing biomes “breathe” in sync (same pulse phase), but with different absolute brightness matching their unique baselines (e.g., Snow stays brighter than Plains)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Update `frontend/src/components/CubeVisualization.tsx` scene fog to “Deep Space” in `SceneSetup`:\n- Use `new THREE.FogExp2(0x05010a, 0.0015)`",
+      "text": "Ensure dithering is applied to all land mesh materials during the same material setup traversal in `frontend/src/components/LandModel.tsx` (i.e., `child.material.dithering = true` for every mesh material processed).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-7"
+          "msg-4"
         ],
         "quotes": [
-          "4. **Fog Color (Deep Space):**\n   Make sure scene.fog is `0x05010a` (almost black violet) with density `0.0015`."
+          "Ensure child.material.dithering = true; is applied to all materials in the same loop."
         ]
       },
       "acceptanceCriteria": [
-        "`SceneSetup` sets `scene.fog = new THREE.FogExp2(0x05010a, 0.0015)`.",
-        "Fog density remains `0.0015`."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Preserve the renderer tone mapping exposure in `frontend/src/components/CubeVisualization.tsx` at `gl.toneMappingExposure = 0.6` while applying the Studio Balance shader and fog changes.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-7"
-        ],
-        "quotes": [
-          "This setup will pass the 0.6 exposure check and trigger a controlled Bloom without washing out the land model."
-        ]
-      },
-      "acceptanceCriteria": [
-        "`gl.toneMappingExposure` remains set to `0.6` (no change).",
-        "After changes, bloom remains enabled and the scene does not whiteout from the background glow at exposure 0.6."
+        "All `MeshStandardMaterial` instances encountered during model traversal have `dithering` enabled (not only glow meshes)."
       ]
     }
   ],
   "constraints": [
-    "Frontend immutable paths listed in SYSTEM_CONTEXT must not be edited.",
-    "Keep all Motoko backend code unchanged (no backend changes required for this request)."
+    "Frontend immutable paths must not be modified (per SYSTEM_CONTEXT).",
+    "Keep changes scoped to `frontend/src/components/LandModel.tsx` for this request.",
+    "Do not change Bloom or tone mapping configuration elsewhere while implementing this LandModel emissive fix (per project state architectural notes)."
   ],
   "nonGoals": [
-    "Do not change bloom pass parameters (strength/radius/threshold) unless explicitly requested.",
-    "Do not change lighting configuration (Environment preset, key light, sun light) unless explicitly requested."
+    "No backend (Motoko) changes.",
+    "No changes to `frontend/src/components/CubeVisualization.tsx` beyond what is required for LandModel to function.",
+    "No new libraries or rendering/post-processing features beyond the emissive baseline + pulse + dithering fix."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

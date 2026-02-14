@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-frontend-src-components-cubevisualization-tsx-backgroundsphere-fragment-shader-to-use-the-final-studio-balance-colors-and-falloff-set-centercolor-to-vec3-1-6-0-4-3-2-keep-edgecolor-as-vec3-0-0-0-0-0-0-change-the-mixing-falloff-to-float-d-pow-distance-1-8",
-      "featureTitle": "Update `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` fragment shader to use the final “Studio Balance” colors and falloff:\n- Set `centerColor` to `vec3(1.6, 0.4, 3.2)`\n- Keep `edgeColor` as `vec3(0.0, 0.0, 0.0)`\n- Change the mixing falloff to `float d = pow(distance, 1.8);`",
+      "featureId": "feature-update-frontend-src-components-landmodel-tsx-material-initialization-so-each-biome-s-mesh-gets-its-own-specific-emissiveintensity-value-set-first-e-g-snow-2-0-plains-1-3-and-only-after-that-persist-the-per-mesh-baseline-with-child-material-userdata-baseemissive-child-material-emissiveintensity-so-the-baseline-remains-unique-per-biome-mesh",
+      "featureTitle": "Update `frontend/src/components/LandModel.tsx` material initialization so each biome’s mesh gets its own specific `emissiveIntensity` value set first (e.g., Snow = 2.0, Plains = 1.3), and only after that, persist the per-mesh baseline with `child.material.userData.baseEmissive = child.material.emissiveIntensity` (so the baseline remains unique per biome/mesh).",
       "files": [
-        "frontend/src/components/CubeVisualization.tsx"
+        "frontend/src/components/LandModel.tsx"
       ],
       "components": [
         "authorization@1.0.1",
@@ -23,10 +23,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-frontend-src-components-cubevisualization-tsx-backgroundsphere-material-settings-remain-fog-false-and-side-three-backside",
-      "featureTitle": "Ensure `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` material settings remain: `fog={false}` and `side={THREE.BackSide}`.",
+      "featureId": "feature-refine-the-emissive-pulse-in-frontend-src-components-landmodel-tsx-so-the-useframe-loop-uses-group-current-traverse-and-sets-material-emissiveintensity-material-userdata-baseemissive-pulse-for-any-traversed-mesh-whose-material-has-userdata-baseemissive-defined-ensuring-the-pulse-scales-each-biome-s-unique-baseline-rather-than-overwriting-it",
+      "featureTitle": "Refine the emissive pulse in `frontend/src/components/LandModel.tsx` so the `useFrame` loop uses `group.current.traverse(...)` and sets `material.emissiveIntensity = material.userData.baseEmissive * pulse` for any traversed mesh whose material has `userData.baseEmissive` defined, ensuring the pulse scales each biome’s unique baseline rather than overwriting it.",
       "files": [
-        "frontend/src/components/CubeVisualization.tsx"
+        "frontend/src/components/LandModel.tsx"
       ],
       "components": [
         "authorization@1.0.1",
@@ -44,10 +44,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-frontend-src-components-cubevisualization-tsx-scene-fog-to-deep-space-in-scenesetup-use-new-three-fogexp2-0x05010a-0-0015",
-      "featureTitle": "Update `frontend/src/components/CubeVisualization.tsx` scene fog to “Deep Space” in `SceneSetup`:\n- Use `new THREE.FogExp2(0x05010a, 0.0015)`",
+      "featureId": "feature-ensure-dithering-is-applied-to-all-land-mesh-materials-during-the-same-material-setup-traversal-in-frontend-src-components-landmodel-tsx-i-e-child-material-dithering-true-for-every-mesh-material-processed",
+      "featureTitle": "Ensure dithering is applied to all land mesh materials during the same material setup traversal in `frontend/src/components/LandModel.tsx` (i.e., `child.material.dithering = true` for every mesh material processed).",
       "files": [
-        "frontend/src/components/CubeVisualization.tsx"
+        "frontend/src/components/LandModel.tsx"
       ],
       "components": [
         "authorization@1.0.1",
@@ -61,27 +61,6 @@
       ],
       "testIds": [
         "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-preserve-the-renderer-tone-mapping-exposure-in-frontend-src-components-cubevisualization-tsx-at-gl-tonemappingexposure-0-6-while-applying-the-studio-balance-shader-and-fog-changes",
-      "featureTitle": "Preserve the renderer tone mapping exposure in `frontend/src/components/CubeVisualization.tsx` at `gl.toneMappingExposure = 0.6` while applying the Studio Balance shader and fog changes.",
-      "files": [
-        "frontend/src/components/CubeVisualization.tsx"
-      ],
-      "components": [
-        "authorization@1.0.1",
-        "http-outcalls@1.1.1",
-        "blob-storage@2.0.3",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
       ],
       "confidence": "high"
     }

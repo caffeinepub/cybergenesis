@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Apply the final “Studio Balance” background shader look and “Deep Space” fog tuning in `CubeVisualization` while preserving existing exposure and material settings.
+**Goal:** Fix `LandModel.tsx` emissive initialization and pulsing so each biome retains its unique baseline emissive brightness while still pulsing, and enable dithering consistently across land materials.
 
 **Planned changes:**
-- Update `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` fragment shader to use `centerColor = vec3(1.6, 0.4, 3.2)`, keep `edgeColor = vec3(0.0, 0.0, 0.0)`, and change falloff to `float d = pow(distance, 1.8);` (continuing to mix via `mix(centerColor, edgeColor, d)`).
-- Ensure `BackgroundSphere` material settings remain `fog={false}` and `side={THREE.BackSide}`.
-- Update `SceneSetup` fog to `new THREE.FogExp2(0x05010a, 0.0015)`.
-- Preserve renderer tone mapping exposure at `gl.toneMappingExposure = 0.6`.
+- Update land material setup traversal in `frontend/src/components/LandModel.tsx` to assign each biome/mesh its intended `emissiveIntensity` first, then store the per-mesh baseline as `child.material.userData.baseEmissive = child.material.emissiveIntensity`.
+- Refine the `useFrame` pulse logic to traverse via `group.current.traverse(...)` and apply pulsing as `material.emissiveIntensity = material.userData.baseEmissive * pulse` for meshes with `userData.baseEmissive` defined.
+- Ensure `child.material.dithering = true` is applied to all processed land mesh materials during the same setup traversal.
 
-**User-visible outcome:** The cube visualization displays the updated Studio Balance background gradient with the tuned Deep Space fog, without changing exposure behavior or breaking the build.
+**User-visible outcome:** Biome land models “breathe” with a shared pulse timing while preserving different absolute emissive brightness per biome (e.g., Snow remains brighter than Plains), with dithering enabled across land materials for smoother gradients.

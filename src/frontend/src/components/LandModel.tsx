@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useLoader, useThree } from '@react-three/fiber';
+import { useLoader, useThree, useFrame } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import * as THREE from 'three';
@@ -12,6 +12,7 @@ export default function LandModel({ modelUrl }: LandModelProps) {
   const { gl, camera } = useThree();
   const fittedRef = useRef(false);
   const isInitialized = useRef(false);
+  const group = useRef<THREE.Group>(null);
 
   // Initialize KTX2Loader with CDN-hosted basis transcoder
   const ktx2Loader = useMemo(() => {
@@ -38,48 +39,78 @@ export default function LandModel({ modelUrl }: LandModelProps) {
     // SAFETY: Call updateMatrixWorld BEFORE Box3 calculation
     gltf.scene.updateMatrixWorld();
 
-    // V.10.1.PBR Material Logic
+    // V.10.1.PBR Material Logic with UNIQUE emissive baseline preservation
     if (gltf.scene?.isObject3D) {
       gltf.scene.traverse((obj: any) => {
         if (obj.isMesh && obj.material) {
           obj.frustumCulled = true;
-          const m = obj.material as THREE.MeshStandardMaterial;
 
-          // Glow List: Emissive 2.0 for specific biomes
-          const name = (obj.name || '').toUpperCase();
-          const isGlowBiome = 
-            name.includes('MYTHIC_VOID') ||
-            name.includes('MYTHIC_AETHER') ||
-            name.includes('FOREST_VALLEY') ||
-            name.includes('DESERT_DUNE') ||
-            name.includes('ISLAND_ARCHIPELAGO') ||
-            name.includes('VOLCANIC_CRAG');
+          // Handle both single material and material arrays
+          const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
 
-          if (isGlowBiome) {
-            if (m.map) {
-              m.emissiveMap = m.map;
+          materials.forEach((m: THREE.MeshStandardMaterial) => {
+            // Enable dithering for all land meshes
+            m.dithering = true;
+
+            // Determine biome-specific emissive intensity FIRST
+            const name = (obj.name || '').toUpperCase();
+            let baselineIntensity = 0.0;
+
+            // SNOW_PEAK gets the brightest glow
+            if (name.includes('SNOW_PEAK')) {
+              baselineIntensity = 2.0;
             }
-            m.emissive = new THREE.Color(0xffffff);
-            m.emissiveIntensity = 2.0;
-          }
+            // MYTHIC biomes get strong glow
+            else if (name.includes('MYTHIC_VOID') || name.includes('MYTHIC_AETHER')) {
+              baselineIntensity = 1.8;
+            }
+            // VOLCANIC_CRAG gets intense glow
+            else if (name.includes('VOLCANIC_CRAG')) {
+              baselineIntensity = 1.6;
+            }
+            // FOREST_VALLEY gets moderate glow
+            else if (name.includes('FOREST_VALLEY')) {
+              baselineIntensity = 1.4;
+            }
+            // DESERT_DUNE and ISLAND_ARCHIPELAGO get subtle glow
+            else if (name.includes('DESERT_DUNE') || name.includes('ISLAND_ARCHIPELAGO')) {
+              baselineIntensity = 1.3;
+            }
 
-          // Environment Intensity (Reflection Boost)
-          if (
-            name.includes('MYTHIC_AETHER') ||
-            name.includes('MYTHIC_VOID') ||
-            name.includes('FOREST_VALLEY') ||
-            name.includes('DESERT_DUNE') ||
-            name.includes('ISLAND_ARCHIPELAGO')
-          ) {
-            m.envMapIntensity = 2.0;
-          } else if (name.includes('VOLCANIC_CRAG')) {
-            m.envMapIntensity = 1.3;
-          } else {
-            m.envMapIntensity = 1.0;
-          }
+            // Apply emissive settings if this mesh should glow
+            if (baselineIntensity > 0.0) {
+              if (m.map) {
+                m.emissiveMap = m.map;
+              }
+              m.emissive = new THREE.Color(0xffffff);
+              
+              // CRITICAL: Set the intensity FIRST
+              m.emissiveIntensity = baselineIntensity;
+              
+              // THEN store it in userData for pulse scaling
+              m.userData.baseEmissive = baselineIntensity;
+              
+              console.log(`[LandModel] ${name} emissive baseline: ${baselineIntensity}`);
+            }
 
-          // PBR Guard: Do NOT manually set roughness/metalness if roughnessMap exists
-          // Let textures drive the surface
+            // Environment Intensity (Reflection Boost)
+            if (
+              name.includes('MYTHIC_AETHER') ||
+              name.includes('MYTHIC_VOID') ||
+              name.includes('FOREST_VALLEY') ||
+              name.includes('DESERT_DUNE') ||
+              name.includes('ISLAND_ARCHIPELAGO')
+            ) {
+              m.envMapIntensity = 2.0;
+            } else if (name.includes('VOLCANIC_CRAG')) {
+              m.envMapIntensity = 1.3;
+            } else {
+              m.envMapIntensity = 1.0;
+            }
+
+            // PBR Guard: Do NOT manually set roughness/metalness if roughnessMap exists
+            // Let textures drive the surface
+          });
         }
       });
     }
@@ -103,13 +134,36 @@ export default function LandModel({ modelUrl }: LandModelProps) {
     }
 
     isInitialized.current = true;
-    console.log('[LandModel] V.10.1.PBR processing completed and locked');
+    console.log('[LandModel] V.10.1.PBR processing completed with unique emissive baselines and dithering');
   }, [gltf, camera, modelUrl]);
+
+  // Emissive pulse animation - scales each biome's UNIQUE baseline
+  useFrame((state) => {
+    if (!group.current) return;
+
+    // Calculate a subtle synchronized pulse factor (all biomes breathe together)
+    const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+
+    // Traverse and scale each material's unique baseEmissive
+    group.current.traverse((obj: any) => {
+      if (obj.isMesh && obj.material) {
+        // Handle both single material and material arrays
+        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+
+        materials.forEach((m: THREE.MeshStandardMaterial) => {
+          if (m.userData?.baseEmissive !== undefined) {
+            // This correctly scales 2.0 for Snow, 1.3 for Plains, etc.
+            m.emissiveIntensity = m.userData.baseEmissive * pulse;
+          }
+        });
+      }
+    });
+  });
 
   if (!gltf || !gltf.scene) {
     console.warn('[LandModel] No valid scene to render');
     return null;
   }
 
-  return <primitive object={gltf.scene} />;
+  return <group ref={group}><primitive object={gltf.scene} /></group>;
 }

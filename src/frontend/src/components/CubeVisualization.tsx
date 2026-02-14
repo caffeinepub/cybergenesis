@@ -45,32 +45,42 @@ function KeyLightSync() {
 }
 
 function BackgroundSphere() {
-  // REQ-1: Studio Balance shader with Vivid Violet center and sharp falloff
+  // View-Space shader: gradient stays fixed to screen center during rotation
   const vertexShader = `
-    varying vec2 vUv;
-    
+    varying vec3 vViewPosition;
     void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = mvPosition.xyz;
+      gl_Position = projectionMatrix * mvPosition;
     }
   `;
 
   const fragmentShader = `
-    varying vec2 vUv;
-    
+    varying vec3 vViewPosition;
     void main() {
-      float distance = length(vUv - vec2(0.5));
+      // 1. Perspective-aware distance
+      float dist = length(vViewPosition.xy) / abs(vViewPosition.z);
       
-      // REQ-1: Studio Balance - Vivid Violet center, black edges
-      vec3 centerColor = vec3(1.6, 0.4, 3.2); // Vivid Violet
-      vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-      
-      // REQ-1: Sharp falloff to keep glow focused behind model
-      float d = pow(distance, 1.8);
-      vec3 color = mix(centerColor, edgeColor, d);
+      // 2. Tighter multiplier for a focused center
+      dist = dist * 1.5; 
+
+      // 3. Cinematic Palette
+      vec3 deepVoid = vec3(0.0, 0.0, 0.0);       // Pitch black
+      vec3 royalViolet = vec3(0.15, 0.02, 0.45); // Muted transition violet
+      vec3 corePurple = vec3(1.5, 0.2, 5.0);     // Hot pink/purple core
+
+      // 4. Smooth Vignette Logic:
+      // Core fades fast, but the black edges only fully take over at the far corners (1.2)
+      vec3 color = mix(corePurple, royalViolet, smoothstep(0.0, 0.3, dist));
+      color = mix(color, deepVoid, smoothstep(0.35, 1.2, dist));
+
       gl_FragColor = vec4(color, 1.0);
     }
   `;
+
+  useEffect(() => {
+    console.log('[Studio Vignette] BackgroundSphere shader active with compact pink core and deep black corners');
+  }, []);
 
   return (
     <mesh renderOrder={-1}>
@@ -79,7 +89,9 @@ function BackgroundSphere() {
         fragmentShader={fragmentShader} 
         vertexShader={vertexShader} 
         side={THREE.BackSide} 
-        fog={false} 
+        fog={false}
+        depthWrite={false}
+        dithering={true}
       />
     </mesh>
   );
@@ -92,7 +104,7 @@ function SceneSetup() {
     // REQ-3: Set scene.background to null so shader sphere is visible
     scene.background = null;
     
-    // REQ-3: Deep Space fog - almost black violet with FogExp2
+    // REQ-3: Deep Space fog color 0x05010a
     scene.fog = new THREE.FogExp2(0x05010a, 0.0015);
     
     console.log('[Scene Setup] Background set to null, Deep Space fog (0x05010a, density 0.0015) applied');
@@ -121,17 +133,24 @@ function BloomEffect() {
     renderPassRef.current = renderPass;
     composer.addPass(renderPass);
 
-    // Add UnrealBloomPass with 50% resolution for mobile GPU performance
+    // REQ-2: Ultra-Soft Mode Bloom - threshold 1.1, intensity 0.45, radius 0.65
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2),
-      0.35, // strength
-      0.35, // radius
-      1.1   // threshold
+      0.45, // intensity (Perfect balance for Deep Nebula shader)
+      0.65, // radius (Wide, soft dispersion of light)
+      1.1   // threshold (Protects land textures from glowing)
     );
     bloomPassRef.current = bloomPass;
+    
+    // REQ-2: Set luminanceSmoothing if supported (feature detection)
+    if ('luminanceSmoothing' in bloomPass) {
+      (bloomPass as any).luminanceSmoothing = 0.4;
+      console.log('[Deep Nebula Bloom] UnrealBloomPass initialized with Ultra-Soft Mode: threshold=1.1, intensity=0.45, radius=0.65, luminanceSmoothing=0.4');
+    } else {
+      console.log('[Deep Nebula Bloom] UnrealBloomPass initialized with Ultra-Soft Mode: threshold=1.1, intensity=0.45, radius=0.65 (luminanceSmoothing not supported in this version)');
+    }
+    
     composer.addPass(bloomPass);
-
-    console.log('[Studio Balance Bloom] UnrealBloomPass initialized with Vivid Violet shader background, threshold=1.1, strength=0.35, radius=0.35');
 
     return () => {
       // Cleanup on unmount
@@ -147,7 +166,7 @@ function BloomEffect() {
         composerRef.current.dispose();
         composerRef.current = null;
       }
-      console.log('[Studio Balance Bloom] Composer disposed');
+      console.log('[Deep Nebula Bloom] Composer disposed');
     };
   }, [gl, scene, camera, size.width, size.height]);
 
@@ -233,20 +252,22 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           alpha: false,
         }}
         onCreated={({ gl }) => {
-          // REQ-4: Keep tone mapping configuration unchanged at 0.6 exposure
+          // REQ-3: Tone mapping exposure set to 0.6
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMappingExposure = 0.6;
           
           // Ensure opaque clear alpha is set (default behavior)
           gl.setClearAlpha(1);
+          
+          console.log('[Deep Nebula] Renderer initialized with toneMappingExposure=0.6');
         }}
       >
         <Suspense fallback={null}>
           {/* REQ-3: Apply null background and Deep Space fog to scene */}
           <SceneSetup />
           
-          {/* REQ-1 & REQ-2: Studio Balance shader background sphere with 500-unit radius, fog disabled, BackSide rendering */}
+          {/* View-Space shader background sphere with Studio Vignette */}
           <BackgroundSphere />
           
           <LandModel modelUrl={modelUrl} />
@@ -268,7 +289,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           
           <OrbitControls makeDefault />
           
-          {/* Native UnrealBloomPass with Studio Balance shader background */}
+          {/* REQ-2: Native UnrealBloomPass with Ultra-Soft Mode settings */}
           <BloomEffect />
         </Suspense>
       </Canvas>
