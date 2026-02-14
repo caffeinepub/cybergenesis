@@ -1,18 +1,18 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T21:59:14.044Z",
+  "generatedAt": "2026-02-14T08:46:49.449Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In `frontend/src/components/CubeVisualization.tsx`, update `SceneSetup` to also configure the scene camera for the diagnostic test by setting `camera.far = 2000` (when the camera is a `THREE.PerspectiveCamera`) and calling `camera.updateProjectionMatrix()` so the background sphere cannot be clipped by the far plane.",
+        "summary": "Update `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` fragment shader to use the final “Studio Balance” colors and falloff:\n- Set `centerColor` to `vec3(1.6, 0.4, 3.2)`\n- Keep `edgeColor` as `vec3(0.0, 0.0, 0.0)`\n- Change the mixing falloff to `float d = pow(distance, 1.8);`",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"
@@ -23,7 +23,7 @@
       },
       {
         "id": "REQ-2",
-        "summary": "In `frontend/src/components/CubeVisualization.tsx`, modify the `BackgroundSphere` diagnostic implementation to bypass the custom shader material entirely and instead render the sphere with `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />`.",
+        "summary": "Ensure `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` material settings remain: `fog={false}` and `side={THREE.BackSide}`.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"
@@ -34,7 +34,18 @@
       },
       {
         "id": "REQ-3",
-        "summary": "In `frontend/src/components/CubeVisualization.tsx`, increase the background sphere size for the diagnostic test by changing the `SphereGeometry` radius from `50` to `500` (keeping the geometry inverted so the inside is visible).",
+        "summary": "Update `frontend/src/components/CubeVisualization.tsx` scene fog to “Deep Space” in `SceneSetup`:\n- Use `new THREE.FogExp2(0x05010a, 0.0015)`",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/CubeVisualization.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/CubeVisualization.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Preserve the renderer tone mapping exposure in `frontend/src/components/CubeVisualization.tsx` at `gl.toneMappingExposure = 0.6` while applying the Studio Balance shader and fog changes.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"

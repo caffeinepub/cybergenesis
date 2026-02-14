@@ -1,36 +1,44 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "3D scene/app where the background sphere is rendering black; user wants a brute-force diagnostic change (camera far plane, basic red material, larger sphere) applied to isolate whether the blocker is camera/clipping/parent render vs shader/fog math.",
+  "summary": "Project now focuses on tuning the CubeVisualization scene's background glow/shader and fog (“Studio Balance”) to avoid whiteout while achieving controlled bloom.",
   "architectural_notes": [
-    "Background is rendered via a large inverted sphere (BackSide); debugging focuses on camera far plane/clipping vs shader/fog causing black output."
+    "Use the finalized “Studio Balance” configuration for CubeVisualization: specific background shader colors + sharper gradient falloff, BackgroundSphere uses BackSide with fog disabled, and scene fog set to near-black violet with low density to avoid whiteout while enabling controlled bloom."
   ],
   "known_issues": [
-    "Background remains black; need to diagnose whether cause is camera far plane/scene hierarchy blocking render vs shader math/fog."
+    "Current background intensity is too high (whiteout) at prior settings; needs Studio Balance tuning."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-in-frontend-src-components-cubevisualization-tsx-update-scenesetup-to-also-configure-the-scene-camera-for-the-diagnostic-test-by-setting-camera-far-2000-when-the-camera-is-a-three-perspectivecamera-and-calling-camera-updateprojectionmatrix-so-the-background-sphere-cannot-be-clipped-by-the-far-plane",
-      "title": "In `frontend/src/components/CubeVisualization.tsx`, update `SceneSetup` to also configure the scene camera for the diagnostic test by setting `camera.far = 2000` (when the camera is a `THREE.PerspectiveCamera`) and calling `camera.updateProjectionMatrix()` so the background sphere cannot be clipped by the far plane.",
+      "id": "feature-update-frontend-src-components-cubevisualization-tsx-backgroundsphere-fragment-shader-to-use-the-final-studio-balance-colors-and-falloff-set-centercolor-to-vec3-1-6-0-4-3-2-keep-edgecolor-as-vec3-0-0-0-0-0-0-change-the-mixing-falloff-to-float-d-pow-distance-1-8",
+      "title": "Update `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` fragment shader to use the final “Studio Balance” colors and falloff:\n- Set `centerColor` to `vec3(1.6, 0.4, 3.2)`\n- Keep `edgeColor` as `vec3(0.0, 0.0, 0.0)`\n- Change the mixing falloff to `float d = pow(distance, 1.8);`",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-in-frontend-src-components-cubevisualization-tsx-modify-the-backgroundsphere-diagnostic-implementation-to-bypass-the-custom-shader-material-entirely-and-instead-render-the-sphere-with-meshbasicmaterial-color-red-side-three-backside-fog-false",
-      "title": "In `frontend/src/components/CubeVisualization.tsx`, modify the `BackgroundSphere` diagnostic implementation to bypass the custom shader material entirely and instead render the sphere with `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />`.",
+      "id": "feature-ensure-frontend-src-components-cubevisualization-tsx-backgroundsphere-material-settings-remain-fog-false-and-side-three-backside",
+      "title": "Ensure `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` material settings remain: `fog={false}` and `side={THREE.BackSide}`.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-in-frontend-src-components-cubevisualization-tsx-increase-the-background-sphere-size-for-the-diagnostic-test-by-changing-the-spheregeometry-radius-from-50-to-500-keeping-the-geometry-inverted-so-the-inside-is-visible",
-      "title": "In `frontend/src/components/CubeVisualization.tsx`, increase the background sphere size for the diagnostic test by changing the `SphereGeometry` radius from `50` to `500` (keeping the geometry inverted so the inside is visible).",
+      "id": "feature-update-frontend-src-components-cubevisualization-tsx-scene-fog-to-deep-space-in-scenesetup-use-new-three-fogexp2-0x05010a-0-0015",
+      "title": "Update `frontend/src/components/CubeVisualization.tsx` scene fog to “Deep Space” in `SceneSetup`:\n- Use `new THREE.FogExp2(0x05010a, 0.0015)`",
       "reqIds": [
         "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-preserve-the-renderer-tone-mapping-exposure-in-frontend-src-components-cubevisualization-tsx-at-gl-tonemappingexposure-0-6-while-applying-the-studio-balance-shader-and-fog-changes",
+      "title": "Preserve the renderer tone mapping exposure in `frontend/src/components/CubeVisualization.tsx` at `gl.toneMappingExposure = 0.6` while applying the Studio Balance shader and fog changes.",
+      "reqIds": [
+        "REQ-4"
       ],
       "version": 1
     }
@@ -38,13 +46,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Apply brute-force diagnostic changes to fix black background (set camera.far=2000, swap background to red MeshBasicMaterial with fog=false, increase background sphere radius to 500) to isolate rendering blocker",
+      "summary": "Apply final “Studio Balance” settings to CubeVisualization.tsx (shader colors + sharp falloff, BackgroundSphere fog/side, and deep-space fog color/density) to prevent whiteout and pass exposure check.",
       "reqIds": [],
       "status": "in_progress"
     }
   ],
-  "gameProjectType": "3d",
-  "projectName": "Apply brute-force 3D background diagnostic: camera far=2000, red basic material, sphere radius=500",
+  "projectName": "Apply final “Studio Balance” shader + fog tuning in CubeVisualization",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

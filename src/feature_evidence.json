@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-update-scenesetup-to-also-configure-the-scene-camera-for-the-diagnostic-test-by-setting-camera-far-2000-when-the-camera-is-a-three-perspectivecamera-and-calling-camera-updateprojectionmatrix-so-the-background-sphere-cannot-be-clipped-by-the-far-plane",
-      "featureTitle": "In `frontend/src/components/CubeVisualization.tsx`, update `SceneSetup` to also configure the scene camera for the diagnostic test by setting `camera.far = 2000` (when the camera is a `THREE.PerspectiveCamera`) and calling `camera.updateProjectionMatrix()` so the background sphere cannot be clipped by the far plane.",
+      "featureId": "feature-update-frontend-src-components-cubevisualization-tsx-backgroundsphere-fragment-shader-to-use-the-final-studio-balance-colors-and-falloff-set-centercolor-to-vec3-1-6-0-4-3-2-keep-edgecolor-as-vec3-0-0-0-0-0-0-change-the-mixing-falloff-to-float-d-pow-distance-1-8",
+      "featureTitle": "Update `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` fragment shader to use the final “Studio Balance” colors and falloff:\n- Set `centerColor` to `vec3(1.6, 0.4, 3.2)`\n- Keep `edgeColor` as `vec3(0.0, 0.0, 0.0)`\n- Change the mixing falloff to `float d = pow(distance, 1.8);`",
       "files": [
         "frontend/src/components/CubeVisualization.tsx"
       ],
@@ -23,8 +23,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-modify-the-backgroundsphere-diagnostic-implementation-to-bypass-the-custom-shader-material-entirely-and-instead-render-the-sphere-with-meshbasicmaterial-color-red-side-three-backside-fog-false",
-      "featureTitle": "In `frontend/src/components/CubeVisualization.tsx`, modify the `BackgroundSphere` diagnostic implementation to bypass the custom shader material entirely and instead render the sphere with `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />`.",
+      "featureId": "feature-ensure-frontend-src-components-cubevisualization-tsx-backgroundsphere-material-settings-remain-fog-false-and-side-three-backside",
+      "featureTitle": "Ensure `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` material settings remain: `fog={false}` and `side={THREE.BackSide}`.",
       "files": [
         "frontend/src/components/CubeVisualization.tsx"
       ],
@@ -44,8 +44,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-increase-the-background-sphere-size-for-the-diagnostic-test-by-changing-the-spheregeometry-radius-from-50-to-500-keeping-the-geometry-inverted-so-the-inside-is-visible",
-      "featureTitle": "In `frontend/src/components/CubeVisualization.tsx`, increase the background sphere size for the diagnostic test by changing the `SphereGeometry` radius from `50` to `500` (keeping the geometry inverted so the inside is visible).",
+      "featureId": "feature-update-frontend-src-components-cubevisualization-tsx-scene-fog-to-deep-space-in-scenesetup-use-new-three-fogexp2-0x05010a-0-0015",
+      "featureTitle": "Update `frontend/src/components/CubeVisualization.tsx` scene fog to “Deep Space” in `SceneSetup`:\n- Use `new THREE.FogExp2(0x05010a, 0.0015)`",
       "files": [
         "frontend/src/components/CubeVisualization.tsx"
       ],
@@ -61,6 +61,27 @@
       ],
       "testIds": [
         "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-preserve-the-renderer-tone-mapping-exposure-in-frontend-src-components-cubevisualization-tsx-at-gl-tonemappingexposure-0-6-while-applying-the-studio-balance-shader-and-fog-changes",
+      "featureTitle": "Preserve the renderer tone mapping exposure in `frontend/src/components/CubeVisualization.tsx` at `gl.toneMappingExposure = 0.6` while applying the Studio Balance shader and fog changes.",
+      "files": [
+        "frontend/src/components/CubeVisualization.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }

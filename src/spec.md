@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Perform a brute-force 3D background visibility diagnostic in `CubeVisualization` to ensure the background sphere is not being clipped and is clearly visible.
+**Goal:** Apply the final “Studio Balance” background shader look and “Deep Space” fog tuning in `CubeVisualization` while preserving existing exposure and material settings.
 
 **Planned changes:**
-- Update `SceneSetup` in `frontend/src/components/CubeVisualization.tsx` to set `camera.far = 2000` for a `THREE.PerspectiveCamera`, then call `camera.updateProjectionMatrix()`.
-- Modify the `BackgroundSphere` implementation in `frontend/src/components/CubeVisualization.tsx` to bypass the custom shader and render with a solid red `<meshBasicMaterial color="red" side={THREE.BackSide} fog={false} />`.
-- Increase the `BackgroundSphere` `SphereGeometry` radius from `50` to `500` while keeping the geometry inverted and preserving `renderOrder={-1}` and `frustumCulled={false}`.
+- Update `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` fragment shader to use `centerColor = vec3(1.6, 0.4, 3.2)`, keep `edgeColor = vec3(0.0, 0.0, 0.0)`, and change falloff to `float d = pow(distance, 1.8);` (continuing to mix via `mix(centerColor, edgeColor, d)`).
+- Ensure `BackgroundSphere` material settings remain `fog={false}` and `side={THREE.BackSide}`.
+- Update `SceneSetup` fog to `new THREE.FogExp2(0x05010a, 0.0015)`.
+- Preserve renderer tone mapping exposure at `gl.toneMappingExposure = 0.6`.
 
-**User-visible outcome:** The 3D scene renders with a large, solid red background sphere that should be clearly visible behind the scene, enabling straightforward verification that camera far-plane clipping and shader/fog issues are not hiding the background.
+**User-visible outcome:** The cube visualization displays the updated Studio Balance background gradient with the tuned Deep Space fog, without changing exposure behavior or breaking the build.

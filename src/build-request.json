@@ -1,68 +1,87 @@
 {
   "kind": "build_request",
-  "title": "Apply brute-force 3D background diagnostic: camera far=2000, red basic material, sphere radius=500",
-  "priority": "high",
+  "title": "Apply final “Studio Balance” shader + fog tuning in CubeVisualization",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In `frontend/src/components/CubeVisualization.tsx`, update `SceneSetup` to also configure the scene camera for the diagnostic test by setting `camera.far = 2000` (when the camera is a `THREE.PerspectiveCamera`) and calling `camera.updateProjectionMatrix()` so the background sphere cannot be clipped by the far plane.",
+      "text": "Update `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` fragment shader to use the final “Studio Balance” colors and falloff:\n- Set `centerColor` to `vec3(1.6, 0.4, 3.2)`\n- Keep `edgeColor` as `vec3(0.0, 0.0, 0.0)`\n- Change the mixing falloff to `float d = pow(distance, 1.8);`",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-7",
+          "msg-9"
         ],
         "quotes": [
-          "### DIAGNOSTIC TEST: STOP FOG AND RADIUS ISSUES\n\n1. **Camera Check:** In `SceneSetup`, ensure `camera.far` is set to `2000`. (If it's 50, the sphere is invisible)."
+          "Let's apply the final \"Studio Balance\" to CubeVisualization.tsx:\n\n1. **Background Intensity (The Sweet Spot):**\n   In fragmentShader, set colors to:\n   `vec3 centerColor = vec3(1.6, 0.4, 3.2);` // Vivid Violet\n   `vec3 edgeColor = vec3(0.0, 0.0, 0.0);`\n\n2. **Gradient Shape (Sharp Falloff):**\n   Change the mixing line to:\n   `float d = pow(distance, 1.8);`",
+          "Build"
         ]
       },
       "acceptanceCriteria": [
-        "When rendering `CubeVisualization`, the active PerspectiveCamera has `far` set to 2000 and the projection matrix is updated (verified via console/logging or runtime inspection)."
+        "`BackgroundSphere` fragment shader uses `vec3 centerColor = vec3(1.6, 0.4, 3.2);` and `vec3 edgeColor = vec3(0.0, 0.0, 0.0);`.",
+        "`BackgroundSphere` falloff uses `float d = pow(distance, 1.8);` and still mixes via `mix(centerColor, edgeColor, d)`.",
+        "App compiles with no TypeScript/ESLint errors after shader edits."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In `frontend/src/components/CubeVisualization.tsx`, modify the `BackgroundSphere` diagnostic implementation to bypass the custom shader material entirely and instead render the sphere with `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />`.",
+      "text": "Ensure `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` material settings remain: `fog={false}` and `side={THREE.BackSide}`.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-7"
         ],
         "quotes": [
-          "2. **Material Overdrive:** In `BackgroundSphere.tsx`, completely bypass the shader for a second. Change the material to a basic one:\n   `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />`"
+          "3. **BackgroundSphere Properties:**\n   Ensure `fog={false}` and `side={THREE.BackSide}` are still there."
         ]
       },
       "acceptanceCriteria": [
-        "`BackgroundSphere` uses `THREE.MeshBasicMaterial` (via `meshBasicMaterial`) with solid red color, `side=THREE.BackSide`, and `fog={false}`.",
-        "The custom `THREE.ShaderMaterial` background gradient is not used during this diagnostic test."
+        "`BackgroundSphere` renders with `side={THREE.BackSide}`.",
+        "`BackgroundSphere` shader material has `fog={false}` explicitly set."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "In `frontend/src/components/CubeVisualization.tsx`, increase the background sphere size for the diagnostic test by changing the `SphereGeometry` radius from `50` to `500` (keeping the geometry inverted so the inside is visible).",
+      "text": "Update `frontend/src/components/CubeVisualization.tsx` scene fog to “Deep Space” in `SceneSetup`:\n- Use `new THREE.FogExp2(0x05010a, 0.0015)`",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-7"
         ],
         "quotes": [
-          "3. **Scale:** Increase sphere radius from `50` to `500`."
+          "4. **Fog Color (Deep Space):**\n   Make sure scene.fog is `0x05010a` (almost black violet) with density `0.0015`."
         ]
       },
       "acceptanceCriteria": [
-        "`BackgroundSphere` creates an inverted `THREE.SphereGeometry` with radius 500.",
-        "The sphere remains `renderOrder={-1}` and `frustumCulled={false}` so it is always drawn behind the scene."
+        "`SceneSetup` sets `scene.fog = new THREE.FogExp2(0x05010a, 0.0015)`.",
+        "Fog density remains `0.0015`."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Preserve the renderer tone mapping exposure in `frontend/src/components/CubeVisualization.tsx` at `gl.toneMappingExposure = 0.6` while applying the Studio Balance shader and fog changes.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-7"
+        ],
+        "quotes": [
+          "This setup will pass the 0.6 exposure check and trigger a controlled Bloom without washing out the land model."
+        ]
+      },
+      "acceptanceCriteria": [
+        "`gl.toneMappingExposure` remains set to `0.6` (no change).",
+        "After changes, bloom remains enabled and the scene does not whiteout from the background glow at exposure 0.6."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useInternetIdentity.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`, or anything in `frontend/src/components/ui` (immutable paths).",
-    "Keep all changes limited to implementing the requested brute-force diagnostic (no unrelated refactors).",
-    "Use English for any user-facing text."
+    "Frontend immutable paths listed in SYSTEM_CONTEXT must not be edited.",
+    "Keep all Motoko backend code unchanged (no backend changes required for this request)."
   ],
   "nonGoals": [
-    "Do not attempt to fix or redesign the custom shader math beyond bypassing it for the diagnostic test.",
-    "Do not add new rendering features or post-processing beyond what is required for the diagnostic validation.",
-    "Do not change backend canister logic."
+    "Do not change bloom pass parameters (strength/radius/threshold) unless explicitly requested.",
+    "Do not change lighting configuration (Environment preset, key light, sun light) unless explicitly requested."
   ],
   "imageRequirements": {
     "required": [],

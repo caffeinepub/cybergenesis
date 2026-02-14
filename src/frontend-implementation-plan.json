@@ -1,49 +1,66 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Brute-force 3D background diagnostic (camera far=2000, red basic material, sphere radius=500)",
+  "title": "Apply final “Studio Balance” shader + fog tuning in CubeVisualization",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Configure the active PerspectiveCamera far plane to 2000 in SceneSetup and update its projection matrix so the diagnostic background sphere is not clipped.",
+      "summary": "Update BackgroundSphere fragment shader to final “Studio Balance” center/edge colors and sharper falloff.",
       "acceptanceCriteria": [
-        "When rendering `CubeVisualization`, the active PerspectiveCamera has `far` set to 2000 and the projection matrix is updated (verified via console/logging or runtime inspection)."
+        "`BackgroundSphere` fragment shader uses `vec3 centerColor = vec3(1.6, 0.4, 3.2);` and `vec3 edgeColor = vec3(0.0, 0.0, 0.0);`.",
+        "`BackgroundSphere` falloff uses `float d = pow(distance, 1.8);` and still mixes via `mix(centerColor, edgeColor, d)`.",
+        "App compiles with no TypeScript/ESLint errors after shader edits."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Update `SceneSetup` to access the current `camera` from `useThree()`, detect when it is a `THREE.PerspectiveCamera`, set `camera.far = 2000`, and call `camera.updateProjectionMatrix()` as part of the diagnostic setup (keeping changes limited to this diagnostic only)."
+          "description": "In `BackgroundSphere`'s `fragmentShader`, set `centerColor` to `vec3(1.6, 0.4, 3.2)`, keep `edgeColor` at `vec3(0.0, 0.0, 0.0)`, and update the gradient falloff to `float d = pow(distance, 1.8);` while preserving the existing `mix(centerColor, edgeColor, d)` usage."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Bypass the custom shader background and render the diagnostic BackgroundSphere using a solid red MeshBasicMaterial with BackSide and fog disabled.",
+      "summary": "Preserve BackgroundSphere material settings: fog disabled and BackSide rendering.",
       "acceptanceCriteria": [
-        "`BackgroundSphere` uses `THREE.MeshBasicMaterial` (via `meshBasicMaterial`) with solid red color, `side=THREE.BackSide`, and `fog={false}`.",
-        "The custom `THREE.ShaderMaterial` background gradient is not used during this diagnostic test."
+        "`BackgroundSphere` renders with `side={THREE.BackSide}`.",
+        "`BackgroundSphere` shader material has `fog={false}` explicitly set."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Modify `BackgroundSphere` to bypass the current `THREE.ShaderMaterial` creation and instead render the sphere using a JSX `<meshBasicMaterial color=\"red\" side={THREE.BackSide} fog={false} />` for the diagnostic test, ensuring the shader material is not instantiated/used."
+          "description": "Confirm `BackgroundSphere`'s `<shaderMaterial>` continues to explicitly include `fog={false}` and `side={THREE.BackSide}` after the shader edits (do not remove or alter these props)."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Increase diagnostic BackgroundSphere geometry radius from 50 to 500 while keeping the sphere inverted and always rendered behind the scene.",
+      "summary": "Tune scene fog to “Deep Space” using FogExp2 with specified color and density.",
       "acceptanceCriteria": [
-        "`BackgroundSphere` creates an inverted `THREE.SphereGeometry` with radius 500.",
-        "The sphere remains `renderOrder={-1}` and `frustumCulled={false}` so it is always drawn behind the scene."
+        "`SceneSetup` sets `scene.fog = new THREE.FogExp2(0x05010a, 0.0015)`.",
+        "Fog density remains `0.0015`."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Change the `THREE.SphereGeometry` radius in `BackgroundSphere` from `50` to `500` and keep the inversion (`geometry.scale(-1, 1, 1)`), while preserving `renderOrder={-1}` and `frustumCulled={false}` on the mesh."
+          "description": "In `SceneSetup`, update fog assignment to `scene.fog = new THREE.FogExp2(0x05010a, 0.0015)` (keep density at `0.0015` and preserve `scene.background = null`)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Ensure tone mapping exposure remains at 0.6 while applying shader and fog changes, without altering bloom settings.",
+      "acceptanceCriteria": [
+        "`gl.toneMappingExposure` remains set to `0.6` (no change).",
+        "After changes, bloom remains enabled and the scene does not whiteout from the background glow at exposure 0.6."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/CubeVisualization.tsx",
+          "operation": "modify",
+          "description": "Verify `onCreated` keeps `gl.toneMappingExposure = 0.6` unchanged, and confirm no changes are made to the existing UnrealBloomPass parameters while integrating the updated background shader and fog values."
         }
       ]
     }

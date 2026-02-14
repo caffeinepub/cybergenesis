@@ -45,51 +45,58 @@ function KeyLightSync() {
 }
 
 function BackgroundSphere() {
-  const meshRef = useRef<THREE.Mesh>(null);
+  // REQ-1: Studio Balance shader with Vivid Violet center and sharp falloff
+  const vertexShader = `
+    varying vec2 vUv;
+    
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
 
-  useEffect(() => {
-    if (!meshRef.current) return;
+  const fragmentShader = `
+    varying vec2 vUv;
+    
+    void main() {
+      float distance = length(vUv - vec2(0.5));
+      
+      // REQ-1: Studio Balance - Vivid Violet center, black edges
+      vec3 centerColor = vec3(1.6, 0.4, 3.2); // Vivid Violet
+      vec3 edgeColor = vec3(0.0, 0.0, 0.0);
+      
+      // REQ-1: Sharp falloff to keep glow focused behind model
+      float d = pow(distance, 1.8);
+      vec3 color = mix(centerColor, edgeColor, d);
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `;
 
-    // DIAGNOSTIC: Increase radius from 50 to 500
-    const geometry = new THREE.SphereGeometry(500, 32, 32);
-    geometry.scale(-1, 1, 1); // Invert so we see the inside
-
-    meshRef.current.geometry = geometry;
-
-    console.log('[DIAGNOSTIC] BackgroundSphere created with radius=500, inverted geometry');
-
-    return () => {
-      geometry.dispose();
-    };
-  }, []);
-
-  // DIAGNOSTIC: Replace shader with red meshBasicMaterial
   return (
-    <mesh ref={meshRef} renderOrder={-1} frustumCulled={false}>
-      <meshBasicMaterial color="red" side={THREE.BackSide} fog={false} />
+    <mesh renderOrder={-1}>
+      <sphereGeometry args={[500, 32, 32]} />
+      <shaderMaterial 
+        fragmentShader={fragmentShader} 
+        vertexShader={vertexShader} 
+        side={THREE.BackSide} 
+        fog={false} 
+      />
     </mesh>
   );
 }
 
 function SceneSetup() {
-  const { scene, camera } = useThree();
+  const { scene } = useThree();
 
   useEffect(() => {
-    // DIAGNOSTIC: Set camera far plane to 2000
-    if (camera instanceof THREE.PerspectiveCamera) {
-      camera.far = 2000;
-      camera.updateProjectionMatrix();
-      console.log('[DIAGNOSTIC] Camera far plane set to 2000 and projection matrix updated');
-    }
-
-    // Set scene.background to null so sphere is visible
+    // REQ-3: Set scene.background to null so shader sphere is visible
     scene.background = null;
     
-    // Reduce fog density to 0.002
-    scene.fog = new THREE.FogExp2(0x000000, 0.002);
+    // REQ-3: Deep Space fog - almost black violet with FogExp2
+    scene.fog = new THREE.FogExp2(0x05010a, 0.0015);
     
-    console.log('[DIAGNOSTIC] Scene setup complete - background=null, fog=0.002, camera.far=2000');
-  }, [scene, camera]);
+    console.log('[Scene Setup] Background set to null, Deep Space fog (0x05010a, density 0.0015) applied');
+  }, [scene]);
 
   return null;
 }
@@ -124,7 +131,7 @@ function BloomEffect() {
     bloomPassRef.current = bloomPass;
     composer.addPass(bloomPass);
 
-    console.log('[Stable Bloom] UnrealBloomPass initialized with diagnostic red background, threshold=1.1, strength=0.35, radius=0.35');
+    console.log('[Studio Balance Bloom] UnrealBloomPass initialized with Vivid Violet shader background, threshold=1.1, strength=0.35, radius=0.35');
 
     return () => {
       // Cleanup on unmount
@@ -140,7 +147,7 @@ function BloomEffect() {
         composerRef.current.dispose();
         composerRef.current = null;
       }
-      console.log('[Stable Bloom] Composer disposed');
+      console.log('[Studio Balance Bloom] Composer disposed');
     };
   }, [gl, scene, camera, size.width, size.height]);
 
@@ -226,7 +233,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           alpha: false,
         }}
         onCreated={({ gl }) => {
-          // Keep tone mapping configuration unchanged at 0.6 exposure
+          // REQ-4: Keep tone mapping configuration unchanged at 0.6 exposure
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMappingExposure = 0.6;
@@ -236,10 +243,10 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
         }}
       >
         <Suspense fallback={null}>
-          {/* DIAGNOSTIC: Apply camera.far=2000, null background and black fog to scene */}
+          {/* REQ-3: Apply null background and Deep Space fog to scene */}
           <SceneSetup />
           
-          {/* DIAGNOSTIC: Red meshBasicMaterial background sphere with radius=500 and frustumCulled=false */}
+          {/* REQ-1 & REQ-2: Studio Balance shader background sphere with 500-unit radius, fog disabled, BackSide rendering */}
           <BackgroundSphere />
           
           <LandModel modelUrl={modelUrl} />
@@ -261,7 +268,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           
           <OrbitControls makeDefault />
           
-          {/* Native UnrealBloomPass with diagnostic red background */}
+          {/* Native UnrealBloomPass with Studio Balance shader background */}
           <BloomEffect />
         </Suspense>
       </Canvas>
