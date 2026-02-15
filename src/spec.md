@@ -1,10 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Update the `BackgroundSphere` fragment shader in `CubeVisualization` to remove masking/squeezing so the nebula fills the entire radius-300 background sphere without circular borders.
+**Goal:** Apply the user-provided fragment shader verbatim to the CubeVisualization background sphere and correctly wire `time` and `resolution` uniforms.
 
 **Planned changes:**
-- In `frontend/src/components/CubeVisualization.tsx`, replace the entire fragment shader `void main()` block in `BackgroundSphere` with the exact user-provided GLSL code (including comments).
-- Ensure the updated `void main()` no longer uses any `edgeMask` (or equivalent) and keeps time-based animation via `uTime`.
+- Update `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere` shader material to use the user-provided fragment shader code exactly as written (verbatim).
+- Wire shader uniforms to match the shader variable names: `time` sourced from `state.clock.elapsedTime` and `resolution` sourced from the React Three Fiber canvas `size.width` and `size.height`, updating on resize.
+- Ensure the shader renders on the existing centered background sphere (radius 300 at `[0,0,0]`) and is visible from inside by setting the material `side` to `THREE.BackSide` or `THREE.DoubleSide`.
 
-**User-visible outcome:** The animated nebula background visually covers the full inside of the background sphere (radius 300) without the “tiny sphere” border/vignette effect.
+**User-visible outcome:** The 3D scene background sphere displays the exact intended animated shader, correctly responding to time and the current canvas resolution without shader compilation errors.

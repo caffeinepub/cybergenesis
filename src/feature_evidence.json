@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-update-the-backgroundsphere-fragment-shader-by-replacing-the-entire-void-main-block-with-the-exact-glsl-code-provided-by-the-user-including-comments-so-the-shader-no-longer-applies-any-edgemask-or-coordinate-squeezing-and-the-nebula-fills-the-entire-background-sphere-spheregeometry-radius-300-without-circular-borders",
-      "featureTitle": "In `frontend/src/components/CubeVisualization.tsx`, update the `BackgroundSphere` fragment shader by replacing the entire `void main()` block with the exact GLSL code provided by the user (including comments), so the shader no longer applies any `edgeMask` or coordinate squeezing and the nebula fills the entire background sphere (sphereGeometry radius 300) without circular borders.",
+      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-update-the-backgroundsphere-shader-material-to-use-the-user-provided-fragment-shader-code-exactly-as-written-verbatim-without-modifying-gl-fragcoord-scaling-loop-logic-comments-or-any-other-shader-logic",
+      "featureTitle": "In `frontend/src/components/CubeVisualization.tsx`, update the `BackgroundSphere` shader material to use the user-provided fragment shader code EXACTLY as written (verbatim), without modifying `gl_FragCoord` scaling, loop logic, comments, or any other shader logic.",
       "files": [
         "frontend/src/components/CubeVisualization.tsx"
       ],
@@ -19,6 +19,48 @@
       ],
       "testIds": [
         "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-backgroundsphere-wire-shader-uniforms-to-match-the-fragment-shader-variable-names-pass-time-float-from-state-clock-elapsedtime-and-resolution-vec2-from-the-react-three-fiber-size-width-and-size-height-values",
+      "featureTitle": "In `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere`, wire shader uniforms to match the fragment shader variable names: pass `time` (float) from `state.clock.elapsedTime` and `resolution` (vec2) from the React Three Fiber `size.width` and `size.height` values.",
+      "files": [
+        "frontend/src/components/CubeVisualization.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-fragment-shader-is-applied-to-the-existing-background-sphere-mesh-in-cubevisualization-tsx-with-spheregeometry-radius-300-centered-at-0-0-0-and-rendered-from-the-inside-by-using-three-backside-or-three-doubleside-on-the-shader-material",
+      "featureTitle": "Ensure the fragment shader is applied to the existing background sphere mesh in `CubeVisualization.tsx` with `sphereGeometry` radius `300`, centered at `[0, 0, 0]`, and rendered from the inside by using `THREE.BackSide` or `THREE.DoubleSide` on the shader material.",
+      "files": [
+        "frontend/src/components/CubeVisualization.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

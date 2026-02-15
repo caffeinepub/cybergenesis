@@ -1,36 +1,78 @@
 {
   "kind": "build_request",
-  "title": "Update CubeVisualization background fragment shader main() to remove edge mask and fix scaling",
+  "title": "Apply exact user-provided fragment shader to CubeVisualization background sphere with time/resolution uniforms",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In `frontend/src/components/CubeVisualization.tsx`, update the `BackgroundSphere` fragment shader by replacing the entire `void main()` block with the exact GLSL code provided by the user (including comments), so the shader no longer applies any `edgeMask` or coordinate squeezing and the nebula fills the entire background sphere (sphereGeometry radius 300) without circular borders.",
+      "text": "In `frontend/src/components/CubeVisualization.tsx`, update the `BackgroundSphere` shader material to use the user-provided fragment shader code EXACTLY as written (verbatim), without modifying `gl_FragCoord` scaling, loop logic, comments, or any other shader logic.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Replace the entire `void main()` block in the fragment shader with this exact code:\n\nvoid main() {\n    // 1. Scale coordinates to fill the sphere properly\n    vec2 p = vViewPosition.xy * 0.0005; \n    \n    // 2. Time-based animation\n    float t = uTime * 0.05;\n    \n    // 3. Noise and Domain Warping logic\n    vec2 n = vec2(0.0);\n    vec2 cp = p;\n    float f = 0.0;\n    float weight = 0.5;\n    for(int i = 0; i < 5; i++) {\n        f += weight * noise(cp + t);\n        cp *= 2.0;\n        weight *= 0.5;\n    }\n    \n    // 4. Custom Colors\n    vec3 blackVoid = vec3(0.01, 0.0, 0.02);\n    vec3 deepViolet = vec3(0.1, 0.02, 0.2);\n    vec3 brightNeon = vec3(0.4, 0.1, 0.6);\n    \n    vec3 color = mix(blackVoid, deepViolet, f);\n    color = mix(color, brightNeon, f * f);\n\n    // REMOVED: edgeMask and coordinate squeezing\n    \n    gl_FragColor = vec4(color * 1.5, 1.0); \n}",
-          "The goal is to remove the \"tiny sphere\" look caused by the edgeMask and ensure the nebula covers the entire background sphere (radius 300) without any circular borders."
+          "Use the code below EXACTLY as written. Do not change `gl_FragCoord` scaling or loop logic.",
+          "Here is the final shader code (User's logic + Our Brand Colors):"
         ]
       },
       "acceptanceCriteria": [
-        "`CubeVisualization.tsx` fragment shader contains the user-provided `void main()` block exactly, replacing the previous `void main()` implementation in `BackgroundSphere`.",
-        "The fragment shader no longer references or uses `edgeMask` (or equivalent masking) in `void main()`.",
-        "When rendering, the background nebula visually covers the full inside of the radius-300 sphere without a circular border/vignette that makes it look like a smaller sphere.",
-        "The background sphere continues to animate over time via `uTime` (no regression in uniform updates or animation loop)."
+        "`BackgroundSphere`'s `fragmentShader` string content matches the user-provided GLSL exactly (including `#ifdef GL_ES`, `#extension`, `#define NUM_OCTAVES 6`, uniform names `time` and `resolution`, and the provided `main()` implementation).",
+        "No additional masking, coordinate squeezing, or substitutions (e.g., `uTime` vs `time`) are introduced inside the fragment shader source.",
+        "The app builds without shader compilation errors."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "In `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere`, wire shader uniforms to match the fragment shader variable names: pass `time` (float) from `state.clock.elapsedTime` and `resolution` (vec2) from the React Three Fiber `size.width` and `size.height` values.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4",
+          "msg-6"
+        ],
+        "quotes": [
+          "Pass the uniforms `time` (instead of uTime) and `resolution` (vec2) to match this shader's variable names.",
+          "time should come from state.clock.elapsedTime.\n\nresolution should come from size.width and size.height from the Three.js state."
+        ]
+      },
+      "acceptanceCriteria": [
+        "`shaderMaterial.uniforms` includes `time` and `resolution` (and does not rely on `uTime`).",
+        "On each frame (or otherwise kept current), `time` is updated using the render loop clock elapsed time.",
+        "`resolution` reflects the current canvas size and updates correctly when the canvas is resized."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Ensure the fragment shader is applied to the existing background sphere mesh in `CubeVisualization.tsx` with `sphereGeometry` radius `300`, centered at `[0, 0, 0]`, and rendered from the inside by using `THREE.BackSide` or `THREE.DoubleSide` on the shader material.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "Apply this shader to the Background Sphere mesh (radius 300) in CubeVisualization.tsx.",
+          "Use THREE.BackSide or THREE.DoubleSide for the material so the shader is visible from the inside.",
+          "Ensure the sphere is centered at [0, 0, 0] so the camera stays inside it."
+        ]
+      },
+      "acceptanceCriteria": [
+        "`BackgroundSphere` uses `sphereGeometry args={[300, ...]}`.",
+        "The background sphere mesh position remains `[0, 0, 0]`.",
+        "The shader material `side` is set to `THREE.BackSide` or `THREE.DoubleSide`, and the shader is visible from inside the sphere."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under `frontend/src/components/ui` or any paths listed as immutable in SYSTEM_CONTEXT."
+    "Do not modify the provided fragment shader code (must be used verbatim).",
+    "Do not change `gl_FragCoord` scaling or any loop logic in the fragment shader.",
+    "Uniforms must be named exactly `time` and `resolution` to match the shader.",
+    "All changes must remain within the existing React + React Three Fiber + Three.js frontend stack; do not add new backend services."
   ],
   "nonGoals": [
-    "Do not change the background sphere geometry (keep `sphereGeometry args={[300, 32, 32]}`).",
-    "Do not change bloom/tone-mapping calibration settings elsewhere in the scene unless required to make the shader render correctly.",
-    "Do not add new background systems or textures; only update the existing fragment shader `void main()` block as requested."
+    "Changing postprocessing/bloom settings (unless required to prevent the shader from rendering at all).",
+    "Adding new UI features unrelated to the background shader application.",
+    "Modifying backend canister logic (Motoko) or introducing schema migrations."
   ],
   "imageRequirements": {
     "required": [],

@@ -1,22 +1,53 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Update CubeVisualization background sphere fragment shader main() to remove edge mask and fix scaling",
+  "title": "Apply user-provided fragment shader to CubeVisualization background sphere with time/resolution uniforms",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Replace BackgroundSphere fragment shader void main() in CubeVisualization to remove edgeMask/coordinate squeezing and ensure full-sphere nebula fill with uTime animation preserved.",
+      "summary": "Replace BackgroundSphere fragment shader source with the user-provided GLSL verbatim (no logic/format changes) in CubeVisualization.tsx.",
       "acceptanceCriteria": [
-        "`CubeVisualization.tsx` fragment shader contains the user-provided `void main()` block exactly, replacing the previous `void main()` implementation in `BackgroundSphere`.",
-        "The fragment shader no longer references or uses `edgeMask` (or equivalent masking) in `void main()`.",
-        "When rendering, the background nebula visually covers the full inside of the radius-300 sphere without a circular border/vignette that makes it look like a smaller sphere.",
-        "The background sphere continues to animate over time via `uTime` (no regression in uniform updates or animation loop)."
+        "`BackgroundSphere`'s `fragmentShader` string content matches the user-provided GLSL exactly (including `#ifdef GL_ES`, `#extension`, `#define NUM_OCTAVES 6`, uniform names `time` and `resolution`, and the provided `main()` implementation).",
+        "No additional masking, coordinate squeezing, or substitutions (e.g., `uTime` vs `time`) are introduced inside the fragment shader source.",
+        "The app builds without shader compilation errors."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "In the `BackgroundSphere` fragment shader string, replace the entire existing `void main()` block with the exact GLSL code provided in the BuildRequest (including comments and whitespace as given), ensuring removal of any `edgeMask`/masking and coordinate squeezing while keeping the rest of the shader (helpers/uniforms) intact and leaving `sphereGeometry args={[300, 32, 32]}` unchanged."
+          "description": "In `BackgroundSphere`, replace the existing `fragmentShader` template string with the user-provided fragment shader code EXACTLY as written (verbatim). Do not alter `gl_FragCoord` scaling, loop logic, comments, uniform names, or any other shader logic; only paste/replace the string content as provided."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Wire BackgroundSphere shaderMaterial uniforms to `time` (elapsed time) and `resolution` (canvas size) matching the fragment shader variable names.",
+      "acceptanceCriteria": [
+        "`shaderMaterial.uniforms` includes `time` and `resolution` (and does not rely on `uTime`).",
+        "On each frame (or otherwise kept current), `time` is updated using the render loop clock elapsed time.",
+        "`resolution` reflects the current canvas size and updates correctly when the canvas is resized."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/CubeVisualization.tsx",
+          "operation": "modify",
+          "description": "Update `BackgroundSphere` to remove `uTime` usage and instead define uniforms `{ time: {value: 0.0}, resolution: {value: new THREE.Vector2(size.width, size.height)} }` (or equivalent) with names exactly `time` and `resolution`. Use React Three Fiber state: set `time` from `state.clock.elapsedTime` in `useFrame`, and derive `resolution` from `useThree().size.width/height`, keeping it current on resize (e.g., update the uniform when `size` changes)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Confirm the shader material is applied to the existing radius-300 background sphere at origin and rendered from inside using BackSide/DoubleSide.",
+      "acceptanceCriteria": [
+        "`BackgroundSphere` uses `sphereGeometry args={[300, ...]}`.",
+        "The background sphere mesh position remains `[0, 0, 0]`.",
+        "The shader material `side` is set to `THREE.BackSide` or `THREE.DoubleSide`, and the shader is visible from inside the sphere."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/CubeVisualization.tsx",
+          "operation": "modify",
+          "description": "Verify `BackgroundSphere` continues to render the shader on the existing sphere mesh: keep `sphereGeometry args` radius at `300`, keep mesh `position={[0,0,0]}`, and ensure `shaderMaterial.side` remains set to `THREE.BackSide` (or `THREE.DoubleSide`) so the fragment shader is visible from inside the sphere. Adjust only if needed to preserve these exact behaviors."
         }
       ]
     }

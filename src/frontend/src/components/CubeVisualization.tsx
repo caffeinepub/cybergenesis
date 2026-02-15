@@ -46,89 +46,149 @@ function KeyLightSync() {
 
 function BackgroundSphere() {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
+  const { size } = useThree();
 
-  // Vertex shader providing vViewPosition for 3D grounding
+  // Simple vertex shader
   const vertexShader = `
-    varying vec3 vViewPosition;
-    
     void main() {
-      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-      vViewPosition = mvPosition.xyz;
-      gl_Position = projectionMatrix * mvPosition;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
   `;
 
-  // Domain Warping FBM fragment shader with updated void main()
+  // User-provided fragment shader EXACTLY as written
   const fragmentShader = `
-    varying vec3 vViewPosition;
-    uniform float uTime;
+#ifdef GL_ES
+precision highp float;
+#endif
 
-    #define NUM_OCTAVES 5
+#extension GL_OES_standard_derivatives : enable
 
-    float random(vec2 pos) {
-        return fract(sin(dot(pos.xy, vec2(13.9898, 78.233))) * 43758.5453);
+#define NUM_OCTAVES 6
+
+uniform float time;
+uniform vec2 resolution;
+
+mat3 rotX(float a) {
+    float c = cos(a);
+    float s = sin(a);
+    return mat3(
+    1, 0, 0,
+    0, c, -s,
+    0, s, c
+    );
+}
+mat3 rotY(float a) {
+    float c = cos(a);
+    float s = sin(a);
+    return mat3(
+    c, 0, -s,
+    0, 1, 0,
+    s, 0, c
+    );
+}
+
+float random(vec2 pos) {
+    return fract(sin(dot(pos.xy, vec2(13.9898, 78.233))) * 43758.5453123);
+}
+
+float noise(vec2 pos) {
+    vec2 i = floor(pos);
+    vec2 f = fract(pos);
+    float a = random(i + vec2(0.0, 0.0));
+    float b = random(i + vec2(1.0, 0.0));
+    float c = random(i + vec2(0.0, 1.0));
+    float d = random(i + vec2(1.0, 1.0));
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+
+float fbm(vec2 pos) {
+    float v = 0.0;
+    float a = 0.5;
+    vec2 shift = vec2(100.0);
+    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+    for (int i=0; i<NUM_OCTAVES; i++) {
+        float dir = mod(float(i), 2.0) > 0.5 ? 1.0 : -1.0;
+        v += a * noise(pos - 0.05 * dir * time);
+
+        pos = rot * pos * 2.0 + shift;
+        a *= 0.5;
     }
+    return v;
+}
 
-    float noise(vec2 pos) {
-        vec2 i = floor(pos);
-        vec2 f = fract(pos);
-        float a = random(i + vec2(0.0, 0.0));
-        float b = random(i + vec2(1.0, 0.0));
-        float c = random(i + vec2(0.0, 1.0));
-        float d = random(i + vec2(1.0, 1.0));
-        vec2 u = f * f * (3.0 - 2.0 * f);
-        return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-    }
+void main(void) {
+    vec2 p = (gl_FragCoord.xy * 3.0 - resolution.xy) / min(resolution.x, resolution.y);
+    p -= vec2(12.0, 0.0);
 
-    void main() {
-        // 1. Scale coordinates to fill the sphere properly
-        vec2 p = vViewPosition.xy * 0.0005; 
-        
-        // 2. Time-based animation
-        float t = uTime * 0.05;
-        
-        // 3. Noise and Domain Warping logic
-        vec2 n = vec2(0.0);
-        vec2 cp = p;
-        float f = 0.0;
-        float weight = 0.5;
-        for(int i = 0; i < 5; i++) {
-            f += weight * noise(cp + t);
-            cp *= 2.0;
-            weight *= 0.5;
-        }
-        
-        // 4. Custom Colors
-        vec3 blackVoid = vec3(0.01, 0.0, 0.02);
-        vec3 deepViolet = vec3(0.1, 0.02, 0.2);
-        vec3 brightNeon = vec3(0.4, 0.1, 0.6);
-        
-        vec3 color = mix(blackVoid, deepViolet, f);
-        color = mix(color, brightNeon, f * f);
+    float t = 0.0, d;
 
-        // REMOVED: edgeMask and coordinate squeezing
-        
-        gl_FragColor = vec4(color * 1.5, 1.0); 
-    }
+    float time2 = 100.0; // Fixed time offset from original code
+
+    vec2 q = vec2(0.0);
+    q.x = fbm(p + 0.00 * time2);
+    q.y = fbm(p + vec2(1.0));
+    vec2 r = vec2(0.0);
+    r.x = fbm(p + 1.0 * q + vec2(1.7, 1.2) + 0.15 * time2);
+    r.y = fbm(p + 1.0 * q + vec2(8.3, 2.8) + 0.126 * time2);
+    float f = fbm(p + r);
+    
+    // MIX 1: Base Background (Deep Purple mixing into Black)
+    vec3 color = mix(
+        vec3(0.05, 0.0, 0.1), // OUR DEEP PURPLE
+        vec3(0.0, 0.0, 0.0),  // OUR BLACK VOID
+        clamp((f * f) * 5.5, 1.2, 15.5)
+    );
+
+    // MIX 2: Adding the Neon Layer
+    color = mix(
+        color,
+        vec3(0.6, 0.0, 0.8),  // OUR BRIGHT NEON
+        clamp(length(q), 2.0, 2.0)
+    );
+
+    // MIX 3: Adding the Highlights (Bright/White)
+    color = mix(
+        color,
+        vec3(0.8, 0.4, 1.0),  // OUR BRIGHT HIGHLIGHT
+        clamp(length(r.x), 0.0, 5.0)
+    );
+
+    color = (f * f * f * 1.0 + 0.5 * 1.7 * 0.0 + 0.9 * f) * color;
+
+    vec2 uv = gl_FragCoord.xy / resolution.xy;
+    float alpha = 50.0 - max(pow(100.0 * distance(uv.x, -1.0), 0.0), pow(2.0 * distance(uv.y, 0.5), 5.0));
+    
+    // Using simple alpha logic from original
+    gl_FragColor = vec4(color, 1.0); 
+}
   `;
 
-  // Initialize uTime uniform
+  // Initialize uniforms with correct names: time and resolution
   const uniforms = useMemo(
     () => ({
-      uTime: { value: 0.0 },
+      time: { value: 0.0 },
+      resolution: { value: new THREE.Vector2(size.width, size.height) },
     }),
-    []
+    [size.width, size.height]
   );
 
-  // Update uTime each frame for subtle animation
+  // Update time uniform each frame
   useFrame((state) => {
     if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime();
+      materialRef.current.uniforms.time.value = state.clock.elapsedTime;
     }
   });
 
+  // Update resolution uniform when size changes
   useEffect(() => {
-    console.log('[BackgroundSphere] Domain Warping FBM shader active with uTime animation');
+    if (materialRef.current) {
+      materialRef.current.uniforms.resolution.value.set(size.width, size.height);
+    }
+  }, [size.width, size.height]);
+
+  useEffect(() => {
+    console.log('[BackgroundSphere] User-provided fragment shader active with time and resolution uniforms');
   }, []);
 
   return (
@@ -324,7 +384,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           {/* Apply null background and Deep Space fog to scene */}
           <SceneSetup />
           
-          {/* Domain Warping FBM shader background sphere with uTime animation */}
+          {/* User-provided fragment shader background sphere with time and resolution uniforms */}
           <BackgroundSphere />
           
           <LandModel modelUrl={modelUrl} />
