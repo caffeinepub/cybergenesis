@@ -45,9 +45,12 @@ function KeyLightSync() {
 }
 
 function BackgroundSphere() {
-  // View-Space shader: gradient stays fixed to screen center during rotation
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
+
+  // Vertex shader providing vViewPosition for 3D grounding
   const vertexShader = `
     varying vec3 vViewPosition;
+    
     void main() {
       vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
       vViewPosition = mvPosition.xyz;
@@ -55,43 +58,97 @@ function BackgroundSphere() {
     }
   `;
 
+  // Domain Warping FBM fragment shader with updated void main()
   const fragmentShader = `
     varying vec3 vViewPosition;
+    uniform float uTime;
+
+    #define NUM_OCTAVES 5
+
+    float random(vec2 pos) {
+        return fract(sin(dot(pos.xy, vec2(13.9898, 78.233))) * 43758.5453);
+    }
+
+    float noise(vec2 pos) {
+        vec2 i = floor(pos);
+        vec2 f = fract(pos);
+        float a = random(i + vec2(0.0, 0.0));
+        float b = random(i + vec2(1.0, 0.0));
+        float c = random(i + vec2(0.0, 1.0));
+        float d = random(i + vec2(1.0, 1.0));
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+    }
+
     void main() {
-      // 1. Perspective-aware distance
-      float dist = length(vViewPosition.xy) / abs(vViewPosition.z);
-      
-      // 2. Tighter multiplier for a focused center
-      dist = dist * 1.5; 
+        // 1. Scale coordinates to fill the sphere properly
+        vec2 p = vViewPosition.xy * 0.0005; 
+        
+        // 2. Time-based animation
+        float t = uTime * 0.05;
+        
+        // 3. Noise and Domain Warping logic
+        vec2 n = vec2(0.0);
+        vec2 cp = p;
+        float f = 0.0;
+        float weight = 0.5;
+        for(int i = 0; i < 5; i++) {
+            f += weight * noise(cp + t);
+            cp *= 2.0;
+            weight *= 0.5;
+        }
+        
+        // 4. Custom Colors
+        vec3 blackVoid = vec3(0.01, 0.0, 0.02);
+        vec3 deepViolet = vec3(0.1, 0.02, 0.2);
+        vec3 brightNeon = vec3(0.4, 0.1, 0.6);
+        
+        vec3 color = mix(blackVoid, deepViolet, f);
+        color = mix(color, brightNeon, f * f);
 
-      // 3. Cinematic Palette
-      vec3 deepVoid = vec3(0.0, 0.0, 0.0);       // Pitch black
-      vec3 royalViolet = vec3(0.15, 0.02, 0.45); // Muted transition violet
-      vec3 corePurple = vec3(1.5, 0.2, 5.0);     // Hot pink/purple core
-
-      // 4. Smooth Vignette Logic:
-      // Core fades fast, but the black edges only fully take over at the far corners (1.2)
-      vec3 color = mix(corePurple, royalViolet, smoothstep(0.0, 0.3, dist));
-      color = mix(color, deepVoid, smoothstep(0.35, 1.2, dist));
-
-      gl_FragColor = vec4(color, 1.0);
+        // REMOVED: edgeMask and coordinate squeezing
+        
+        gl_FragColor = vec4(color * 1.5, 1.0); 
     }
   `;
 
+  // Initialize uTime uniform
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0.0 },
+    }),
+    []
+  );
+
+  // Update uTime each frame for subtle animation
+  useFrame((state) => {
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime();
+    }
+  });
+
   useEffect(() => {
-    console.log('[Studio Vignette] BackgroundSphere shader active with compact pink core and deep black corners');
+    console.log('[BackgroundSphere] Domain Warping FBM shader active with uTime animation');
   }, []);
 
   return (
-    <mesh renderOrder={-1}>
-      <sphereGeometry args={[500, 32, 32]} />
+    <mesh 
+      position={[0, 0, 0]} 
+      renderOrder={-1}
+      castShadow={false}
+      receiveShadow={false}
+    >
+      <sphereGeometry args={[300, 32, 32]} />
       <shaderMaterial 
+        ref={materialRef}
         fragmentShader={fragmentShader} 
-        vertexShader={vertexShader} 
+        vertexShader={vertexShader}
+        uniforms={uniforms}
         side={THREE.BackSide} 
         fog={false}
         depthWrite={false}
         dithering={true}
+        transparent={false}
       />
     </mesh>
   );
@@ -101,10 +158,10 @@ function SceneSetup() {
   const { scene } = useThree();
 
   useEffect(() => {
-    // REQ-3: Set scene.background to null so shader sphere is visible
+    // Set scene.background to null so shader sphere is visible
     scene.background = null;
     
-    // REQ-3: Deep Space fog color 0x05010a
+    // Deep Space fog color 0x05010a
     scene.fog = new THREE.FogExp2(0x05010a, 0.0015);
     
     console.log('[Scene Setup] Background set to null, Deep Space fog (0x05010a, density 0.0015) applied');
@@ -133,21 +190,21 @@ function BloomEffect() {
     renderPassRef.current = renderPass;
     composer.addPass(renderPass);
 
-    // REQ-2: Ultra-Soft Mode Bloom - threshold 1.1, intensity 0.45, radius 0.65
+    // Bloom configuration: threshold=1.1 (preserved as requested)
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2),
-      0.45, // intensity (Perfect balance for Deep Nebula shader)
-      0.65, // radius (Wide, soft dispersion of light)
-      1.1   // threshold (Protects land textures from glowing)
+      0.45, // intensity
+      0.65, // radius
+      1.1   // threshold (preserved)
     );
     bloomPassRef.current = bloomPass;
     
-    // REQ-2: Set luminanceSmoothing if supported (feature detection)
+    // Set luminanceSmoothing if supported (feature detection)
     if ('luminanceSmoothing' in bloomPass) {
       (bloomPass as any).luminanceSmoothing = 0.4;
-      console.log('[Deep Nebula Bloom] UnrealBloomPass initialized with Ultra-Soft Mode: threshold=1.1, intensity=0.45, radius=0.65, luminanceSmoothing=0.4');
+      console.log('[Domain Warp Bloom] UnrealBloomPass initialized: threshold=1.1, intensity=0.45, radius=0.65, luminanceSmoothing=0.4');
     } else {
-      console.log('[Deep Nebula Bloom] UnrealBloomPass initialized with Ultra-Soft Mode: threshold=1.1, intensity=0.45, radius=0.65 (luminanceSmoothing not supported in this version)');
+      console.log('[Domain Warp Bloom] UnrealBloomPass initialized: threshold=1.1, intensity=0.45, radius=0.65');
     }
     
     composer.addPass(bloomPass);
@@ -166,7 +223,7 @@ function BloomEffect() {
         composerRef.current.dispose();
         composerRef.current = null;
       }
-      console.log('[Deep Nebula Bloom] Composer disposed');
+      console.log('[Domain Warp Bloom] Composer disposed');
     };
   }, [gl, scene, camera, size.width, size.height]);
 
@@ -252,7 +309,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           alpha: false,
         }}
         onCreated={({ gl }) => {
-          // REQ-3: Tone mapping exposure set to 0.6
+          // Tone mapping exposure set to 0.6 (preserved as requested)
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMappingExposure = 0.6;
@@ -260,14 +317,14 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           // Ensure opaque clear alpha is set (default behavior)
           gl.setClearAlpha(1);
           
-          console.log('[Deep Nebula] Renderer initialized with toneMappingExposure=0.6');
+          console.log('[Domain Warp FBM] Renderer initialized with toneMappingExposure=0.6');
         }}
       >
         <Suspense fallback={null}>
-          {/* REQ-3: Apply null background and Deep Space fog to scene */}
+          {/* Apply null background and Deep Space fog to scene */}
           <SceneSetup />
           
-          {/* View-Space shader background sphere with Studio Vignette */}
+          {/* Domain Warping FBM shader background sphere with uTime animation */}
           <BackgroundSphere />
           
           <LandModel modelUrl={modelUrl} />
@@ -289,7 +346,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           
           <OrbitControls makeDefault />
           
-          {/* REQ-2: Native UnrealBloomPass with Ultra-Soft Mode settings */}
+          {/* Native UnrealBloomPass with threshold=1.1 preserved */}
           <BloomEffect />
         </Suspense>
       </Canvas>

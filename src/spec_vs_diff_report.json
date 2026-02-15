@@ -1,32 +1,38 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-14T12:46:19.673Z",
-  "summary": "REQ-1 and REQ-3 appear implemented in the shown LandModel.tsx traversal (biome-specific emissiveIntensity set before persisting baseEmissive; dithering enabled on all processed materials). REQ-2 (useFrame pulse logic using group.current.traverse and scaling emissiveIntensity = baseEmissive * pulse) is not evidenced in the truncated diff. The diff also includes modifications outside LandModel.tsx, which were not requested and conflict with the scope constraint.",
+  "generatedAt": "2026-02-15T02:08:10.948Z",
+  "summary": "REQ-1 is only partially evidenced: CubeVisualization.tsx shows an updated fragment shader main() with edge masking removed, but the diff does not demonstrate that the entire void main() block was replaced with the exact user-provided GLSL (including comments). Additionally, unrelated files (frontend-file-summaries.txt, project_state.json) were modified without being requested.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Refine the emissive pulse in LandModel.tsx so the useFrame loop uses group.current.traverse(...) and sets material.emissiveIntensity = material.userData.baseEmissive * pulse for meshes with baseEmissive defined.",
-      "reason": "The provided LandModel.tsx diff excerpt shows material setup and baseline storage, but does not show any useFrame implementation or group.current.traverse-based pulsing logic due to truncation; therefore implementation cannot be verified from the evidence.",
+      "id": "REQ-1",
+      "requirement": "Replace the entire BackgroundSphere fragment shader `void main()` block with the exact GLSL code provided by the user (including comments).",
+      "reason": "The diff shows a new `void main()` implementation, but the BuildRequest requires it to match user-provided GLSL exactly. The user-provided GLSL is not present in the diff summary, so exactness cannot be verified from the provided evidence.",
       "evidence": [
-        "frontend/src/components/LandModel.tsx (truncated)"
+        "frontend/src/components/CubeVisualization.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Modified additional files outside the requested scope (changes should be scoped to frontend/src/components/LandModel.tsx only).",
-      "reason": "BuildRequest constraints explicitly require keeping changes scoped to LandModel.tsx, but the diff summary reports modifications to two other files.",
+      "description": "Modified project tracking/state file (project_state.json).",
+      "reason": "BuildRequest only asked to update the fragment shader `void main()` in CubeVisualization.tsx; no request to update project metadata/state files.",
       "evidence": [
-        "frontend-file-summaries.txt",
         "project_state.json"
+      ]
+    },
+    {
+      "description": "Modified frontend-file-summaries.txt documentation/summary file.",
+      "reason": "BuildRequest does not mention updating any summary/documentation files; only the shader main() block update was requested.",
+      "evidence": [
+        "frontend-file-summaries.txt (truncated)"
       ]
     }
   ],
-  "confidence": 0.68,
+  "confidence": 0.63,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/LandModel.tsx",
+    "frontend/src/components/CubeVisualization.tsx",
     "project_state.json"
   ]
 }
