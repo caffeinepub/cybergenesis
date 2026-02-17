@@ -1,78 +1,56 @@
 {
   "kind": "build_request",
-  "title": "Apply exact user-provided fragment shader to CubeVisualization background sphere with time/resolution uniforms",
-  "priority": "normal",
+  "title": "Emergency emissive fix for LandModel + add Canvas dithering",
+  "projectName": "CyberGenesis PBR Emissive",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In `frontend/src/components/CubeVisualization.tsx`, update the `BackgroundSphere` shader material to use the user-provided fragment shader code EXACTLY as written (verbatim), without modifying `gl_FragCoord` scaling, loop logic, comments, or any other shader logic.",
+      "text": "Update `frontend/src/components/LandModel.tsx` emissive material logic so emissive glow is conditional: if a mesh/material has an `emissiveMap`, keep it and set emissive color to white with `m.userData.baseEmissive = 2.0`; otherwise disable emissive completely by setting emissive to black and `m.userData.baseEmissive = 0.0` (to prevent models without emissive maps from glowing white). Replace only the current emissive block in the material loop, keeping all other behavior unchanged.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-6",
+          "msg-7"
         ],
         "quotes": [
-          "Use the code below EXACTLY as written. Do not change `gl_FragCoord` scaling or loop logic.",
-          "Here is the final shader code (User's logic + Our Brand Colors):"
+          "Emergency Fix for LandModel.tsx! We have a \"blindness\" bug on models without emissive maps.\n\nThe logic must be conditional. If a mesh doesn't have an emissive map, it must have ZERO emissive color, otherwise the whole object glows white.\n\nUpdate the Material logic in useEffect as follows:\nReplace the current emissive block (around line 56-65 approx) with this:\nif (obj.material.emissiveMap) {\n    // Model HAS an emissive map\n    m.emissiveMap = obj.material.emissiveMap;\n    m.emissive = new THREE.Color(0xffffff);\n    m.userData.baseEmissive = 2.0; \n} else {\n    // Model HAS NO emissive map - DISABLE glow completely\n    m.emissive = new THREE.Color(0x000000);\n    m.userData.baseEmissive = 0.0;\n}",
+          "Собирай! Но другое ничего больше не трогай!! Только то что в промте"
         ]
       },
       "acceptanceCriteria": [
-        "`BackgroundSphere`'s `fragmentShader` string content matches the user-provided GLSL exactly (including `#ifdef GL_ES`, `#extension`, `#define NUM_OCTAVES 6`, uniform names `time` and `resolution`, and the provided `main()` implementation).",
-        "No additional masking, coordinate squeezing, or substitutions (e.g., `uTime` vs `time`) are introduced inside the fragment shader source.",
-        "The app builds without shader compilation errors."
+        "For a GLB model whose meshes do not include an emissive map, the rendered object shows no emissive glow (no white glow) and the emissive pulse has no visible effect.",
+        "For a GLB model whose meshes include an emissive map, the emissive map is used, emissive color is white, and `m.userData.baseEmissive` is set to `2.0` so existing pulse logic continues to work.",
+        "No other logic in `LandModel.tsx` is changed (including `m.dithering = true`, the `useFrame` pulse traversal, biome `envMapIntensity` rules, and camera auto-fit logic)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere`, wire shader uniforms to match the fragment shader variable names: pass `time` (float) from `state.clock.elapsedTime` and `resolution` (vec2) from the React Three Fiber `size.width` and `size.height` values.",
+      "text": "In `frontend/src/components/CubeVisualization.tsx`, add `dithering: true` to the `<Canvas gl={{ ... }} />` configuration while keeping existing `gl` settings unchanged.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4",
-          "msg-6"
+          "msg-6",
+          "msg-7"
         ],
         "quotes": [
-          "Pass the uniforms `time` (instead of uTime) and `resolution` (vec2) to match this shader's variable names.",
-          "time should come from state.clock.elapsedTime.\n\nresolution should come from size.width and size.height from the Three.js state."
+          "2. In CubeVisualization.tsx:\nDon't forget to add dithering: true to the <Canvas gl={{...}} /> if you haven't yet.",
+          "Собирай! Но другое ничего больше не трогай!! Только то что в промте"
         ]
       },
       "acceptanceCriteria": [
-        "`shaderMaterial.uniforms` includes `time` and `resolution` (and does not rely on `uTime`).",
-        "On each frame (or otherwise kept current), `time` is updated using the render loop clock elapsed time.",
-        "`resolution` reflects the current canvas size and updates correctly when the canvas is resized."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Ensure the fragment shader is applied to the existing background sphere mesh in `CubeVisualization.tsx` with `sphereGeometry` radius `300`, centered at `[0, 0, 0]`, and rendered from the inside by using `THREE.BackSide` or `THREE.DoubleSide` on the shader material.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "Apply this shader to the Background Sphere mesh (radius 300) in CubeVisualization.tsx.",
-          "Use THREE.BackSide or THREE.DoubleSide for the material so the shader is visible from the inside.",
-          "Ensure the sphere is centered at [0, 0, 0] so the camera stays inside it."
-        ]
-      },
-      "acceptanceCriteria": [
-        "`BackgroundSphere` uses `sphereGeometry args={[300, ...]}`.",
-        "The background sphere mesh position remains `[0, 0, 0]`.",
-        "The shader material `side` is set to `THREE.BackSide` or `THREE.DoubleSide`, and the shader is visible from inside the sphere."
+        "`Canvas` in `CubeVisualization.tsx` includes `gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, dithering: true }}` (ordering may vary) and no other Canvas props/logic are modified.",
+        "The app builds successfully with the new `gl.dithering` setting present."
       ]
     }
   ],
   "constraints": [
-    "Do not modify the provided fragment shader code (must be used verbatim).",
-    "Do not change `gl_FragCoord` scaling or any loop logic in the fragment shader.",
-    "Uniforms must be named exactly `time` and `resolution` to match the shader.",
-    "All changes must remain within the existing React + React Three Fiber + Three.js frontend stack; do not add new backend services."
+    "Make only the changes explicitly listed in the user prompt: (1) conditional emissive logic in `frontend/src/components/LandModel.tsx` and (2) add `dithering: true` to `frontend/src/components/CubeVisualization.tsx` Canvas `gl` config.",
+    "Do not modify any other files, logic, settings, UI text, or styling beyond these two edits."
   ],
   "nonGoals": [
-    "Changing postprocessing/bloom settings (unless required to prevent the shader from rendering at all).",
-    "Adding new UI features unrelated to the background shader application.",
-    "Modifying backend canister logic (Motoko) or introducing schema migrations."
+    "Refactoring LandModel/CubeVisualization structure, performance optimizations, or any changes to bloom/tone mapping/lighting beyond adding `gl.dithering`.",
+    "Any backend/canister changes."
   ],
   "imageRequirements": {
     "required": [],

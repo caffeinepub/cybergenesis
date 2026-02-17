@@ -44,181 +44,124 @@ function KeyLightSync() {
   );
 }
 
-function BackgroundSphere() {
+// Full FBM Shader with 4-color neon palette
+const BackgroundSphere = () => {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const { size } = useThree();
 
-  // Simple vertex shader
   const vertexShader = `
+    varying vec2 vUv;
     void main() {
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      vUv = uv;
+      gl_Position = vec4(position.xy, 1.0, 1.0);
     }
   `;
 
-  // User-provided fragment shader EXACTLY as written
   const fragmentShader = `
-#ifdef GL_ES
-precision highp float;
-#endif
+    uniform float time;
+    uniform vec2 resolution;
+    
+    #define NUM_OCTAVES 6
 
-#extension GL_OES_standard_derivatives : enable
-
-#define NUM_OCTAVES 6
-
-uniform float time;
-uniform vec2 resolution;
-
-mat3 rotX(float a) {
-    float c = cos(a);
-    float s = sin(a);
-    return mat3(
-    1, 0, 0,
-    0, c, -s,
-    0, s, c
-    );
-}
-mat3 rotY(float a) {
-    float c = cos(a);
-    float s = sin(a);
-    return mat3(
-    c, 0, -s,
-    0, 1, 0,
-    s, 0, c
-    );
-}
-
-float random(vec2 pos) {
-    return fract(sin(dot(pos.xy, vec2(13.9898, 78.233))) * 43758.5453123);
-}
-
-float noise(vec2 pos) {
-    vec2 i = floor(pos);
-    vec2 f = fract(pos);
-    float a = random(i + vec2(0.0, 0.0));
-    float b = random(i + vec2(1.0, 0.0));
-    float c = random(i + vec2(0.0, 1.0));
-    float d = random(i + vec2(1.0, 1.0));
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-}
-
-float fbm(vec2 pos) {
-    float v = 0.0;
-    float a = 0.5;
-    vec2 shift = vec2(100.0);
-    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
-    for (int i=0; i<NUM_OCTAVES; i++) {
-        float dir = mod(float(i), 2.0) > 0.5 ? 1.0 : -1.0;
-        v += a * noise(pos - 0.05 * dir * time);
-
-        pos = rot * pos * 2.0 + shift;
-        a *= 0.5;
+    float random(vec2 pos) {
+        return fract(sin(dot(pos.xy, vec2(13.9898, 78.233))) * 43758.5453123);
     }
-    return v;
-}
 
-void main(void) {
-    vec2 p = (gl_FragCoord.xy * 3.0 - resolution.xy) / min(resolution.x, resolution.y);
-    p -= vec2(12.0, 0.0);
+    float noise(vec2 pos) {
+        vec2 i = floor(pos);
+        vec2 f = fract(pos);
+        float a = random(i + vec2(0.0, 0.0));
+        float b = random(i + vec2(1.0, 0.0));
+        float c = random(i + vec2(0.0, 1.0));
+        float d = random(i + vec2(1.0, 1.0));
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+    }
 
-    float t = 0.0, d;
+    float fbm(vec2 pos) {
+        float v = 0.0;
+        float a = 0.5;
+        vec2 shift = vec2(100.0);
+        mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+        for (int i=0; i<NUM_OCTAVES; i++) {
+            float dir = mod(float(i), 2.0) > 0.5 ? 1.0 : -1.0;
+            v += a * noise(pos - 0.05 * dir * time);
+            pos = rot * pos * 2.0 + shift;
+            a *= 0.5;
+        }
+        return v;
+    }
 
-    float time2 = 100.0; // Fixed time offset from original code
+    void main(void) {
+        // Universal Screen-Space coordinates
+        vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+        
+        // Deep Indigo Base
+        vec3 c1 = vec3(0.2, 0.0, 0.4);
+        // Electric Cyan Highlight
+        vec3 c2 = vec3(0.0, 0.8, 1.0);
+        // Hot Magenta Highlight (Desaturated slightly for realism)
+        vec3 c3 = vec3(0.9, 0.1, 0.4);
+        // Pure Void Black (Crucial for contrast)
+        vec3 c4 = vec3(0.0, 0.0, 0.05);
 
-    vec2 q = vec2(0.0);
-    q.x = fbm(p + 0.00 * time2);
-    q.y = fbm(p + vec2(1.0));
-    vec2 r = vec2(0.0);
-    r.x = fbm(p + 1.0 * q + vec2(1.7, 1.2) + 0.15 * time2);
-    r.y = fbm(p + 1.0 * q + vec2(8.3, 2.8) + 0.126 * time2);
-    float f = fbm(p + r);
-    
-    // MIX 1: Base Background (Deep Purple mixing into Black)
-    vec3 color = mix(
-        vec3(0.05, 0.0, 0.1), // OUR DEEP PURPLE
-        vec3(0.0, 0.0, 0.0),  // OUR BLACK VOID
-        clamp((f * f) * 5.5, 1.2, 15.5)
-    );
+        float time2 = time * 0.2; // Slow down for elegance
 
-    // MIX 2: Adding the Neon Layer
-    color = mix(
-        color,
-        vec3(0.6, 0.0, 0.8),  // OUR BRIGHT NEON
-        clamp(length(q), 2.0, 2.0)
-    );
+        vec2 q = vec2(0.0);
+        q.x = fbm(p + 0.00 * time2);
+        q.y = fbm(p + vec2(1.0));
+        
+        vec2 r = vec2(0.0);
+        r.x = fbm(p + 1.0 * q + vec2(1.7, 1.2) + 0.15 * time2);
+        r.y = fbm(p + 1.0 * q + vec2(8.3, 2.8) + 0.126 * time2);
+        
+        float f = fbm(p + r);
 
-    // MIX 3: Adding the Highlights (Bright/White)
-    color = mix(
-        color,
-        vec3(0.8, 0.4, 1.0),  // OUR BRIGHT HIGHLIGHT
-        clamp(length(r.x), 0.0, 5.0)
-    );
+        // Mix our colors using the FBM logic
+        vec3 color = mix(c1, c2, clamp((f * f) * 4.0, 0.0, 1.0));
+        color = mix(color, c3, clamp(length(q), 0.0, 1.0));
+        color = mix(color, c4, clamp(length(r.x), 0.0, 1.0));
 
-    color = (f * f * f * 1.0 + 0.5 * 1.7 * 0.0 + 0.9 * f) * color;
+        color = (f * f * f * 1.5 + 0.5 * f) * color;
 
-    vec2 uv = gl_FragCoord.xy / resolution.xy;
-    float alpha = 50.0 - max(pow(100.0 * distance(uv.x, -1.0), 0.0), pow(2.0 * distance(uv.y, 0.5), 5.0));
-    
-    // Using simple alpha logic from original
-    gl_FragColor = vec4(color, 1.0); 
-}
+        // Increased contrast power (pow 3.0) to crush blacks and boost bloom
+        gl_FragColor = vec4(pow(color, vec3(3.0)) * 6.0, 1.0);
+    }
   `;
 
-  // Initialize uniforms with correct names: time and resolution
-  const uniforms = useMemo(
-    () => ({
-      time: { value: 0.0 },
-      resolution: { value: new THREE.Vector2(size.width, size.height) },
-    }),
-    [size.width, size.height]
-  );
+  const uniforms = useMemo(() => ({
+    time: { value: 0 },
+    resolution: { value: new THREE.Vector2(1, 1) }
+  }), []);
 
-  // Update time uniform each frame
   useFrame((state) => {
     if (materialRef.current) {
-      materialRef.current.uniforms.time.value = state.clock.elapsedTime;
+      materialRef.current.uniforms.time.value = state.clock.getElapsedTime();
+      const canvas = state.gl.domElement;
+      materialRef.current.uniforms.resolution.value.set(canvas.width, canvas.height);
     }
   });
 
-  // Update resolution uniform when size changes
-  useEffect(() => {
-    if (materialRef.current) {
-      materialRef.current.uniforms.resolution.value.set(size.width, size.height);
-    }
-  }, [size.width, size.height]);
-
-  useEffect(() => {
-    console.log('[BackgroundSphere] User-provided fragment shader active with time and resolution uniforms');
-  }, []);
-
   return (
-    <mesh 
-      position={[0, 0, 0]} 
-      renderOrder={-1}
-      castShadow={false}
-      receiveShadow={false}
-    >
-      <sphereGeometry args={[300, 32, 32]} />
-      <shaderMaterial 
+    <mesh frustumCulled={false} renderOrder={-1000}>
+      <planeGeometry args={[2, 2]} />
+      <shaderMaterial
         ref={materialRef}
-        fragmentShader={fragmentShader} 
         vertexShader={vertexShader}
+        fragmentShader={fragmentShader}
         uniforms={uniforms}
-        side={THREE.BackSide} 
-        fog={false}
+        depthTest={false}
         depthWrite={false}
-        dithering={true}
         transparent={false}
       />
     </mesh>
   );
-}
+};
 
 function SceneSetup() {
   const { scene } = useThree();
 
   useEffect(() => {
-    // Set scene.background to null so shader sphere is visible
+    // Set scene.background to null so shader plane is visible
     scene.background = null;
     
     // Deep Space fog color 0x05010a
@@ -262,9 +205,9 @@ function BloomEffect() {
     // Set luminanceSmoothing if supported (feature detection)
     if ('luminanceSmoothing' in bloomPass) {
       (bloomPass as any).luminanceSmoothing = 0.4;
-      console.log('[Domain Warp Bloom] UnrealBloomPass initialized: threshold=1.1, intensity=0.45, radius=0.65, luminanceSmoothing=0.4');
+      console.log('[Full FBM Bloom] UnrealBloomPass initialized: threshold=1.1, intensity=0.45, radius=0.65, luminanceSmoothing=0.4');
     } else {
-      console.log('[Domain Warp Bloom] UnrealBloomPass initialized: threshold=1.1, intensity=0.45, radius=0.65');
+      console.log('[Full FBM Bloom] UnrealBloomPass initialized: threshold=1.1, intensity=0.45, radius=0.65');
     }
     
     composer.addPass(bloomPass);
@@ -283,7 +226,7 @@ function BloomEffect() {
         composerRef.current.dispose();
         composerRef.current = null;
       }
-      console.log('[Domain Warp Bloom] Composer disposed');
+      console.log('[Full FBM Bloom] Composer disposed');
     };
   }, [gl, scene, camera, size.width, size.height]);
 
@@ -377,14 +320,16 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           // Ensure opaque clear alpha is set (default behavior)
           gl.setClearAlpha(1);
           
-          console.log('[Domain Warp FBM] Renderer initialized with toneMappingExposure=0.6');
+          // Note: Dithering is handled at the material level in LandModel.tsx (m.dithering = true)
+          // This is the correct approach in Three.js as dithering is a material property, not a renderer property
+          console.log('[Full FBM] Renderer initialized with toneMappingExposure=0.6 (dithering handled at material level in LandModel)');
         }}
       >
         <Suspense fallback={null}>
           {/* Apply null background and Deep Space fog to scene */}
           <SceneSetup />
           
-          {/* User-provided fragment shader background sphere with time and resolution uniforms */}
+          {/* Screen-Space Quad with full FBM 4-color neon shader */}
           <BackgroundSphere />
           
           <LandModel modelUrl={modelUrl} />
@@ -449,10 +394,10 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-            <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-            <path d="M3 16v3a2 2 0 0 0 2 2h3" />
-            <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+            <path d="M15 3h6v6" />
+            <path d="M9 21H3v-6" />
+            <path d="M21 3l-7 7" />
+            <path d="M3 21l7-7" />
           </svg>
         )}
       </button>

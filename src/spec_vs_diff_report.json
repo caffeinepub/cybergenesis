@@ -1,47 +1,49 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-15T03:02:10.718Z",
-  "summary": "CubeVisualization.tsx was modified to include a BackgroundSphere with a shader, but the fragment shader shown is not strictly verbatim (it contains an added/changed comment and a fixed `time2` value), and the diff snippet does not provide evidence that uniforms are wired/updated per-frame or that the sphere mesh uses the required radius/position/material side settings. An unrelated KeyLightSync light-follow behavior appears to be added.",
+  "generatedAt": "2026-02-17T22:54:21.641Z",
+  "summary": "REQ-1 appears partially implemented (conditional emissive logic added), but the condition checks `obj.material.emissiveMap` rather than each iterated material `m.emissiveMap`, which may break correctness for multi-material meshes. REQ-2 is not evidenced in the diff (no visible `dithering: true` added to the Canvas `gl` config). Additionally, changes were made to extra files not requested, violating the constraint to only edit the two specified components.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Update BackgroundSphere shader material to use the user-provided fragment shader code EXACTLY as written (verbatim), without modifying gl_FragCoord scaling, loop logic, comments, or any other shader logic.",
-      "reason": "The fragment shader text shown includes a comment and logic that appear to be modifications (e.g., `float time2 = 100.0; // Fixed time offset from original code`), which violates the requirement to use the provided GLSL verbatim. The shader is also truncated in the diff, so an exact match cannot be verified.",
+      "requirement": "Conditional emissive logic must be based on whether each mesh/material has an `emissiveMap` (per-material), keeping emissiveMap when present and disabling emissive when absent, while replacing only the existing emissive block and keeping all other behavior unchanged.",
+      "reason": "The diff shows the conditional check uses `obj.material.emissiveMap` (the mesh's original material reference) inside a loop over `materials.forEach((m) => ...)`, which can be incorrect when `obj.material` is an array or when per-material emissiveMap differs. This does not clearly satisfy the requirement 'if a mesh/material has an emissiveMap'.",
       "evidence": [
-        "frontend/src/components/CubeVisualization.tsx"
+        "frontend/src/components/LandModel.tsx: `materials.forEach((m: THREE.MeshStandardMaterial) => { ... if (obj.material.emissiveMap) { ... m.emissiveMap = obj.material.emissiveMap; ... } else { ... } }`"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Wire uniforms named exactly `time` and `resolution`: update `time` from `state.clock.elapsedTime` and `resolution` from `size.width`/`size.height`, keeping them current (including on resize).",
-      "reason": "The diff shows `uniform float time; uniform vec2 resolution;` inside the shader and `const { size } = useThree();`, but does not show `shaderMaterial.uniforms` setup nor any `useFrame` logic updating `materialRef.current.uniforms.time.value` or updating `resolution` when size changes. With truncation, this wiring cannot be confirmed.",
+      "requirement": "Add `dithering: true` to the `<Canvas gl={{ ... }} />` config in `frontend/src/components/CubeVisualization.tsx` while keeping existing `gl` settings unchanged.",
+      "reason": "The provided truncated diff for `CubeVisualization.tsx` does not show any `<Canvas gl={{...}} />` configuration including `dithering: true`, and the file summary explicitly states dithering is handled at the material level while preserving existing Canvas gl settings (antialias, powerPreference, alpha), which suggests `gl.dithering` was not added.",
       "evidence": [
-        "frontend/src/components/CubeVisualization.tsx"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Apply the shader to the existing background sphere mesh with `sphereGeometry` radius 300, centered at `[0,0,0]`, and render from inside via `THREE.BackSide` or `THREE.DoubleSide`.",
-      "reason": "The provided diff snippet does not include the mesh JSX (sphereGeometry args, position) nor the shader material `side` setting, so compliance cannot be verified from the available evidence.",
-      "evidence": [
-        "frontend/src/components/CubeVisualization.tsx"
+        "frontend/src/components/CubeVisualization.tsx (truncated): no visible `<Canvas gl={{ ... dithering: true ... }} />` block",
+        "frontend-file-summaries.txt: `...with dithering handled at the material level in LandModel.tsx ... while preserving all existing Canvas gl settings (antialias, powerPreference, alpha).`"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "KeyLightSync component that moves a directional light relative to the camera each frame.",
-      "reason": "The BuildRequest only covers applying a fragment shader to the background sphere and wiring `time`/`resolution` uniforms; it does not request adding or modifying scene lighting behavior.",
+      "description": "Extra, non-requested file modifications beyond the two allowed component edits (violates constraint to only change LandModel.tsx emissive block and CubeVisualization.tsx Canvas gl config).",
+      "reason": "Diff summary reports 4 modified files, including `frontend-file-summaries.txt` and `project_state.json`, neither of which are part of the requested two explicit code edits.",
       "evidence": [
-        "frontend/src/components/CubeVisualization.tsx"
+        "Diff summary: `Modified: 4`",
+        "Modified files list includes `frontend-file-summaries.txt` and `project_state.json`"
+      ]
+    },
+    {
+      "description": "Additional console logging inside the emissive material loop.",
+      "reason": "REQ-1 requires replacing only the existing emissive block and otherwise keeping behavior unchanged; adding a new `console.log` changes runtime behavior/log output beyond the emissive settings themselves.",
+      "evidence": [
+        "frontend/src/components/LandModel.tsx: `console.log(`[LandModel] Emissive applied: ...`);`"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.71,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/components/CubeVisualization.tsx",
+    "frontend/src/components/LandModel.tsx",
     "project_state.json"
   ]
 }

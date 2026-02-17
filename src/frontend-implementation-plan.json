@@ -1,53 +1,36 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Apply user-provided fragment shader to CubeVisualization background sphere with time/resolution uniforms",
+  "title": "Emergency emissive fix for LandModel + add Canvas dithering",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Replace BackgroundSphere fragment shader source with the user-provided GLSL verbatim (no logic/format changes) in CubeVisualization.tsx.",
+      "summary": "Make LandModel emissive glow conditional based on presence of an emissiveMap, without changing any other material/camera/pulse behavior.",
       "acceptanceCriteria": [
-        "`BackgroundSphere`'s `fragmentShader` string content matches the user-provided GLSL exactly (including `#ifdef GL_ES`, `#extension`, `#define NUM_OCTAVES 6`, uniform names `time` and `resolution`, and the provided `main()` implementation).",
-        "No additional masking, coordinate squeezing, or substitutions (e.g., `uTime` vs `time`) are introduced inside the fragment shader source.",
-        "The app builds without shader compilation errors."
+        "For a GLB model whose meshes do not include an emissive map, the rendered object shows no emissive glow (no white glow) and the emissive pulse has no visible effect.",
+        "For a GLB model whose meshes include an emissive map, the emissive map is used, emissive color is white, and `m.userData.baseEmissive` is set to `2.0` so existing pulse logic continues to work.",
+        "No other logic in `LandModel.tsx` is changed (including `m.dithering = true`, the `useFrame` pulse traversal, biome `envMapIntensity` rules, and camera auto-fit logic)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/CubeVisualization.tsx",
+          "path": "frontend/src/components/LandModel.tsx",
           "operation": "modify",
-          "description": "In `BackgroundSphere`, replace the existing `fragmentShader` template string with the user-provided fragment shader code EXACTLY as written (verbatim). Do not alter `gl_FragCoord` scaling, loop logic, comments, uniform names, or any other shader logic; only paste/replace the string content as provided."
+          "description": "Replace only the current emissive block inside the materials loop with the specified conditional logic: if `obj.material.emissiveMap` exists, set `m.emissiveMap` to it, set `m.emissive` to white, and set `m.userData.baseEmissive = 2.0`; otherwise set `m.emissive` to black and `m.userData.baseEmissive = 0.0`. Keep all other existing logic and settings unchanged."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Wire BackgroundSphere shaderMaterial uniforms to `time` (elapsed time) and `resolution` (canvas size) matching the fragment shader variable names.",
+      "summary": "Enable renderer dithering in CubeVisualization Canvas gl configuration while preserving existing gl settings.",
       "acceptanceCriteria": [
-        "`shaderMaterial.uniforms` includes `time` and `resolution` (and does not rely on `uTime`).",
-        "On each frame (or otherwise kept current), `time` is updated using the render loop clock elapsed time.",
-        "`resolution` reflects the current canvas size and updates correctly when the canvas is resized."
+        "`Canvas` in `CubeVisualization.tsx` includes `gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, dithering: true }}` (ordering may vary) and no other Canvas props/logic are modified.",
+        "The app builds successfully with the new `gl.dithering` setting present."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Update `BackgroundSphere` to remove `uTime` usage and instead define uniforms `{ time: {value: 0.0}, resolution: {value: new THREE.Vector2(size.width, size.height)} }` (or equivalent) with names exactly `time` and `resolution`. Use React Three Fiber state: set `time` from `state.clock.elapsedTime` in `useFrame`, and derive `resolution` from `useThree().size.width/height`, keeping it current on resize (e.g., update the uniform when `size` changes)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Confirm the shader material is applied to the existing radius-300 background sphere at origin and rendered from inside using BackSide/DoubleSide.",
-      "acceptanceCriteria": [
-        "`BackgroundSphere` uses `sphereGeometry args={[300, ...]}`.",
-        "The background sphere mesh position remains `[0, 0, 0]`.",
-        "The shader material `side` is set to `THREE.BackSide` or `THREE.DoubleSide`, and the shader is visible from inside the sphere."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/CubeVisualization.tsx",
-          "operation": "modify",
-          "description": "Verify `BackgroundSphere` continues to render the shader on the existing sphere mesh: keep `sphereGeometry args` radius at `300`, keep mesh `position={[0,0,0]}`, and ensure `shaderMaterial.side` remains set to `THREE.BackSide` (or `THREE.DoubleSide`) so the fragment shader is visible from inside the sphere. Adjust only if needed to preserve these exact behaviors."
+          "description": "Add `dithering: true` to the existing `<Canvas gl={{ ... }} />` object literal while leaving the current `antialias`, `powerPreference`, and `alpha` settings and all other code unchanged."
         }
       ]
     }

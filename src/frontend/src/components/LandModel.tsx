@@ -34,12 +34,12 @@ export default function LandModel({ modelUrl }: LandModelProps) {
   useEffect(() => {
     if (!gltf || !gltf.scene || isInitialized.current) return;
 
-    console.log('[LandModel] Processing model:', modelUrl);
+    console.log('[LandModel] Processing model with native PBR emissive workflow:', modelUrl);
 
     // SAFETY: Call updateMatrixWorld BEFORE Box3 calculation
     gltf.scene.updateMatrixWorld();
 
-    // V.10.1.PBR Material Logic with UNIQUE emissive baseline preservation
+    // Native PBR Emissive Material Logic
     if (gltf.scene?.isObject3D) {
       gltf.scene.traverse((obj: any) => {
         if (obj.isMesh && obj.material) {
@@ -52,48 +52,24 @@ export default function LandModel({ modelUrl }: LandModelProps) {
             // Enable dithering for all land meshes
             m.dithering = true;
 
-            // Determine biome-specific emissive intensity FIRST
-            const name = (obj.name || '').toUpperCase();
-            let baselineIntensity = 0.0;
-
-            // SNOW_PEAK gets the brightest glow
-            if (name.includes('SNOW_PEAK')) {
-              baselineIntensity = 2.0;
-            }
-            // MYTHIC biomes get strong glow
-            else if (name.includes('MYTHIC_VOID') || name.includes('MYTHIC_AETHER')) {
-              baselineIntensity = 1.8;
-            }
-            // VOLCANIC_CRAG gets intense glow
-            else if (name.includes('VOLCANIC_CRAG')) {
-              baselineIntensity = 1.6;
-            }
-            // FOREST_VALLEY gets moderate glow
-            else if (name.includes('FOREST_VALLEY')) {
-              baselineIntensity = 1.4;
-            }
-            // DESERT_DUNE and ISLAND_ARCHIPELAGO get subtle glow
-            else if (name.includes('DESERT_DUNE') || name.includes('ISLAND_ARCHIPELAGO')) {
-              baselineIntensity = 1.3;
-            }
-
-            // Apply emissive settings if this mesh should glow
-            if (baselineIntensity > 0.0) {
-              if (m.map) {
-                m.emissiveMap = m.map;
-              }
+            // CONDITIONAL EMISSIVE LOGIC - EMERGENCY FIX
+            if (obj.material.emissiveMap) {
+              // Model HAS an emissive map
+              m.emissiveMap = obj.material.emissiveMap;
               m.emissive = new THREE.Color(0xffffff);
-              
-              // CRITICAL: Set the intensity FIRST
-              m.emissiveIntensity = baselineIntensity;
-              
-              // THEN store it in userData for pulse scaling
-              m.userData.baseEmissive = baselineIntensity;
-              
-              console.log(`[LandModel] ${name} emissive baseline: ${baselineIntensity}`);
+              m.userData.baseEmissive = 2.0;
+            } else {
+              // Model HAS NO emissive map - DISABLE glow completely
+              m.emissive = new THREE.Color(0x000000);
+              m.userData.baseEmissive = 0.0;
             }
 
-            // Environment Intensity (Reflection Boost)
+            console.log(`[LandModel] Emissive applied: hasMap=${!!obj.material.emissiveMap}, baseEmissive=${m.userData.baseEmissive}`);
+
+            // Determine biome-specific environment settings
+            const name = (obj.name || '').toUpperCase();
+
+            // Environment Intensity (Reflection Boost) - PROTECTED, DO NOT MODIFY
             if (
               name.includes('MYTHIC_AETHER') ||
               name.includes('MYTHIC_VOID') ||
@@ -109,7 +85,7 @@ export default function LandModel({ modelUrl }: LandModelProps) {
             }
 
             // PBR Guard: Do NOT manually set roughness/metalness if roughnessMap exists
-            // Let textures drive the surface
+            // Let textures drive the surface - PROTECTED, DO NOT MODIFY
           });
         }
       });
@@ -134,17 +110,17 @@ export default function LandModel({ modelUrl }: LandModelProps) {
     }
 
     isInitialized.current = true;
-    console.log('[LandModel] V.10.1.PBR processing completed with unique emissive baselines and dithering');
+    console.log('[LandModel] Native PBR emissive processing completed');
   }, [gltf, camera, modelUrl]);
 
-  // Emissive pulse animation - scales each biome's UNIQUE baseline
+  // SYNCED PULSE IN useFrame - Subtle breathing effect
   useFrame((state) => {
     if (!group.current) return;
 
-    // Calculate a subtle synchronized pulse factor (all biomes breathe together)
-    const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+    // Calculate a subtle synchronized pulse factor (0.25 amplitude)
+    const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25;
 
-    // Traverse and scale each material's unique baseEmissive
+    // Traverse and apply pulse to all materials with baseEmissive
     group.current.traverse((obj: any) => {
       if (obj.isMesh && obj.material) {
         // Handle both single material and material arrays
@@ -152,7 +128,6 @@ export default function LandModel({ modelUrl }: LandModelProps) {
 
         materials.forEach((m: THREE.MeshStandardMaterial) => {
           if (m.userData?.baseEmissive !== undefined) {
-            // This correctly scales 2.0 for Snow, 1.3 for Plains, etc.
             m.emissiveIntensity = m.userData.baseEmissive * pulse;
           }
         });

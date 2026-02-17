@@ -1,40 +1,29 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-15T03:02:10.721Z",
+  "generatedAt": "2026-02-17T22:54:21.644Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In `frontend/src/components/CubeVisualization.tsx`, update the `BackgroundSphere` shader material to use the user-provided fragment shader code EXACTLY as written (verbatim), without modifying `gl_FragCoord` scaling, loop logic, comments, or any other shader logic.",
+        "summary": "Update `frontend/src/components/LandModel.tsx` emissive material logic so emissive glow is conditional: if a mesh/material has an `emissiveMap`, keep it and set emissive color to white with `m.userData.baseEmissive = 2.0`; otherwise disable emissive completely by setting emissive to black and `m.userData.baseEmissive = 0.0` (to prevent models without emissive maps from glowing white). Replace only the current emissive block in the material loop, keeping all other behavior unchanged.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/CubeVisualization.tsx"
+          "frontend/src/components/LandModel.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/CubeVisualization.tsx"
+          "frontend/src/components/LandModel.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "In `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere`, wire shader uniforms to match the fragment shader variable names: pass `time` (float) from `state.clock.elapsedTime` and `resolution` (vec2) from the React Three Fiber `size.width` and `size.height` values.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/CubeVisualization.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/CubeVisualization.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Ensure the fragment shader is applied to the existing background sphere mesh in `CubeVisualization.tsx` with `sphereGeometry` radius `300`, centered at `[0, 0, 0]`, and rendered from the inside by using `THREE.BackSide` or `THREE.DoubleSide` on the shader material.",
+        "summary": "In `frontend/src/components/CubeVisualization.tsx`, add `dithering: true` to the `<Canvas gl={{ ... }} />` configuration while keeping existing `gl` settings unchanged.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"
@@ -51,6 +40,7 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/components/CubeVisualization.tsx",
+    "frontend/src/components/LandModel.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

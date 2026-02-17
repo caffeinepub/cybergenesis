@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-update-the-backgroundsphere-shader-material-to-use-the-user-provided-fragment-shader-code-exactly-as-written-verbatim-without-modifying-gl-fragcoord-scaling-loop-logic-comments-or-any-other-shader-logic",
-      "featureTitle": "In `frontend/src/components/CubeVisualization.tsx`, update the `BackgroundSphere` shader material to use the user-provided fragment shader code EXACTLY as written (verbatim), without modifying `gl_FragCoord` scaling, loop logic, comments, or any other shader logic.",
+      "featureId": "feature-update-frontend-src-components-landmodel-tsx-emissive-material-logic-so-emissive-glow-is-conditional-if-a-mesh-material-has-an-emissivemap-keep-it-and-set-emissive-color-to-white-with-m-userdata-baseemissive-2-0-otherwise-disable-emissive-completely-by-setting-emissive-to-black-and-m-userdata-baseemissive-0-0-to-prevent-models-without-emissive-maps-from-glowing-white-replace-only-the-current-emissive-block-in-the-material-loop-keeping-all-other-behavior-unchanged",
+      "featureTitle": "Update `frontend/src/components/LandModel.tsx` emissive material logic so emissive glow is conditional: if a mesh/material has an `emissiveMap`, keep it and set emissive color to white with `m.userData.baseEmissive = 2.0`; otherwise disable emissive completely by setting emissive to black and `m.userData.baseEmissive = 0.0` (to prevent models without emissive maps from glowing white). Replace only the current emissive block in the material loop, keeping all other behavior unchanged.",
       "files": [
-        "frontend/src/components/CubeVisualization.tsx"
+        "frontend/src/components/LandModel.tsx"
       ],
       "components": [
         "authorization@1.0.1",
@@ -23,8 +23,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-backgroundsphere-wire-shader-uniforms-to-match-the-fragment-shader-variable-names-pass-time-float-from-state-clock-elapsedtime-and-resolution-vec2-from-the-react-three-fiber-size-width-and-size-height-values",
-      "featureTitle": "In `frontend/src/components/CubeVisualization.tsx` `BackgroundSphere`, wire shader uniforms to match the fragment shader variable names: pass `time` (float) from `state.clock.elapsedTime` and `resolution` (vec2) from the React Three Fiber `size.width` and `size.height` values.",
+      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-add-dithering-true-to-the-canvas-gl-configuration-while-keeping-existing-gl-settings-unchanged",
+      "featureTitle": "In `frontend/src/components/CubeVisualization.tsx`, add `dithering: true` to the `<Canvas gl={{ ... }} />` configuration while keeping existing `gl` settings unchanged.",
       "files": [
         "frontend/src/components/CubeVisualization.tsx"
       ],
@@ -40,27 +40,6 @@
       ],
       "testIds": [
         "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-the-fragment-shader-is-applied-to-the-existing-background-sphere-mesh-in-cubevisualization-tsx-with-spheregeometry-radius-300-centered-at-0-0-0-and-rendered-from-the-inside-by-using-three-backside-or-three-doubleside-on-the-shader-material",
-      "featureTitle": "Ensure the fragment shader is applied to the existing background sphere mesh in `CubeVisualization.tsx` with `sphereGeometry` radius `300`, centered at `[0, 0, 0]`, and rendered from the inside by using `THREE.BackSide` or `THREE.DoubleSide` on the shader material.",
-      "files": [
-        "frontend/src/components/CubeVisualization.tsx"
-      ],
-      "components": [
-        "authorization@1.0.1",
-        "http-outcalls@1.1.1",
-        "blob-storage@2.0.3",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
       ],
       "confidence": "high"
     }
