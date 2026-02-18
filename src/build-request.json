@@ -1,136 +1,58 @@
 {
   "kind": "build_request",
-  "title": "Apply global dithering, tone mapping, lighting, bloom, and emissive calibration",
-  "projectName": "CyberGenesis PBR Emissive",
+  "title": "Enable dithering in Canvas and remove blocking comment",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In `frontend/src/components/CubeVisualization.tsx`, update the `<Canvas gl={{ ... }} />` configuration to include `dithering: true` inside the existing `gl` object, without changing any other `gl` properties or the surrounding JSX structure.",
+      "text": "In frontend/src/components/CubeVisualization.tsx, remove the comment in lines 323-325 that mentions 'dithering на уровне материалов — правильно' which is blocking dithering changes in the Canvas gl block",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-12",
+          "msg-14"
         ],
         "quotes": [
-          "Canvas Renderer Update: * gl block (lines 309-313): Add `dithering: true` inside the `gl={{ ... }}` property.",
-          "IMPORTANT: Ignore the outdated comment on line 323 regarding material-level dithering. We need global `gl.dithering = true` to fix background banding."
+          "этот комментарий в строчках 323-325 тебе мешает применить в сборке введение этой строчки dithering true в канвас gl",
+          "Remove the old comment on line 323-325 to avoid future confusion"
         ]
       },
       "acceptanceCriteria": [
-        "`frontend/src/components/CubeVisualization.tsx` contains `dithering: true` within the `Canvas` `gl={{ ... }}` prop alongside the existing `antialias`, `powerPreference`, and `alpha` entries.",
-        "No other `Canvas` props, object keys, or code structure are changed beyond inserting `dithering: true`."
+        "Lines 323-325 in CubeVisualization.tsx no longer contain the blocking comment about dithering"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In `frontend/src/components/CubeVisualization.tsx` within `onCreated`, set `gl.toneMappingExposure = 0.85;` and do not change any other `onCreated` logic or assignments.",
+      "text": "In frontend/src/components/CubeVisualization.tsx, add 'dithering: true' to the gl prop object of the Canvas component (around line 310), ensuring the gl object includes: antialias: true, powerPreference: 'high-performance', alpha: false, and dithering: true",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-14",
+          "msg-15"
         ],
         "quotes": [
-          "Tone Mapping (in `onCreated`): Update `gl.toneMappingExposure = 0.85;`"
+          "Inside the gl={{ ... }} prop, add: dithering: true",
+          "gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, dithering: true }}"
         ]
       },
       "acceptanceCriteria": [
-        "`gl.toneMappingExposure` is set to `0.85` in `onCreated` in `frontend/src/components/CubeVisualization.tsx`."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "In `frontend/src/components/CubeVisualization.tsx`, update lighting numeric values only: set `KeyLightSync` `intensity={Math.PI * 2.0}` and set the scene `hemisphereLight` `intensity={1.2}`. Do not change any other lighting properties, names, or component structure.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Lighting Update: * KeyLight (in `KeyLightSync`): Set `intensity={Math.PI * 2.0}`",
-          "* hemisphereLight: Set `intensity={1.2}`"
-        ]
-      },
-      "acceptanceCriteria": [
-        "`KeyLightSync` uses `intensity={Math.PI * 2.0}` (and no other changes to that light component).",
-        "The `hemisphereLight` in `CubeVisualization.tsx` uses `intensity={1.2}` (and no other changes to that light component)."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "In `frontend/src/components/CubeVisualization.tsx`, update UnrealBloomPass calibration values (numeric values only): set `threshold` to `1.5` and set `luminanceSmoothing` (when supported) to `0.1`, without changing the postprocessing pipeline logic or structure.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Bloom Update (in `UnrealBloomPass`): * threshold: Set to `1.5` * luminanceSmoothing: Set to `0.1`"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The `UnrealBloomPass` constructor uses `threshold` value `1.5`.",
-        "When the bloom pass supports `luminanceSmoothing`, it is assigned the value `0.1`.",
-        "No other bloom composer setup logic (passes added, cleanup, render loop, resize logic) is changed beyond these numeric value updates."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "In `frontend/src/components/LandModel.tsx`, inside the existing `if (obj.material.emissiveMap)` block, change `m.userData.baseEmissive` from `2.0` to `2.2` and do not change any other logic or values.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "File: `LandModel.tsx` Emissive Intensity Update: * **m.userData.baseEmissive:** Update the value from `2.0` to `2.2` (inside the emissiveMap check block)."
-        ]
-      },
-      "acceptanceCriteria": [
-        "When `obj.material.emissiveMap` is truthy, `m.userData.baseEmissive` is set to `2.2` in `frontend/src/components/LandModel.tsx`.",
-        "The `else` branch value `m.userData.baseEmissive = 0.0` remains unchanged."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Ensure the final build artifact includes all calibration changes (REQ-1 through REQ-5) without any automated reverts removing `dithering: true` from the `Canvas gl={{ ... }}` block in `frontend/src/components/CubeVisualization.tsx`.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Build",
-          "the change has repeatedly not appeared in final builds despite being shown during execution; investigate build/revert process or auto-rewrite behavior that drops this line."
-        ]
-      },
-      "acceptanceCriteria": [
-        "After implementation, `frontend/src/components/CubeVisualization.tsx` still contains `dithering: true` in the `Canvas` `gl` object (i.e., the line is present in the committed/built output, not only during intermediate steps)."
+        "The Canvas component's gl prop includes dithering: true",
+        "All other existing gl properties (antialias, powerPreference, alpha) are preserved",
+        "Dithering is enabled in the 3D rendering context"
       ]
     }
   ],
   "constraints": [
-    "Use English for any user-facing text.",
-    "Only update the specific numerical values and the single `dithering: true` insertion described in the instructions; do not change any other logic, property names, or code structure in the affected files.",
-    "Do not modify files under `frontend/src/components/ui` or other immutable paths listed in SYSTEM_CONTEXT."
+    "Do not modify any other properties in the Canvas gl configuration beyond adding dithering",
+    "Preserve all existing 3D rendering architecture and material-level settings"
   ],
   "nonGoals": [
-    "Do not change any other renderer settings beyond adding `dithering: true` and updating `toneMappingExposure`.",
-    "Do not refactor the postprocessing pipeline (EffectComposer/RenderPass/UnrealBloomPass lifecycle, render loop, cleanup).",
-    "Do not change model loading, camera fitting, texture, or environment-intensity logic in `LandModel.tsx` beyond the `baseEmissive` numeric update."
+    "Changing dithering implementation at the material level",
+    "Modifying shader code or postprocessing effects",
+    "Altering any other Canvas configuration properties"
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

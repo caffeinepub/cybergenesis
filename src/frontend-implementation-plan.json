@@ -1,94 +1,35 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Global renderer dithering + calibrated tone mapping, lighting, bloom, and emissive tuning",
+  "title": "Enable dithering in Canvas and remove blocking comment",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Enable global renderer dithering on the R3F Canvas via the existing gl={{...}} configuration.",
+      "summary": "Remove blocking comment about dithering from CubeVisualization.tsx",
       "acceptanceCriteria": [
-        "`frontend/src/components/CubeVisualization.tsx` contains `dithering: true` within the `Canvas` `gl={{ ... }}` prop alongside the existing `antialias`, `powerPreference`, and `alpha` entries.",
-        "No other `Canvas` props, object keys, or code structure are changed beyond inserting `dithering: true`."
+        "Lines 323-325 in CubeVisualization.tsx no longer contain the blocking comment about dithering"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Insert `dithering: true` into the existing `<Canvas gl={{ ... }} />` object (keeping all existing keys and JSX structure unchanged)."
+          "description": "Remove the comment on lines 323-325 that mentions 'dithering на уровне материалов — правильно' which is blocking the addition of dithering to the Canvas gl configuration. This comment is preventing the dithering configuration from being applied to the Canvas component."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Set tone mapping exposure to 0.85 in the existing Canvas onCreated hook.",
+      "summary": "Add dithering property to Canvas gl configuration",
       "acceptanceCriteria": [
-        "`gl.toneMappingExposure` is set to `0.85` in `onCreated` in `frontend/src/components/CubeVisualization.tsx`."
+        "The Canvas component's gl prop includes dithering: true",
+        "All other existing gl properties (antialias, powerPreference, alpha) are preserved",
+        "Dithering is enabled in the 3D rendering context"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Within the existing `onCreated` callback, change only the `gl.toneMappingExposure` assignment value to `0.85` without altering any other onCreated logic or assignments."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Calibrate scene lighting intensities for key and hemisphere lights (numeric-only changes).",
-      "acceptanceCriteria": [
-        "`KeyLightSync` uses `intensity={Math.PI * 2.0}` (and no other changes to that light component).",
-        "The `hemisphereLight` in `CubeVisualization.tsx` uses `intensity={1.2}` (and no other changes to that light component)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/CubeVisualization.tsx",
-          "operation": "modify",
-          "description": "Update lighting numeric values only: set `KeyLightSync` directional light intensity to `Math.PI * 2.0` and set the scene `hemisphereLight` intensity to `1.2`, without changing any other lighting props, names, or structure."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Recalibrate UnrealBloomPass threshold and luminance smoothing (numeric-only changes) without altering the postprocessing pipeline structure.",
-      "acceptanceCriteria": [
-        "The `UnrealBloomPass` constructor uses `threshold` value `1.5`.",
-        "When the bloom pass supports `luminanceSmoothing`, it is assigned the value `0.1`.",
-        "No other bloom composer setup logic (passes added, cleanup, render loop, resize logic) is changed beyond these numeric value updates."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/CubeVisualization.tsx",
-          "operation": "modify",
-          "description": "In the existing `BloomEffect` setup, change only UnrealBloomPass calibration numbers: set constructor threshold argument to `1.5`, and in the existing feature-detection block set `luminanceSmoothing` to `0.1` when supported; do not change any other composer/passes lifecycle, logic, or structure."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Increase base emissive calibration for materials with emissive maps (numeric-only change).",
-      "acceptanceCriteria": [
-        "When `obj.material.emissiveMap` is truthy, `m.userData.baseEmissive` is set to `2.2` in `frontend/src/components/LandModel.tsx`.",
-        "The `else` branch value `m.userData.baseEmissive = 0.0` remains unchanged."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/LandModel.tsx",
-          "operation": "modify",
-          "description": "Inside the existing `if (obj.material.emissiveMap)` block, change only `m.userData.baseEmissive` from `2.0` to `2.2`, leaving all other logic and the `else` branch value (`0.0`) unchanged."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Ensure dithering and all calibration edits persist into the final build output without being auto-reverted.",
-      "acceptanceCriteria": [
-        "After implementation, `frontend/src/components/CubeVisualization.tsx` still contains `dithering: true` in the `Canvas` `gl` object (i.e., the line is present in the committed/built output, not only during intermediate steps)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/CubeVisualization.tsx",
-          "operation": "modify",
-          "description": "Ensure the committed state includes the `dithering: true` line inside the `<Canvas gl={{ ... }} />` object and that it remains present after running the normal frontend build process (no code changes beyond the REQ-1–REQ-4 specified edits)."
+          "description": "Add 'dithering: true' to the gl prop object of the Canvas component (around line 310). Ensure the gl object includes all existing properties (antialias: true, powerPreference: 'high-performance', alpha: false) plus the new dithering: true property. This enables dithering at the WebGL context level for improved color gradation in the 3D scene."
         }
       ]
     }

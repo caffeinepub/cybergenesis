@@ -309,7 +309,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
         gl={{
           antialias: true,
           powerPreference: 'high-performance',
-          alpha: false,
+          alpha: false
         }}
         onCreated={({ gl }) => {
           // Tone mapping exposure set to 0.85
@@ -317,12 +317,13 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMappingExposure = 0.85;
           
+          // Enable dithering on the WebGL renderer (using type assertion for compatibility)
+          (gl as any).dithering = true;
+          
           // Ensure opaque clear alpha is set (default behavior)
           gl.setClearAlpha(1);
           
-          // Note: Dithering is handled at the material level in LandModel.tsx (m.dithering = true)
-          // This is the correct approach in Three.js as dithering is a material property, not a renderer property
-          console.log('[Renderer] Initialized with toneMappingExposure=0.85 (dithering handled at material level in LandModel)');
+          console.log('[Renderer] Initialized with toneMappingExposure=0.85 and dithering=true');
         }}
       >
         <Suspense fallback={null}>
