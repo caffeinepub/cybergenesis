@@ -1,10 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Fix unintended emissive glow on models without emissive maps and enable dithering in the Cube visualization canvas.
+**Goal:** Calibrate global renderer dithering, tone mapping exposure, lighting intensities, bloom settings, and emissive baseline to reduce banding and improve PBR emissive look.
 
 **Planned changes:**
-- Update `frontend/src/components/LandModel.tsx` material emissive handling so emissive glow is conditional: use the emissive map + white emissive (with `m.userData.baseEmissive = 2.0`) when present, otherwise set emissive to black and `m.userData.baseEmissive = 0.0`.
-- Update `frontend/src/components/CubeVisualization.tsx` to add `dithering: true` to the `<Canvas gl={{ ... }} />` configuration without changing existing `gl` settings.
+- Add `dithering: true` to the existing `<Canvas gl={{ ... }} />` configuration in `frontend/src/components/CubeVisualization.tsx` without altering other `gl` properties or JSX structure.
+- In `CubeVisualization.tsx` `onCreated`, set `gl.toneMappingExposure = 0.85` without changing other initialization logic.
+- In `CubeVisualization.tsx`, update lighting numeric values only: `KeyLightSync` intensity to `Math.PI * 2.0` and `hemisphereLight` intensity to `1.2`.
+- In `CubeVisualization.tsx`, update UnrealBloomPass calibration numeric values only: `threshold` to `1.5` and, when supported, `luminanceSmoothing` to `0.1`, without changing the postprocessing pipeline structure.
+- In `frontend/src/components/LandModel.tsx`, within the existing `if (obj.material.emissiveMap)` block, change `m.userData.baseEmissive` from `2.0` to `2.2` without altering other logic.
+- Ensure the final build output retains the `dithering: true` line in the committed/built `CubeVisualization.tsx` (no build/rewrite removing it).
 
-**User-visible outcome:** Models without emissive maps no longer glow white or pulse emissively, while models with emissive maps retain their intended glow; Cube visualization renders with dithering enabled.
+**User-visible outcome:** The scene renders with reduced background banding (global dithering), adjusted exposure, tuned lighting and bloom behavior, and slightly stronger emissive response on land materials, with these calibrations reliably present in the final build.

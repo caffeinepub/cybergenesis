@@ -38,7 +38,7 @@ function KeyLightSync() {
     <directionalLight
       ref={keyLight}
       name="KeyLight"
-      intensity={Math.PI * 2.2}
+      intensity={Math.PI * 2.0}
       color="#ffffff"
     />
   );
@@ -193,21 +193,21 @@ function BloomEffect() {
     renderPassRef.current = renderPass;
     composer.addPass(renderPass);
 
-    // Bloom configuration: threshold=1.1 (preserved as requested)
+    // Bloom configuration: threshold=1.5, luminanceSmoothing=0.1
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2),
       0.45, // intensity
       0.65, // radius
-      1.1   // threshold (preserved)
+      1.5   // threshold
     );
     bloomPassRef.current = bloomPass;
     
     // Set luminanceSmoothing if supported (feature detection)
     if ('luminanceSmoothing' in bloomPass) {
-      (bloomPass as any).luminanceSmoothing = 0.4;
-      console.log('[Full FBM Bloom] UnrealBloomPass initialized: threshold=1.1, intensity=0.45, radius=0.65, luminanceSmoothing=0.4');
+      (bloomPass as any).luminanceSmoothing = 0.1;
+      console.log('[Bloom] UnrealBloomPass initialized: threshold=1.5, intensity=0.45, radius=0.65, luminanceSmoothing=0.1');
     } else {
-      console.log('[Full FBM Bloom] UnrealBloomPass initialized: threshold=1.1, intensity=0.45, radius=0.65');
+      console.log('[Bloom] UnrealBloomPass initialized: threshold=1.5, intensity=0.45, radius=0.65');
     }
     
     composer.addPass(bloomPass);
@@ -226,7 +226,7 @@ function BloomEffect() {
         composerRef.current.dispose();
         composerRef.current = null;
       }
-      console.log('[Full FBM Bloom] Composer disposed');
+      console.log('[Bloom] Composer disposed');
     };
   }, [gl, scene, camera, size.width, size.height]);
 
@@ -312,17 +312,17 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           alpha: false,
         }}
         onCreated={({ gl }) => {
-          // Tone mapping exposure set to 0.6 (preserved as requested)
+          // Tone mapping exposure set to 0.85
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.toneMappingExposure = 0.6;
+          gl.toneMappingExposure = 0.85;
           
           // Ensure opaque clear alpha is set (default behavior)
           gl.setClearAlpha(1);
           
           // Note: Dithering is handled at the material level in LandModel.tsx (m.dithering = true)
           // This is the correct approach in Three.js as dithering is a material property, not a renderer property
-          console.log('[Full FBM] Renderer initialized with toneMappingExposure=0.6 (dithering handled at material level in LandModel)');
+          console.log('[Renderer] Initialized with toneMappingExposure=0.85 (dithering handled at material level in LandModel)');
         }}
       >
         <Suspense fallback={null}>
@@ -334,10 +334,10 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           
           <LandModel modelUrl={modelUrl} />
           
-          {/* V.10.1.PBR Lighting Configuration */}
+          {/* Calibrated Lighting Configuration */}
           <Environment preset="sunset" environmentIntensity={1.0} />
           <hemisphereLight 
-            intensity={1.05} 
+            intensity={1.2} 
             color="#f7f7f7" 
             groundColor="#3a3a3a" 
           />
@@ -351,7 +351,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           
           <OrbitControls makeDefault />
           
-          {/* Native UnrealBloomPass with threshold=1.1 preserved */}
+          {/* Native UnrealBloomPass with threshold=1.5, luminanceSmoothing=0.1 */}
           <BloomEffect />
         </Suspense>
       </Canvas>

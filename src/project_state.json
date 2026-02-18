@@ -1,28 +1,60 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
+  "summary": "Project involves calibrating global lighting & bloom rendering in a Three.js/React Three Fiber scene, including enforcing Canvas renderer dithering and adjusting tone mapping exposure and numeric lighting/bloom/emissive values.",
   "architectural_notes": [
-    "Limit changes strictly to the specified prompt items (LandModel.tsx emissive conditional + CubeVisualization.tsx dithering)"
+    "Override existing material-level dithering guidance and enforce renderer-level Canvas gl.dithering=true to address background banding; restrict changes to specified numerical/value edits only."
   ],
   "known_issues": [
-    "\"Blindness\" bug: models without emissive maps glow white due to non-conditional emissive logic"
+    "Canvas gl.dithering=true change has repeatedly not appeared in final builds despite being shown during execution; investigate build/revert process or auto-rewrite behavior that drops this line."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-frontend-src-components-landmodel-tsx-emissive-material-logic-so-emissive-glow-is-conditional-if-a-mesh-material-has-an-emissivemap-keep-it-and-set-emissive-color-to-white-with-m-userdata-baseemissive-2-0-otherwise-disable-emissive-completely-by-setting-emissive-to-black-and-m-userdata-baseemissive-0-0-to-prevent-models-without-emissive-maps-from-glowing-white-replace-only-the-current-emissive-block-in-the-material-loop-keeping-all-other-behavior-unchanged",
-      "title": "Update `frontend/src/components/LandModel.tsx` emissive material logic so emissive glow is conditional: if a mesh/material has an `emissiveMap`, keep it and set emissive color to white with `m.userData.baseEmissive = 2.0`; otherwise disable emissive completely by setting emissive to black and `m.userData.baseEmissive = 0.0` (to prevent models without emissive maps from glowing white). Replace only the current emissive block in the material loop, keeping all other behavior unchanged.",
+      "id": "feature-in-frontend-src-components-cubevisualization-tsx-update-the-canvas-gl-configuration-to-include-dithering-true-inside-the-existing-gl-object-without-changing-any-other-gl-properties-or-the-surrounding-jsx-structure",
+      "title": "In `frontend/src/components/CubeVisualization.tsx`, update the `<Canvas gl={{ ... }} />` configuration to include `dithering: true` inside the existing `gl` object, without changing any other `gl` properties or the surrounding JSX structure.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-in-frontend-src-components-cubevisualization-tsx-add-dithering-true-to-the-canvas-gl-configuration-while-keeping-existing-gl-settings-unchanged",
-      "title": "In `frontend/src/components/CubeVisualization.tsx`, add `dithering: true` to the `<Canvas gl={{ ... }} />` configuration while keeping existing `gl` settings unchanged.",
+      "id": "feature-in-frontend-src-components-cubevisualization-tsx-within-oncreated-set-gl-tonemappingexposure-0-85-and-do-not-change-any-other-oncreated-logic-or-assignments",
+      "title": "In `frontend/src/components/CubeVisualization.tsx` within `onCreated`, set `gl.toneMappingExposure = 0.85;` and do not change any other `onCreated` logic or assignments.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-components-cubevisualization-tsx-update-lighting-numeric-values-only-set-keylightsync-intensity-math-pi-2-0-and-set-the-scene-hemispherelight-intensity-1-2-do-not-change-any-other-lighting-properties-names-or-component-structure",
+      "title": "In `frontend/src/components/CubeVisualization.tsx`, update lighting numeric values only: set `KeyLightSync` `intensity={Math.PI * 2.0}` and set the scene `hemisphereLight` `intensity={1.2}`. Do not change any other lighting properties, names, or component structure.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-components-cubevisualization-tsx-update-unrealbloompass-calibration-values-numeric-values-only-set-threshold-to-1-5-and-set-luminancesmoothing-when-supported-to-0-1-without-changing-the-postprocessing-pipeline-logic-or-structure",
+      "title": "In `frontend/src/components/CubeVisualization.tsx`, update UnrealBloomPass calibration values (numeric values only): set `threshold` to `1.5` and set `luminanceSmoothing` (when supported) to `0.1`, without changing the postprocessing pipeline logic or structure.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-components-landmodel-tsx-inside-the-existing-if-obj-material-emissivemap-block-change-m-userdata-baseemissive-from-2-0-to-2-2-and-do-not-change-any-other-logic-or-values",
+      "title": "In `frontend/src/components/LandModel.tsx`, inside the existing `if (obj.material.emissiveMap)` block, change `m.userData.baseEmissive` from `2.0` to `2.2` and do not change any other logic or values.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-final-build-artifact-includes-all-calibration-changes-req-1-through-req-5-without-any-automated-reverts-removing-dithering-true-from-the-canvas-gl-block-in-frontend-src-components-cubevisualization-tsx",
+      "title": "Ensure the final build artifact includes all calibration changes (REQ-1 through REQ-5) without any automated reverts removing `dithering: true` from the `Canvas gl={{ ... }}` block in `frontend/src/components/CubeVisualization.tsx`.",
+      "reqIds": [
+        "REQ-6"
       ],
       "version": 1
     }
@@ -30,15 +62,9 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Emergency fix: in LandModel.tsx, disable emissive glow when mesh has no emissiveMap (set emissive black and baseEmissive 0); otherwise keep emissiveMap with emissive white and baseEmissive 2.0",
+      "summary": "Apply GLOBAL LIGHTING & BLOOM CALIBRATION updates: add Canvas gl.dithering=true, set toneMappingExposure=0.85, adjust KeyLight/hemisphere intensities, update UnrealBloomPass threshold/smoothing, and raise LandModel baseEmissive to 2.2.",
       "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add `dithering: true` to <Canvas gl={{...}} /> in CubeVisualization.tsx",
-      "reqIds": [],
-      "status": "pending"
+      "status": "in_progress"
     }
   ],
   "projectName": "CyberGenesis PBR Emissive",

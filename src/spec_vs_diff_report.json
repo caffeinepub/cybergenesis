@@ -1,45 +1,60 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T22:54:21.641Z",
-  "summary": "REQ-1 appears partially implemented (conditional emissive logic added), but the condition checks `obj.material.emissiveMap` rather than each iterated material `m.emissiveMap`, which may break correctness for multi-material meshes. REQ-2 is not evidenced in the diff (no visible `dithering: true` added to the Canvas `gl` config). Additionally, changes were made to extra files not requested, violating the constraint to only edit the two specified components.",
+  "generatedAt": "2026-02-18T14:08:29.373Z",
+  "summary": "Diff evidence confirms REQ-5 (LandModel baseEmissive=2.2 when emissiveMap exists) and partially confirms REQ-3 (KeyLightSync intensity updated). The diff does not provide evidence for the required Canvas-level `dithering: true`, toneMappingExposure change, hemisphereLight intensity change, or UnrealBloomPass threshold/luminanceSmoothing updates. Additionally, LandModel introduces material-level dithering, which was not requested and violates the stated constraint to only change the baseEmissive numeric value in that file.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Conditional emissive logic must be based on whether each mesh/material has an `emissiveMap` (per-material), keeping emissiveMap when present and disabling emissive when absent, while replacing only the existing emissive block and keeping all other behavior unchanged.",
-      "reason": "The diff shows the conditional check uses `obj.material.emissiveMap` (the mesh's original material reference) inside a loop over `materials.forEach((m) => ...)`, which can be incorrect when `obj.material` is an array or when per-material emissiveMap differs. This does not clearly satisfy the requirement 'if a mesh/material has an emissiveMap'.",
+      "requirement": "In `frontend/src/components/CubeVisualization.tsx`, update the `<Canvas gl={{ ... }} />` configuration to include `dithering: true` inside the existing `gl` object, without changing any other `gl` properties or the surrounding JSX structure.",
+      "reason": "The provided truncated `CubeVisualization.tsx` diff does not show the `<Canvas gl={{...}} />` block and contains no evidence that `dithering: true` was added to the renderer `gl` object.",
       "evidence": [
-        "frontend/src/components/LandModel.tsx: `materials.forEach((m: THREE.MeshStandardMaterial) => { ... if (obj.material.emissiveMap) { ... m.emissiveMap = obj.material.emissiveMap; ... } else { ... } }`"
+        "frontend/src/components/CubeVisualization.tsx (truncated)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Add `dithering: true` to the `<Canvas gl={{ ... }} />` config in `frontend/src/components/CubeVisualization.tsx` while keeping existing `gl` settings unchanged.",
-      "reason": "The provided truncated diff for `CubeVisualization.tsx` does not show any `<Canvas gl={{...}} />` configuration including `dithering: true`, and the file summary explicitly states dithering is handled at the material level while preserving existing Canvas gl settings (antialias, powerPreference, alpha), which suggests `gl.dithering` was not added.",
+      "requirement": "In `frontend/src/components/CubeVisualization.tsx` within `onCreated`, set `gl.toneMappingExposure = 0.85;` and do not change any other `onCreated` logic or assignments.",
+      "reason": "The truncated diff excerpt for `CubeVisualization.tsx` does not include the `onCreated` handler, so there is no direct evidence the assignment was made.",
       "evidence": [
-        "frontend/src/components/CubeVisualization.tsx (truncated): no visible `<Canvas gl={{ ... dithering: true ... }} />` block",
-        "frontend-file-summaries.txt: `...with dithering handled at the material level in LandModel.tsx ... while preserving all existing Canvas gl settings (antialias, powerPreference, alpha).`"
+        "frontend/src/components/CubeVisualization.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "In `frontend/src/components/CubeVisualization.tsx`, set the scene `hemisphereLight` `intensity={1.2}` without changing any other lighting properties or structure.",
+      "reason": "While `KeyLightSync` intensity is shown as updated, the truncated diff does not include any `hemisphereLight` JSX, so the hemisphere intensity change cannot be verified.",
+      "evidence": [
+        "frontend/src/components/CubeVisualization.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "In `frontend/src/components/CubeVisualization.tsx`, update UnrealBloomPass calibration values: `threshold` to `1.5` and `luminanceSmoothing` (when supported) to `0.1`, without changing pipeline logic/structure.",
+      "reason": "The truncated diff does not show the UnrealBloomPass instantiation or any `threshold`/`luminanceSmoothing` assignments, so the numeric updates cannot be confirmed from the provided evidence.",
+      "evidence": [
+        "frontend/src/components/CubeVisualization.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Ensure the final build artifact includes all calibration changes (REQ-1 through REQ-5) without reverts removing `dithering: true` from the Canvas `gl` block in `CubeVisualization.tsx`.",
+      "reason": "Because the diff excerpt does not show the Canvas `gl` block and there is no evidence `dithering: true` was added there, this cannot be considered satisfied.",
+      "evidence": [
+        "frontend/src/components/CubeVisualization.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Extra, non-requested file modifications beyond the two allowed component edits (violates constraint to only change LandModel.tsx emissive block and CubeVisualization.tsx Canvas gl config).",
-      "reason": "Diff summary reports 4 modified files, including `frontend-file-summaries.txt` and `project_state.json`, neither of which are part of the requested two explicit code edits.",
+      "description": "Enabled material-level dithering for all land meshes (`m.dithering = true`) in `LandModel.tsx`.",
+      "reason": "BuildRequest only allowed changing `m.userData.baseEmissive` from 2.0 to 2.2 inside the existing `if (obj.material.emissiveMap)` block and explicitly said not to change other logic in `LandModel.tsx`. Adding/setting `m.dithering` is an additional renderer/material behavior change not requested.",
       "evidence": [
-        "Diff summary: `Modified: 4`",
-        "Modified files list includes `frontend-file-summaries.txt` and `project_state.json`"
-      ]
-    },
-    {
-      "description": "Additional console logging inside the emissive material loop.",
-      "reason": "REQ-1 requires replacing only the existing emissive block and otherwise keeping behavior unchanged; adding a new `console.log` changes runtime behavior/log output beyond the emissive settings themselves.",
-      "evidence": [
-        "frontend/src/components/LandModel.tsx: `console.log(`[LandModel] Emissive applied: ...`);`"
+        "frontend/src/components/LandModel.tsx (truncated): \"// Enable dithering for all land meshes\" and \"m.dithering = true;\""
       ]
     }
   ],
-  "confidence": 0.71,
+  "confidence": 0.68,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/components/CubeVisualization.tsx",

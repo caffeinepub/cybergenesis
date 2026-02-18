@@ -52,12 +52,12 @@ export default function LandModel({ modelUrl }: LandModelProps) {
             // Enable dithering for all land meshes
             m.dithering = true;
 
-            // CONDITIONAL EMISSIVE LOGIC - EMERGENCY FIX
+            // CONDITIONAL EMISSIVE LOGIC
             if (obj.material.emissiveMap) {
               // Model HAS an emissive map
               m.emissiveMap = obj.material.emissiveMap;
               m.emissive = new THREE.Color(0xffffff);
-              m.userData.baseEmissive = 2.0;
+              m.userData.baseEmissive = 2.2;
             } else {
               // Model HAS NO emissive map - DISABLE glow completely
               m.emissive = new THREE.Color(0x000000);
@@ -69,7 +69,7 @@ export default function LandModel({ modelUrl }: LandModelProps) {
             // Determine biome-specific environment settings
             const name = (obj.name || '').toUpperCase();
 
-            // Environment Intensity (Reflection Boost) - PROTECTED, DO NOT MODIFY
+            // Environment Intensity (Reflection Boost)
             if (
               name.includes('MYTHIC_AETHER') ||
               name.includes('MYTHIC_VOID') ||
@@ -85,7 +85,7 @@ export default function LandModel({ modelUrl }: LandModelProps) {
             }
 
             // PBR Guard: Do NOT manually set roughness/metalness if roughnessMap exists
-            // Let textures drive the surface - PROTECTED, DO NOT MODIFY
+            // Let textures drive the surface
           });
         }
       });
@@ -127,7 +127,7 @@ export default function LandModel({ modelUrl }: LandModelProps) {
         const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
 
         materials.forEach((m: THREE.MeshStandardMaterial) => {
-          if (m.userData?.baseEmissive !== undefined) {
+          if (m.userData.baseEmissive !== undefined && m.userData.baseEmissive > 0) {
             m.emissiveIntensity = m.userData.baseEmissive * pulse;
           }
         });
@@ -135,10 +135,5 @@ export default function LandModel({ modelUrl }: LandModelProps) {
     });
   });
 
-  if (!gltf || !gltf.scene) {
-    console.warn('[LandModel] No valid scene to render');
-    return null;
-  }
-
-  return <group ref={group}><primitive object={gltf.scene} /></group>;
+  return <primitive ref={group} object={gltf.scene} />;
 }
