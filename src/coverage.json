@@ -1,18 +1,18 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T22:55:38.138Z",
+  "generatedAt": "2026-02-19T01:21:40.984Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 5,
+    "implemented": 5,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In frontend/src/components/CubeVisualization.tsx, remove the comment in lines 323-325 that mentions 'dithering на уровне материалов — правильно' which is blocking dithering changes in the Canvas gl block",
+        "summary": "In CubeVisualization.tsx, remove line 320 (the comment about type assertion) and line 321 (the incorrect code `(gl as any).dithering = true`).",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"
@@ -23,7 +23,40 @@
       },
       {
         "id": "REQ-2",
-        "summary": "In frontend/src/components/CubeVisualization.tsx, add 'dithering: true' to the gl prop object of the Canvas component (around line 310), ensuring the gl object includes: antialias: true, powerPreference: 'high-performance', alpha: false, and dithering: true",
+        "summary": "In CubeVisualization.tsx, add `dithering: true` to the Canvas component's `gl` prop object (alongside antialias, powerPreference, and alpha properties), approximately at line 310.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/CubeVisualization.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/CubeVisualization.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "In LandModel.tsx, update the envMap intensity logic for the 5 main biomes from 2.0 to 1.5. Keep VOLCANIC_CRAG at 1.3 and the default (else) at 1.0. Do not change the code structure, only the numerical values.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LandModel.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LandModel.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "In LandModel.tsx, set the base emissive intensity to 3.2 and update the useFrame pulse logic to: `const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15;` and apply it as: `material.emissiveIntensity = 3.2 * pulse;`",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LandModel.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LandModel.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "In CubeVisualization.tsx, update the Bloom post-processing configuration to: threshold: 2.1, luminanceSmoothing: 0.5, intensity: 0.32, radius: 0.7. Change only these numerical values without altering the code structure.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"
@@ -36,11 +69,11 @@
   },
   "changedFiles": [
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/components/CubeVisualization.tsx",
+    "frontend/src/components/LandModel.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

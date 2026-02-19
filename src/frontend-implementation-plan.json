@@ -1,35 +1,86 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Enable dithering in Canvas and remove blocking comment",
+  "title": "Surgical calibration: Fix Canvas dithering placement and adjust lighting/Bloom parameters",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Remove blocking comment about dithering from CubeVisualization.tsx",
+      "summary": "Remove incorrect dithering code from CubeVisualization.tsx",
       "acceptanceCriteria": [
-        "Lines 323-325 in CubeVisualization.tsx no longer contain the blocking comment about dithering"
+        "Line 320 (type assertion comment) is removed from CubeVisualization.tsx",
+        "Line 321 (`(gl as any).dithering = true`) is removed from CubeVisualization.tsx"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Remove the comment on lines 323-325 that mentions 'dithering на уровне материалов — правильно' which is blocking the addition of dithering to the Canvas gl configuration. This comment is preventing the dithering configuration from being applied to the Canvas component."
+          "description": "Delete line 320 (the comment about type assertion) and line 321 (the code `(gl as any).dithering = true`) from the onCreated callback or wherever they currently exist in the file. These lines are incorrect and must be removed to prepare for the proper dithering configuration."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add dithering property to Canvas gl configuration",
+      "summary": "Add dithering property to Canvas gl prop in CubeVisualization.tsx",
       "acceptanceCriteria": [
-        "The Canvas component's gl prop includes dithering: true",
-        "All other existing gl properties (antialias, powerPreference, alpha) are preserved",
-        "Dithering is enabled in the 3D rendering context"
+        "Canvas component's gl prop includes `dithering: true`",
+        "The dithering property is placed within the gl object, not in onCreated callback"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Add 'dithering: true' to the gl prop object of the Canvas component (around line 310). Ensure the gl object includes all existing properties (antialias: true, powerPreference: 'high-performance', alpha: false) plus the new dithering: true property. This enables dithering at the WebGL context level for improved color gradation in the 3D scene."
+          "description": "Add `dithering: true` to the Canvas component's `gl` prop object (approximately at line 310). The gl prop should include: `gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, dithering: true }}`. This correctly configures dithering at the WebGL context initialization level."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Update envMap intensity values for main biomes in LandModel.tsx",
+      "acceptanceCriteria": [
+        "Five main biome envMap intensity values changed from 2.0 to 1.5",
+        "VOLCANIC_CRAG remains at 1.3",
+        "Default (else) case remains at 1.0"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/LandModel.tsx",
+          "operation": "modify",
+          "description": "In the envMap intensity logic section, change the intensity value for the 5 main biomes from 2.0 to 1.5. Do not change the code structure or biome names—only update the numerical value from 2.0 to 1.5 where it appears for the main biomes. Keep VOLCANIC_CRAG at 1.3 and the default (else) case at 1.0."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Adjust emissive intensity base value and pulse logic in LandModel.tsx",
+      "acceptanceCriteria": [
+        "Base emissive intensity is set to 3.2",
+        "Pulse calculation uses Math.sin(state.clock.elapsedTime * 0.8) * 0.15",
+        "Pulse range is 1.0 +/- 0.15",
+        "Final emissiveIntensity is calculated as 3.2 * pulse"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/LandModel.tsx",
+          "operation": "modify",
+          "description": "Set the base emissive intensity to 3.2. In the useFrame hook, update the pulse calculation to: `const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15;`. Then apply the emissive intensity as: `material.emissiveIntensity = 3.2 * pulse;`. This adjusts the pulsing glow effect for land models."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Update Bloom post-processing parameters in CubeVisualization.tsx",
+      "acceptanceCriteria": [
+        "Bloom threshold set to 2.1",
+        "Bloom luminanceSmoothing set to 0.5",
+        "Bloom intensity set to 0.32",
+        "Bloom radius set to 0.7",
+        "No structural changes to the Bloom configuration code"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/CubeVisualization.tsx",
+          "operation": "modify",
+          "description": "Update the Bloom post-processing configuration numerical values: set threshold to 2.1, luminanceSmoothing to 0.5, intensity to 0.32, and radius to 0.7. Do not change the code structure—only update these four numerical values in the Bloom component props. This calibrates the bloom effect to work with the new emissive intensity settings."
         }
       ]
     }

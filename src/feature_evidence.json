@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-remove-the-comment-in-lines-323-325-that-mentions-dithering-which-is-blocking-dithering-changes-in-the-canvas-gl-block",
-      "featureTitle": "In frontend/src/components/CubeVisualization.tsx, remove the comment in lines 323-325 that mentions 'dithering на уровне материалов — правильно' which is blocking dithering changes in the Canvas gl block",
+      "featureId": "feature-in-cubevisualization-tsx-remove-line-320-the-comment-about-type-assertion-and-line-321-the-incorrect-code-gl-as-any-dithering-true",
+      "featureTitle": "In CubeVisualization.tsx, remove line 320 (the comment about type assertion) and line 321 (the incorrect code `(gl as any).dithering = true`).",
       "files": [
         "frontend/src/components/CubeVisualization.tsx"
       ],
@@ -23,8 +23,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-frontend-src-components-cubevisualization-tsx-add-dithering-true-to-the-gl-prop-object-of-the-canvas-component-around-line-310-ensuring-the-gl-object-includes-antialias-true-powerpreference-high-performance-alpha-false-and-dithering-true",
-      "featureTitle": "In frontend/src/components/CubeVisualization.tsx, add 'dithering: true' to the gl prop object of the Canvas component (around line 310), ensuring the gl object includes: antialias: true, powerPreference: 'high-performance', alpha: false, and dithering: true",
+      "featureId": "feature-in-cubevisualization-tsx-add-dithering-true-to-the-canvas-component-s-gl-prop-object-alongside-antialias-powerpreference-and-alpha-properties-approximately-at-line-310",
+      "featureTitle": "In CubeVisualization.tsx, add `dithering: true` to the Canvas component's `gl` prop object (alongside antialias, powerPreference, and alpha properties), approximately at line 310.",
       "files": [
         "frontend/src/components/CubeVisualization.tsx"
       ],
@@ -40,6 +40,69 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-landmodel-tsx-update-the-envmap-intensity-logic-for-the-5-main-biomes-from-2-0-to-1-5-keep-volcanic-crag-at-1-3-and-the-default-else-at-1-0-do-not-change-the-code-structure-only-the-numerical-values",
+      "featureTitle": "In LandModel.tsx, update the envMap intensity logic for the 5 main biomes from 2.0 to 1.5. Keep VOLCANIC_CRAG at 1.3 and the default (else) at 1.0. Do not change the code structure, only the numerical values.",
+      "files": [
+        "frontend/src/components/LandModel.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-landmodel-tsx-set-the-base-emissive-intensity-to-3-2-and-update-the-useframe-pulse-logic-to-const-pulse-1-0-math-sin-state-clock-elapsedtime-0-8-0-15-and-apply-it-as-material-emissiveintensity-3-2-pulse",
+      "featureTitle": "In LandModel.tsx, set the base emissive intensity to 3.2 and update the useFrame pulse logic to: `const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15;` and apply it as: `material.emissiveIntensity = 3.2 * pulse;`",
+      "files": [
+        "frontend/src/components/LandModel.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-cubevisualization-tsx-update-the-bloom-post-processing-configuration-to-threshold-2-1-luminancesmoothing-0-5-intensity-0-32-radius-0-7-change-only-these-numerical-values-without-altering-the-code-structure",
+      "featureTitle": "In CubeVisualization.tsx, update the Bloom post-processing configuration to: threshold: 2.1, luminanceSmoothing: 0.5, intensity: 0.32, radius: 0.7. Change only these numerical values without altering the code structure.",
+      "files": [
+        "frontend/src/components/CubeVisualization.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
       ],
       "confidence": "high"
     }

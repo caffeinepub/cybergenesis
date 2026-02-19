@@ -57,7 +57,7 @@ export default function LandModel({ modelUrl }: LandModelProps) {
               // Model HAS an emissive map
               m.emissiveMap = obj.material.emissiveMap;
               m.emissive = new THREE.Color(0xffffff);
-              m.userData.baseEmissive = 2.2;
+              m.userData.baseEmissive = 3.2;
             } else {
               // Model HAS NO emissive map - DISABLE glow completely
               m.emissive = new THREE.Color(0x000000);
@@ -77,7 +77,7 @@ export default function LandModel({ modelUrl }: LandModelProps) {
               name.includes('DESERT_DUNE') ||
               name.includes('ISLAND_ARCHIPELAGO')
             ) {
-              m.envMapIntensity = 2.0;
+              m.envMapIntensity = 1.5;
             } else if (name.includes('VOLCANIC_CRAG')) {
               m.envMapIntensity = 1.3;
             } else {
@@ -117,8 +117,8 @@ export default function LandModel({ modelUrl }: LandModelProps) {
   useFrame((state) => {
     if (!group.current) return;
 
-    // Calculate a subtle synchronized pulse factor (0.25 amplitude)
-    const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25;
+    // Calculate a subtle synchronized pulse factor (0.15 amplitude)
+    const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15;
 
     // Traverse and apply pulse to all materials with baseEmissive
     group.current.traverse((obj: any) => {
@@ -128,7 +128,7 @@ export default function LandModel({ modelUrl }: LandModelProps) {
 
         materials.forEach((m: THREE.MeshStandardMaterial) => {
           if (m.userData.baseEmissive !== undefined && m.userData.baseEmissive > 0) {
-            m.emissiveIntensity = m.userData.baseEmissive * pulse;
+            m.emissiveIntensity = 3.2 * pulse;
           }
         });
       }

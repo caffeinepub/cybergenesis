@@ -1,55 +1,113 @@
 {
   "kind": "build_request",
-  "title": "Enable dithering in Canvas and remove blocking comment",
+  "title": "Surgical calibration: Fix Canvas dithering placement and adjust lighting/Bloom parameters",
+  "projectName": "CyberGenesis Land",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In frontend/src/components/CubeVisualization.tsx, remove the comment in lines 323-325 that mentions 'dithering на уровне материалов — правильно' which is blocking dithering changes in the Canvas gl block",
+      "text": "In CubeVisualization.tsx, remove line 320 (the comment about type assertion) and line 321 (the incorrect code `(gl as any).dithering = true`).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12",
-          "msg-14"
+          "msg-recent"
         ],
         "quotes": [
-          "этот комментарий в строчках 323-325 тебе мешает применить в сборке введение этой строчки dithering true в канвас gl",
-          "Remove the old comment on line 323-325 to avoid future confusion"
+          "Да, сначала нужно удалить лишнее чтобы тебе ничего не мешало в Cubevisualisation.tsx: 1. УДАЛИТЬ строку 320 (комментарий про type assertion). 2. УДАЛИТЬ строку 321 (бесполезный код (gl as any).dithering = true)."
         ]
       },
       "acceptanceCriteria": [
-        "Lines 323-325 in CubeVisualization.tsx no longer contain the blocking comment about dithering"
+        "Line 320 (type assertion comment) is removed from CubeVisualization.tsx",
+        "Line 321 (`(gl as any).dithering = true`) is removed from CubeVisualization.tsx"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In frontend/src/components/CubeVisualization.tsx, add 'dithering: true' to the gl prop object of the Canvas component (around line 310), ensuring the gl object includes: antialias: true, powerPreference: 'high-performance', alpha: false, and dithering: true",
+      "text": "In CubeVisualization.tsx, add `dithering: true` to the Canvas component's `gl` prop object (alongside antialias, powerPreference, and alpha properties), approximately at line 310.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-14",
-          "msg-15"
+          "msg-recent"
         ],
         "quotes": [
-          "Inside the gl={{ ... }} prop, add: dithering: true",
-          "gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, dithering: true }}"
+          "3. Добавить dithering в правильное место (в gl prop): gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, dithering: true }}"
         ]
       },
       "acceptanceCriteria": [
-        "The Canvas component's gl prop includes dithering: true",
-        "All other existing gl properties (antialias, powerPreference, alpha) are preserved",
-        "Dithering is enabled in the 3D rendering context"
+        "Canvas component's gl prop includes `dithering: true`",
+        "The dithering property is placed within the gl object, not in onCreated callback"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "In LandModel.tsx, update the envMap intensity logic for the 5 main biomes from 2.0 to 1.5. Keep VOLCANIC_CRAG at 1.3 and the default (else) at 1.0. Do not change the code structure, only the numerical values.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "EnvMap Intensity Logic: Change the values for the 5 main biomes from 2.0 to 1.5. Keep the VOLCANIC_CRAG biome that is set to 1.3 as it is. Keep the else (default) set to 1.0 as it is."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Five main biome envMap intensity values changed from 2.0 to 1.5",
+        "VOLCANIC_CRAG remains at 1.3",
+        "Default (else) case remains at 1.0"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "In LandModel.tsx, set the base emissive intensity to 3.2 and update the useFrame pulse logic to: `const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15;` and apply it as: `material.emissiveIntensity = 3.2 * pulse;`",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "Set base emissive intensity = 3.2; Update the useFrame pulse logic: const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15; material.emissiveIntensity = 3.2 * pulse;"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Base emissive intensity is set to 3.2",
+        "Pulse calculation uses Math.sin(state.clock.elapsedTime * 0.8) * 0.15",
+        "Pulse range is 1.0 +/- 0.15",
+        "Final emissiveIntensity is calculated as 3.2 * pulse"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "In CubeVisualization.tsx, update the Bloom post-processing configuration to: threshold: 2.1, luminanceSmoothing: 0.5, intensity: 0.32, radius: 0.7. Change only these numerical values without altering the code structure.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "Bloom Configuration: threshold: 2.1 (Crucial for cutting off specular highlights from Kay and Sun lamps), luminanceSmoothing: 0.5 (To soften the threshold entry and remove pixel jitter), intensity: 0.32 (Balanced for the new 3.2 base emissive), radius: 0.7 (Tightened for maximum sharpness and detail retention)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Bloom threshold set to 2.1",
+        "Bloom luminanceSmoothing set to 0.5",
+        "Bloom intensity set to 0.32",
+        "Bloom radius set to 0.7",
+        "No structural changes to the Bloom configuration code"
       ]
     }
   ],
   "constraints": [
-    "Do not modify any other properties in the Canvas gl configuration beyond adding dithering",
-    "Preserve all existing 3D rendering architecture and material-level settings"
+    "Do not alter code structure or logic, only change the specified numerical values",
+    "Do not modify material properties like metalness or roughness",
+    "Do not change texture masking or loading logic",
+    "Keep VOLCANIC_CRAG envMap intensity at 1.3",
+    "Keep default envMap intensity at 1.0"
   ],
   "nonGoals": [
-    "Changing dithering implementation at the material level",
-    "Modifying shader code or postprocessing effects",
-    "Altering any other Canvas configuration properties"
+    "Changing any material properties beyond emissive intensity",
+    "Modifying texture loading or masking systems",
+    "Altering the overall 3D rendering architecture",
+    "Adding new post-processing effects beyond Bloom parameter adjustments"
   ],
   "imageRequirements": {
     "required": [],

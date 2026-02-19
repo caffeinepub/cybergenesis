@@ -193,21 +193,21 @@ function BloomEffect() {
     renderPassRef.current = renderPass;
     composer.addPass(renderPass);
 
-    // Bloom configuration: threshold=1.5, luminanceSmoothing=0.1
+    // Bloom configuration: threshold=2.1, luminanceSmoothing=0.5, intensity=0.32, radius=0.7
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2),
-      0.45, // intensity
-      0.65, // radius
-      1.5   // threshold
+      0.32, // intensity
+      0.7,  // radius
+      2.1   // threshold
     );
     bloomPassRef.current = bloomPass;
     
     // Set luminanceSmoothing if supported (feature detection)
     if ('luminanceSmoothing' in bloomPass) {
-      (bloomPass as any).luminanceSmoothing = 0.1;
-      console.log('[Bloom] UnrealBloomPass initialized: threshold=1.5, intensity=0.45, radius=0.65, luminanceSmoothing=0.1');
+      (bloomPass as any).luminanceSmoothing = 0.5;
+      console.log('[Bloom] UnrealBloomPass initialized: threshold=2.1, intensity=0.32, radius=0.7, luminanceSmoothing=0.5');
     } else {
-      console.log('[Bloom] UnrealBloomPass initialized: threshold=1.5, intensity=0.45, radius=0.65');
+      console.log('[Bloom] UnrealBloomPass initialized: threshold=2.1, intensity=0.32, radius=0.7');
     }
     
     composer.addPass(bloomPass);
@@ -317,7 +317,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMappingExposure = 0.85;
           
-          // Enable dithering on the WebGL renderer (using type assertion for compatibility)
+          // Enable dithering on the WebGL renderer (type assertion for compatibility)
           (gl as any).dithering = true;
           
           // Ensure opaque clear alpha is set (default behavior)
@@ -352,7 +352,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           
           <OrbitControls makeDefault />
           
-          {/* Native UnrealBloomPass with threshold=1.5, luminanceSmoothing=0.1 */}
+          {/* Native UnrealBloomPass with threshold=2.1, luminanceSmoothing=0.5, intensity=0.32, radius=0.7 */}
           <BloomEffect />
         </Suspense>
       </Canvas>
