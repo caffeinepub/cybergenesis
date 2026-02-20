@@ -6,9 +6,10 @@ import * as THREE from 'three';
 
 interface LandModelProps {
   modelUrl: string;
+  biome?: string;
 }
 
-export default function LandModel({ modelUrl }: LandModelProps) {
+export default function LandModel({ modelUrl, biome }: LandModelProps) {
   const { gl, camera } = useThree();
   const fittedRef = useRef(false);
   const isInitialized = useRef(false);
@@ -34,12 +35,33 @@ export default function LandModel({ modelUrl }: LandModelProps) {
   useEffect(() => {
     if (!gltf || !gltf.scene || isInitialized.current) return;
 
-    console.log('[LandModel] Processing model with native PBR emissive workflow:', modelUrl);
+    console.log('[LandModel] Processing model with biome-specific lighting and max anisotropy:', modelUrl, 'Biome:', biome);
 
     // SAFETY: Call updateMatrixWorld BEFORE Box3 calculation
     gltf.scene.updateMatrixWorld();
 
-    // Native PBR Emissive Material Logic
+    // Get maximum anisotropy capability
+    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+    console.log('[LandModel] Maximum anisotropy capability:', maxAnisotropy);
+
+    // Determine land type from biome prop
+    const landType = biome || 'DEFAULT';
+
+    // Biome-specific lighting configuration
+    const settings: Record<string, { env: number; emissive: number }> = {
+      MYTHIC_VOID: { env: 3.0, emissive: 7.5 },
+      ISLAND_ARCHIPELAGO: { env: 3.0, emissive: 6.0 },
+      DESERT_DUNE: { env: 1.0, emissive: 6.2 },
+      VOLCANIC_CRAG: { env: 1.5, emissive: 6.6 },
+      FOREST_VALLEY: { env: 1.0, emissive: 2.5 },
+      MYTHIC_AETHER: { env: 1.0, emissive: 5.5 },
+      DEFAULT: { env: 1.0, emissive: 3.2 }
+    };
+
+    const config = settings[landType] || settings.DEFAULT;
+    console.log('[LandModel] Applying biome config:', landType, config);
+
+    // Native PBR Emissive Material Logic + Texture Anisotropy + Biome-specific settings
     if (gltf.scene?.isObject3D) {
       gltf.scene.traverse((obj: any) => {
         if (obj.isMesh && obj.material) {
@@ -52,40 +74,39 @@ export default function LandModel({ modelUrl }: LandModelProps) {
             // Enable dithering for all land meshes
             m.dithering = true;
 
-            // CONDITIONAL EMISSIVE LOGIC
-            if (obj.material.emissiveMap) {
+            // Apply biome-specific envMapIntensity
+            m.envMapIntensity = config.env;
+
+            // CONDITIONAL EMISSIVE LOGIC with biome-specific baseEmissive
+            if (m.emissiveMap) {
               // Model HAS an emissive map
-              m.emissiveMap = obj.material.emissiveMap;
               m.emissive = new THREE.Color(0xffffff);
-              m.userData.baseEmissive = 3.2;
+              m.userData.baseEmissive = config.emissive;
+              console.log(`[LandModel] Emissive enabled: baseEmissive=${config.emissive}, envMapIntensity=${config.env}`);
             } else {
               // Model HAS NO emissive map - DISABLE glow completely
               m.emissive = new THREE.Color(0x000000);
               m.userData.baseEmissive = 0.0;
+              console.log(`[LandModel] No emissive map detected, glow disabled`);
             }
 
-            console.log(`[LandModel] Emissive applied: hasMap=${!!obj.material.emissiveMap}, baseEmissive=${m.userData.baseEmissive}`);
+            // Apply maximum anisotropic filtering to ALL textures
+            const textures = [
+              m.map,
+              m.emissiveMap,
+              m.normalMap,
+              m.metalnessMap,
+              m.roughnessMap
+            ];
 
-            // Determine biome-specific environment settings
-            const name = (obj.name || '').toUpperCase();
+            textures.forEach(tex => {
+              if (tex) {
+                tex.anisotropy = maxAnisotropy;
+                tex.needsUpdate = true;
+              }
+            });
 
-            // Environment Intensity (Reflection Boost)
-            if (
-              name.includes('MYTHIC_AETHER') ||
-              name.includes('MYTHIC_VOID') ||
-              name.includes('FOREST_VALLEY') ||
-              name.includes('DESERT_DUNE') ||
-              name.includes('ISLAND_ARCHIPELAGO')
-            ) {
-              m.envMapIntensity = 1.5;
-            } else if (name.includes('VOLCANIC_CRAG')) {
-              m.envMapIntensity = 1.3;
-            } else {
-              m.envMapIntensity = 1.0;
-            }
-
-            // PBR Guard: Do NOT manually set roughness/metalness if roughnessMap exists
-            // Let textures drive the surface
+            console.log(`[LandModel] Anisotropy applied to textures: ${textures.filter(t => t).length} textures updated`);
           });
         }
       });
@@ -106,34 +127,35 @@ export default function LandModel({ modelUrl }: LandModelProps) {
       camera.updateProjectionMatrix();
 
       fittedRef.current = true;
-      console.log('[LandModel] Camera auto-fit completed');
+      console.log('[LandModel] Camera auto-fitted to model bounds');
     }
 
     isInitialized.current = true;
-    console.log('[LandModel] Native PBR emissive processing completed');
-  }, [gltf, camera, modelUrl]);
+  }, [gltf, gl, camera, modelUrl, biome]);
 
-  // SYNCED PULSE IN useFrame - Subtle breathing effect
+  // Smart pulse animation using stored baseEmissive values
   useFrame((state) => {
-    if (!group.current) return;
+    if (!gltf?.scene) return;
 
-    // Calculate a subtle synchronized pulse factor (0.15 amplitude)
-    const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15;
+    const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25;
 
-    // Traverse and apply pulse to all materials with baseEmissive
-    group.current.traverse((obj: any) => {
-      if (obj.isMesh && obj.material) {
-        // Handle both single material and material arrays
-        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+    gltf.scene.traverse((child: any) => {
+      if (child.isMesh && child.material) {
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
 
         materials.forEach((m: THREE.MeshStandardMaterial) => {
-          if (m.userData.baseEmissive !== undefined && m.userData.baseEmissive > 0) {
-            m.emissiveIntensity = 3.2 * pulse;
+          // Only apply pulse to materials with emissive map or color
+          if (m.emissiveMap || (m.emissive && !m.emissive.equals(new THREE.Color(0x000000)))) {
+            m.emissiveIntensity = (m.userData.baseEmissive || 3.2) * pulse;
           }
         });
       }
     });
   });
 
-  return <primitive ref={group} object={gltf.scene} />;
+  return (
+    <group ref={group}>
+      <primitive object={gltf.scene} />
+    </group>
+  );
 }

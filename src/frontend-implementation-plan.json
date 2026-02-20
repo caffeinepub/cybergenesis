@@ -1,86 +1,54 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Surgical calibration: Fix Canvas dithering placement and adjust lighting/Bloom parameters",
+  "title": "Implement Visual Engine finalization with Artist Workshop HDRI and biome-specific lighting",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Remove incorrect dithering code from CubeVisualization.tsx",
+      "summary": "Replace Environment component HDRI URL in CubeVisualization.tsx with Artist Workshop HDRI and set environmentIntensity to 1.0 and blur to 0",
       "acceptanceCriteria": [
-        "Line 320 (type assertion comment) is removed from CubeVisualization.tsx",
-        "Line 321 (`(gl as any).dithering = true`) is removed from CubeVisualization.tsx"
+        "Environment component uses the artist_workshop_1k.hdr HDRI file",
+        "environmentIntensity is set to exactly 1.0",
+        "blur property is set to 0"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Delete line 320 (the comment about type assertion) and line 321 (the code `(gl as any).dithering = true`) from the onCreated callback or wherever they currently exist in the file. These lines are incorrect and must be removed to prepare for the proper dithering configuration."
+          "description": "Update the Environment component to use the Artist Workshop HDRI from Poly Haven. Replace the existing files prop URL with 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr', set environmentIntensity={1.0}, and set blur={0}. Locate the Environment component within the Canvas and update only these three props without modifying other scene settings like Bloom, Anisotropy, DPR, or Dithering."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add dithering property to Canvas gl prop in CubeVisualization.tsx",
+      "summary": "Implement biome-specific lighting configuration in LandModel.tsx traverse loop with env and emissive values for all land types",
       "acceptanceCriteria": [
-        "Canvas component's gl prop includes `dithering: true`",
-        "The dithering property is placed within the gl object, not in onCreated callback"
+        "Settings object defined with all 6 biome types plus DEFAULT fallback",
+        "Each biome has correct env and emissive values as specified",
+        "Config is applied inside traverse: const config = settings[landType] || settings.DEFAULT",
+        "Material properties set: child.material.envMapIntensity = config.env and child.material.userData.baseEmissive = config.emissive"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/CubeVisualization.tsx",
+          "path": "frontend/src/components/LandModel.tsx",
           "operation": "modify",
-          "description": "Add `dithering: true` to the Canvas component's `gl` prop object (approximately at line 310). The gl prop should include: `gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, dithering: true }}`. This correctly configures dithering at the WebGL context initialization level."
+          "description": "Add a biome-specific lighting configuration object that maps land types to env and emissive values. Define the settings object with these exact mappings: MYTHIC_VOID {env: 3.0, emissive: 7.5}, ISLAND_ARCHIPELAGO {env: 3.0, emissive: 6.0}, DESERT_DUNE {env: 1.0, emissive: 6.2}, VOLCANIC_CRAG {env: 1.5, emissive: 6.6}, FOREST_VALLEY {env: 1.0, emissive: 2.5}, MYTHIC_AETHER {env: 1.0, emissive: 5.5}, DEFAULT {env: 1.0, emissive: 3.2}. In the traverse loop where materials are processed, apply the configuration by retrieving const config = settings[landType] || settings.DEFAULT, then set child.material.envMapIntensity = config.env and store child.material.userData.baseEmissive = config.emissive for later use in the pulse animation. Ensure this logic only applies to materials with emissive maps or colors as specified in the constraints."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Update envMap intensity values for main biomes in LandModel.tsx",
+      "summary": "Update pulse animation logic in LandModel.tsx useFrame hook to use new formula with stored baseEmissive values",
       "acceptanceCriteria": [
-        "Five main biome envMap intensity values changed from 2.0 to 1.5",
-        "VOLCANIC_CRAG remains at 1.3",
-        "Default (else) case remains at 1.0"
+        "Pulse calculation uses Math.sin(state.clock.elapsedTime * 0.8) * 0.25 added to 1.0",
+        "emissiveIntensity multiplies the stored baseEmissive value (or 3.2 default) by pulse",
+        "Pulse logic only applies to materials with emissive map or color as specified in constraints"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/LandModel.tsx",
           "operation": "modify",
-          "description": "In the envMap intensity logic section, change the intensity value for the 5 main biomes from 2.0 to 1.5. Do not change the code structure or biome names—only update the numerical value from 2.0 to 1.5 where it appears for the main biomes. Keep VOLCANIC_CRAG at 1.3 and the default (else) case at 1.0."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Adjust emissive intensity base value and pulse logic in LandModel.tsx",
-      "acceptanceCriteria": [
-        "Base emissive intensity is set to 3.2",
-        "Pulse calculation uses Math.sin(state.clock.elapsedTime * 0.8) * 0.15",
-        "Pulse range is 1.0 +/- 0.15",
-        "Final emissiveIntensity is calculated as 3.2 * pulse"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/LandModel.tsx",
-          "operation": "modify",
-          "description": "Set the base emissive intensity to 3.2. In the useFrame hook, update the pulse calculation to: `const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15;`. Then apply the emissive intensity as: `material.emissiveIntensity = 3.2 * pulse;`. This adjusts the pulsing glow effect for land models."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Update Bloom post-processing parameters in CubeVisualization.tsx",
-      "acceptanceCriteria": [
-        "Bloom threshold set to 2.1",
-        "Bloom luminanceSmoothing set to 0.5",
-        "Bloom intensity set to 0.32",
-        "Bloom radius set to 0.7",
-        "No structural changes to the Bloom configuration code"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/CubeVisualization.tsx",
-          "operation": "modify",
-          "description": "Update the Bloom post-processing configuration numerical values: set threshold to 2.1, luminanceSmoothing to 0.5, intensity to 0.32, and radius to 0.7. Do not change the code structure—only update these four numerical values in the Bloom component props. This calibrates the bloom effect to work with the new emissive intensity settings."
+          "description": "Update the pulse animation logic in the useFrame hook (around line 153) to use the new formula. Replace the existing pulse calculation with: const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25. Then update the emissiveIntensity assignment to: child.material.emissiveIntensity = (child.material.userData.baseEmissive || 3.2) * pulse. This retrieves the biome-specific baseEmissive value stored during the traverse loop in REQ-2 and applies the oscillating pulse multiplier. Ensure this logic only applies to materials that have an emissive map or emissive color, as specified in the constraints. Do not modify Bloom threshold, Anisotropy, Dithering, or DPR settings."
         }
       ]
     }

@@ -305,25 +305,23 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
     <div ref={containerRef} className="relative w-full h-full group">
       <Canvas
         camera={{ position: [0, 0, 6], fov: 45 }}
-        dpr={[1, 1.5]}
+        dpr={[1, 2]}
         gl={{
           antialias: true,
           powerPreference: 'high-performance',
-          alpha: false
+          alpha: false,
+          ...(({ dithering: true } as any))
         }}
         onCreated={({ gl }) => {
-          // Tone mapping exposure set to 0.85
+          // Tone mapping exposure set to 1.0
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.toneMappingExposure = 0.85;
-          
-          // Enable dithering on the WebGL renderer (type assertion for compatibility)
-          (gl as any).dithering = true;
+          gl.toneMappingExposure = 1.0;
           
           // Ensure opaque clear alpha is set (default behavior)
           gl.setClearAlpha(1);
           
-          console.log('[Renderer] Initialized with toneMappingExposure=0.85 and dithering=true');
+          console.log('[Renderer] Initialized with toneMappingExposure=1.0 and dithering=true');
         }}
       >
         <Suspense fallback={null}>
@@ -333,12 +331,16 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           {/* Screen-Space Quad with full FBM 4-color neon shader */}
           <BackgroundSphere />
           
-          <LandModel modelUrl={modelUrl} />
+          <LandModel modelUrl={modelUrl} biome={biome} />
           
-          {/* Calibrated Lighting Configuration */}
-          <Environment preset="sunset" environmentIntensity={1.0} />
+          {/* Artist Workshop HDRI Lighting Configuration */}
+          <Environment 
+            files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr" 
+            environmentIntensity={1.0} 
+            blur={0} 
+          />
           <hemisphereLight 
-            intensity={1.2} 
+            intensity={0.4} 
             color="#f7f7f7" 
             groundColor="#3a3a3a" 
           />

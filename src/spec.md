@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix Canvas dithering placement and calibrate lighting/Bloom parameters for optimal visual quality.
+**Goal:** Finalize the visual engine by implementing the Artist Workshop HDRI and biome-specific lighting configuration with dynamic pulse animations.
 
 **Planned changes:**
-- Remove incorrect dithering code (lines 320-321) from CubeVisualization.tsx and add dithering property to Canvas gl prop
-- Reduce envMap intensity for 5 main biomes from 2.0 to 1.5 in LandModel.tsx
-- Update base emissive intensity to 3.2 and adjust pulse animation timing/range in LandModel.tsx
-- Fine-tune Bloom post-processing parameters (threshold: 2.1, luminanceSmoothing: 0.5, intensity: 0.32, radius: 0.7) in CubeVisualization.tsx
+- Replace Environment component HDRI with Artist Workshop HDRI (artist_workshop_1k.hdr) at intensity 1.0 and blur 0
+- Implement biome-specific lighting configuration mapping 6 land types plus default fallback to env and emissive values
+- Update pulse animation formula to use sin-based calculation with stored baseEmissive values per biome
 
-**User-visible outcome:** Improved 3D rendering quality with proper dithering, balanced lighting that reduces excessive glow from environment maps, smoother emissive animations, and sharper detail retention by preventing specular highlights from being caught in the Bloom effect.
+**User-visible outcome:** Each biome (Mythic Void, Island Archipelago, Desert Dune, Volcanic Crag, Forest Valley, Mythic Aether) will have distinct environmental lighting and emissive glow intensity with smooth pulsing animations, creating more immersive and varied visual atmospheres across different land types.

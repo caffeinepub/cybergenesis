@@ -1,114 +1,73 @@
 {
   "kind": "build_request",
-  "title": "Surgical calibration: Fix Canvas dithering placement and adjust lighting/Bloom parameters",
-  "projectName": "CyberGenesis Land",
+  "title": "Implement Visual Engine finalization with Artist Workshop HDRI and biome-specific lighting",
+  "projectName": "CyberGenesis",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In CubeVisualization.tsx, remove line 320 (the comment about type assertion) and line 321 (the incorrect code `(gl as any).dithering = true`).",
+      "text": "Replace the Environment component HDRI URL in CubeVisualization.tsx with 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr', set environmentIntensity to 1.0, and blur to 0",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-recent"
+          "msg-user-final"
         ],
         "quotes": [
-          "Да, сначала нужно удалить лишнее чтобы тебе ничего не мешало в Cubevisualisation.tsx: 1. УДАЛИТЬ строку 320 (комментарий про type assertion). 2. УДАЛИТЬ строку 321 (бесполезный код (gl as any).dithering = true)."
+          "Replace the current Environment URL with this Artist Workshop HDRI: `<Environment files=\"https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr\" environmentIntensity={1.0} blur={0} />`"
         ]
       },
       "acceptanceCriteria": [
-        "Line 320 (type assertion comment) is removed from CubeVisualization.tsx",
-        "Line 321 (`(gl as any).dithering = true`) is removed from CubeVisualization.tsx"
+        "Environment component uses the artist_workshop_1k.hdr HDRI file",
+        "environmentIntensity is set to exactly 1.0",
+        "blur property is set to 0"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In CubeVisualization.tsx, add `dithering: true` to the Canvas component's `gl` prop object (alongside antialias, powerPreference, and alpha properties), approximately at line 310.",
+      "text": "In LandModel.tsx traverse loop, implement biome-specific lighting settings with a configuration object mapping land types (MYTHIC_VOID, ISLAND_ARCHIPELAGO, DESERT_DUNE, VOLCANIC_CRAG, FOREST_VALLEY, MYTHIC_AETHER, DEFAULT) to env and emissive values: MYTHIC_VOID {env: 3.0, emissive: 7.5}, ISLAND_ARCHIPELAGO {env: 3.0, emissive: 6.0}, DESERT_DUNE {env: 1.0, emissive: 6.2}, VOLCANIC_CRAG {env: 1.5, emissive: 6.6}, FOREST_VALLEY {env: 1.0, emissive: 2.5}, MYTHIC_AETHER {env: 1.0, emissive: 5.5}, DEFAULT {env: 1.0, emissive: 3.2}",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-recent"
+          "msg-user-final"
         ],
         "quotes": [
-          "3. Добавить dithering в правильное место (в gl prop): gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, dithering: true }}"
+          "In the `traverse` loop, update the mapping for ENVMap and Emissive using this specific data: const settings = { MYTHIC_VOID: { env: 3.0, emissive: 7.5 }, ..."
         ]
       },
       "acceptanceCriteria": [
-        "Canvas component's gl prop includes `dithering: true`",
-        "The dithering property is placed within the gl object, not in onCreated callback"
+        "Settings object defined with all 6 biome types plus DEFAULT fallback",
+        "Each biome has correct env and emissive values as specified",
+        "Config is applied inside traverse: const config = settings[landType] || settings.DEFAULT",
+        "Material properties set: child.material.envMapIntensity = config.env and child.material.userData.baseEmissive = config.emissive"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "In LandModel.tsx, update the envMap intensity logic for the 5 main biomes from 2.0 to 1.5. Keep VOLCANIC_CRAG at 1.3 and the default (else) at 1.0. Do not change the code structure, only the numerical values.",
+      "text": "Update the pulse animation logic in LandModel.tsx useFrame hook (around line 153) to use the formula: const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25; and set child.material.emissiveIntensity = (child.material.userData.baseEmissive || 3.2) * pulse",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-recent"
+          "msg-user-final"
         ],
         "quotes": [
-          "EnvMap Intensity Logic: Change the values for the 5 main biomes from 2.0 to 1.5. Keep the VOLCANIC_CRAG biome that is set to 1.3 as it is. Keep the else (default) set to 1.0 as it is."
+          "Update the pulse logic (around line 153) to use the stored values: `const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25;` `child.material.emissiveIntensity = (child.material.userData.baseEmissive || 3.2) * pulse;`"
         ]
       },
       "acceptanceCriteria": [
-        "Five main biome envMap intensity values changed from 2.0 to 1.5",
-        "VOLCANIC_CRAG remains at 1.3",
-        "Default (else) case remains at 1.0"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "In LandModel.tsx, set the base emissive intensity to 3.2 and update the useFrame pulse logic to: `const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15;` and apply it as: `material.emissiveIntensity = 3.2 * pulse;`",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-recent"
-        ],
-        "quotes": [
-          "Set base emissive intensity = 3.2; Update the useFrame pulse logic: const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15; material.emissiveIntensity = 3.2 * pulse;"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Base emissive intensity is set to 3.2",
-        "Pulse calculation uses Math.sin(state.clock.elapsedTime * 0.8) * 0.15",
-        "Pulse range is 1.0 +/- 0.15",
-        "Final emissiveIntensity is calculated as 3.2 * pulse"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "In CubeVisualization.tsx, update the Bloom post-processing configuration to: threshold: 2.1, luminanceSmoothing: 0.5, intensity: 0.32, radius: 0.7. Change only these numerical values without altering the code structure.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-recent"
-        ],
-        "quotes": [
-          "Bloom Configuration: threshold: 2.1 (Crucial for cutting off specular highlights from Kay and Sun lamps), luminanceSmoothing: 0.5 (To soften the threshold entry and remove pixel jitter), intensity: 0.32 (Balanced for the new 3.2 base emissive), radius: 0.7 (Tightened for maximum sharpness and detail retention)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Bloom threshold set to 2.1",
-        "Bloom luminanceSmoothing set to 0.5",
-        "Bloom intensity set to 0.32",
-        "Bloom radius set to 0.7",
-        "No structural changes to the Bloom configuration code"
+        "Pulse calculation uses Math.sin(state.clock.elapsedTime * 0.8) * 0.25 added to 1.0",
+        "emissiveIntensity multiplies the stored baseEmissive value (or 3.2 default) by pulse",
+        "Pulse logic only applies to materials with emissive map or color as specified in constraints"
       ]
     }
   ],
   "constraints": [
-    "Do not alter code structure or logic, only change the specified numerical values",
-    "Do not modify material properties like metalness or roughness",
-    "Do not change texture masking or loading logic",
-    "Keep VOLCANIC_CRAG envMap intensity at 1.3",
-    "Keep default envMap intensity at 1.0"
+    "Do not change Bloom threshold (keep it at 2.1)",
+    "Do not modify Anisotropy settings",
+    "Do not modify Dithering settings",
+    "Do not modify DPR settings",
+    "Ensure pulse logic only applies to materials that have an emissive map or color"
   ],
-  "nonGoals": [
-    "Changing any material properties beyond emissive intensity",
-    "Modifying texture loading or masking systems",
-    "Altering the overall 3D rendering architecture",
-    "Adding new post-processing effects beyond Bloom parameter adjustments"
-  ],
+  "nonGoals": [],
   "imageRequirements": {
     "required": [],
     "edits": []

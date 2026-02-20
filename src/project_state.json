@@ -1,59 +1,45 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
+  "summary": "3D land NFT visualization app with Visual Engine featuring Artist Workshop HDRI, biome-specific lighting, and smart pulse animations",
   "architectural_notes": [
-    "Dithering enabled in Canvas gl prop (not in onCreated hook)",
-    "Bloom configuration: threshold 2.1, luminanceSmoothing 0.5, intensity 0.32, radius 0.7 for clean metallic surfaces",
-    "EnvMap intensity reduced to 1.5 for main biomes (from 2.0) to eliminate specular highlight artifacts",
-    "Emissive intensity set to 3.2 with pulse: 1.0 + Math.sin(time * 0.8) * 0.15"
+    "Visual Engine uses Artist Workshop HDRI (artist_workshop_1k.hdr) with intensity 1.0 and no blur",
+    "Biome-specific lighting: MYTHIC_VOID (env:3.0, emissive:7.5), ISLAND_ARCHIPELAGO (env:3.0, emissive:6.0), DESERT_DUNE (env:1.0, emissive:6.2), VOLCANIC_CRAG (env:1.5, emissive:6.6), FOREST_VALLEY (env:1.0, emissive:2.5), MYTHIC_AETHER (env:1.0, emissive:5.5), DEFAULT (env:1.0, emissive:3.2)",
+    "Smart pulse animation: pulse = 1.0 + Math.sin(elapsedTime * 0.8) * 0.25, applied to baseEmissive values stored in material.userData",
+    "Bloom threshold locked at 2.1, Anisotropy/Dithering/DPR settings preserved",
+    "Pulse logic only applies to materials with emissive map or color"
   ],
   "known_issues": [],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-in-cubevisualization-tsx-remove-line-320-the-comment-about-type-assertion-and-line-321-the-incorrect-code-gl-as-any-dithering-true",
-      "title": "In CubeVisualization.tsx, remove line 320 (the comment about type assertion) and line 321 (the incorrect code `(gl as any).dithering = true`).",
+      "id": "feature-replace-the-environment-component-hdri-url-in-cubevisualization-tsx-with-https-dl-polyhaven-org-file-ph-assets-hdris-hdr-1k-artist-workshop-1k-hdr-set-environmentintensity-to-1-0-and-blur-to-0",
+      "title": "Replace the Environment component HDRI URL in CubeVisualization.tsx with 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr', set environmentIntensity to 1.0, and blur to 0",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-in-cubevisualization-tsx-add-dithering-true-to-the-canvas-component-s-gl-prop-object-alongside-antialias-powerpreference-and-alpha-properties-approximately-at-line-310",
-      "title": "In CubeVisualization.tsx, add `dithering: true` to the Canvas component's `gl` prop object (alongside antialias, powerPreference, and alpha properties), approximately at line 310.",
+      "id": "feature-in-landmodel-tsx-traverse-loop-implement-biome-specific-lighting-settings-with-a-configuration-object-mapping-land-types-mythic-void-island-archipelago-desert-dune-volcanic-crag-forest-valley-mythic-aether-default-to-env-and-emissive-values-mythic-void-env-3-0-emissive-7-5-island-archipelago-env-3-0-emissive-6-0-desert-dune-env-1-0-emissive-6-2-volcanic-crag-env-1-5-emissive-6-6-forest-valley-env-1-0-emissive-2-5-mythic-aether-env-1-0-emissive-5-5-default-env-1-0-emissive-3-2",
+      "title": "In LandModel.tsx traverse loop, implement biome-specific lighting settings with a configuration object mapping land types (MYTHIC_VOID, ISLAND_ARCHIPELAGO, DESERT_DUNE, VOLCANIC_CRAG, FOREST_VALLEY, MYTHIC_AETHER, DEFAULT) to env and emissive values: MYTHIC_VOID {env: 3.0, emissive: 7.5}, ISLAND_ARCHIPELAGO {env: 3.0, emissive: 6.0}, DESERT_DUNE {env: 1.0, emissive: 6.2}, VOLCANIC_CRAG {env: 1.5, emissive: 6.6}, FOREST_VALLEY {env: 1.0, emissive: 2.5}, MYTHIC_AETHER {env: 1.0, emissive: 5.5}, DEFAULT {env: 1.0, emissive: 3.2}",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-in-landmodel-tsx-update-the-envmap-intensity-logic-for-the-5-main-biomes-from-2-0-to-1-5-keep-volcanic-crag-at-1-3-and-the-default-else-at-1-0-do-not-change-the-code-structure-only-the-numerical-values",
-      "title": "In LandModel.tsx, update the envMap intensity logic for the 5 main biomes from 2.0 to 1.5. Keep VOLCANIC_CRAG at 1.3 and the default (else) at 1.0. Do not change the code structure, only the numerical values.",
+      "id": "feature-update-the-pulse-animation-logic-in-landmodel-tsx-useframe-hook-around-line-153-to-use-the-formula-const-pulse-1-0-math-sin-state-clock-elapsedtime-0-8-0-25-and-set-child-material-emissiveintensity-child-material-userdata-baseemissive-3-2-pulse",
+      "title": "Update the pulse animation logic in LandModel.tsx useFrame hook (around line 153) to use the formula: const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25; and set child.material.emissiveIntensity = (child.material.userData.baseEmissive || 3.2) * pulse",
       "reqIds": [
         "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-in-landmodel-tsx-set-the-base-emissive-intensity-to-3-2-and-update-the-useframe-pulse-logic-to-const-pulse-1-0-math-sin-state-clock-elapsedtime-0-8-0-15-and-apply-it-as-material-emissiveintensity-3-2-pulse",
-      "title": "In LandModel.tsx, set the base emissive intensity to 3.2 and update the useFrame pulse logic to: `const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15;` and apply it as: `material.emissiveIntensity = 3.2 * pulse;`",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-in-cubevisualization-tsx-update-the-bloom-post-processing-configuration-to-threshold-2-1-luminancesmoothing-0-5-intensity-0-32-radius-0-7-change-only-these-numerical-values-without-altering-the-code-structure",
-      "title": "In CubeVisualization.tsx, update the Bloom post-processing configuration to: threshold: 2.1, luminanceSmoothing: 0.5, intensity: 0.32, radius: 0.7. Change only these numerical values without altering the code structure.",
-      "reqIds": [
-        "REQ-5"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [],
-  "projectName": "CyberGenesis Land",
+  "gameProjectType": "3d",
+  "projectName": "CyberGenesis",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }
