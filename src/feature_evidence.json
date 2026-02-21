@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-replace-the-environment-component-hdri-url-in-cubevisualization-tsx-with-https-dl-polyhaven-org-file-ph-assets-hdris-hdr-1k-artist-workshop-1k-hdr-set-environmentintensity-to-1-0-and-blur-to-0",
-      "featureTitle": "Replace the Environment component HDRI URL in CubeVisualization.tsx with 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr', set environmentIntensity to 1.0, and blur to 0",
+      "featureId": "feature-replace-the-map-container-s-classname-based-styling-with-hardcoded-inline-styles-to-prevent-height-collapse-width-100vw-height-100vh-position-absolute-top-0-left-0-backgroundcolor-111-zindex-0",
+      "featureTitle": "Replace the map container's className-based styling with hardcoded inline styles to prevent height collapse: width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0, backgroundColor: '#111', zIndex: 0",
       "files": [
-        "frontend/src/components/CubeVisualization.tsx"
+        "frontend/src/components/MapView.tsx"
       ],
       "components": [
         "authorization@1.0.1",
@@ -23,10 +23,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-landmodel-tsx-traverse-loop-implement-biome-specific-lighting-settings-with-a-configuration-object-mapping-land-types-mythic-void-island-archipelago-desert-dune-volcanic-crag-forest-valley-mythic-aether-default-to-env-and-emissive-values-mythic-void-env-3-0-emissive-7-5-island-archipelago-env-3-0-emissive-6-0-desert-dune-env-1-0-emissive-6-2-volcanic-crag-env-1-5-emissive-6-6-forest-valley-env-1-0-emissive-2-5-mythic-aether-env-1-0-emissive-5-5-default-env-1-0-emissive-3-2",
-      "featureTitle": "In LandModel.tsx traverse loop, implement biome-specific lighting settings with a configuration object mapping land types (MYTHIC_VOID, ISLAND_ARCHIPELAGO, DESERT_DUNE, VOLCANIC_CRAG, FOREST_VALLEY, MYTHIC_AETHER, DEFAULT) to env and emissive values: MYTHIC_VOID {env: 3.0, emissive: 7.5}, ISLAND_ARCHIPELAGO {env: 3.0, emissive: 6.0}, DESERT_DUNE {env: 1.0, emissive: 6.2}, VOLCANIC_CRAG {env: 1.5, emissive: 6.6}, FOREST_VALLEY {env: 1.0, emissive: 2.5}, MYTHIC_AETHER {env: 1.0, emissive: 5.5}, DEFAULT {env: 1.0, emissive: 3.2}",
+      "featureId": "feature-update-map-initialization-camera-settings-to-safe-values-center-at-1704-961-zoom-level-1-and-pitch-0-degrees-for-flat-view",
+      "featureTitle": "Update map initialization camera settings to safe values: center at [1704, 961], zoom level 1, and pitch 0 degrees for flat view",
       "files": [
-        "frontend/src/components/LandModel.tsx"
+        "frontend/src/components/MapView.tsx"
       ],
       "components": [
         "authorization@1.0.1",
@@ -44,10 +44,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-pulse-animation-logic-in-landmodel-tsx-useframe-hook-around-line-153-to-use-the-formula-const-pulse-1-0-math-sin-state-clock-elapsedtime-0-8-0-25-and-set-child-material-emissiveintensity-child-material-userdata-baseemissive-3-2-pulse",
-      "featureTitle": "Update the pulse animation logic in LandModel.tsx useFrame hook (around line 153) to use the formula: const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25; and set child.material.emissiveIntensity = (child.material.userData.baseEmissive || 3.2) * pulse",
+      "featureId": "feature-add-on-screen-debug-ui-overlay-with-lime-green-text-on-semi-transparent-black-background-positioned-at-top-left-top-80px-left-20px-zindex-9999-displaying-real-time-debug-messages",
+      "featureTitle": "Add on-screen debug UI overlay with lime green text on semi-transparent black background positioned at top-left (top: 80px, left: 20px, zIndex: 9999) displaying real-time debug messages",
       "files": [
-        "frontend/src/components/LandModel.tsx"
+        "frontend/src/components/MapView.tsx"
       ],
       "components": [
         "authorization@1.0.1",
@@ -61,6 +61,27 @@
       ],
       "testIds": [
         "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-event-capture-to-update-on-screen-debug-messages-display-map-dimensions-500ms-after-initialization-capture-and-display-imagelayer-resourceloaderror-events-as-image-load-error-cors-or-link-and-capture-layerload-events-as-image-loaded-ok",
+      "featureTitle": "Implement event capture to update on-screen debug messages: display map dimensions 500ms after initialization, capture and display ImageLayer 'resourceloaderror' events as 'IMAGE LOAD ERROR (CORS or Link)', and capture 'layerload' events as 'IMAGE LOADED OK'",
+      "files": [
+        "frontend/src/components/MapView.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }

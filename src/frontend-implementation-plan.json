@@ -1,54 +1,70 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Implement Visual Engine finalization with Artist Workshop HDRI and biome-specific lighting",
+  "title": "Add on-screen debug UI and foolproof CSS to MapView for tablet testing",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Replace Environment component HDRI URL in CubeVisualization.tsx with Artist Workshop HDRI and set environmentIntensity to 1.0 and blur to 0",
+      "summary": "Replace map container className-based styling with hardcoded inline styles to prevent height collapse",
       "acceptanceCriteria": [
-        "Environment component uses the artist_workshop_1k.hdr HDRI file",
-        "environmentIntensity is set to exactly 1.0",
-        "blur property is set to 0"
+        "Map container div uses inline style object instead of className",
+        "Container has explicit 100vw width and 100vh height",
+        "Container is absolutely positioned at top-left with zIndex 0"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/CubeVisualization.tsx",
+          "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "Update the Environment component to use the Artist Workshop HDRI from Poly Haven. Replace the existing files prop URL with 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr', set environmentIntensity={1.0}, and set blur={0}. Locate the Environment component within the Canvas and update only these three props without modifying other scene settings like Bloom, Anisotropy, DPR, or Dithering."
+          "description": "Replace the map container's className=\"map-content\" with an inline style object containing: width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0, backgroundColor: '#111', zIndex: 0. This ensures the container has explicit dimensions and positioning to prevent 0px height collapse on tablets."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Implement biome-specific lighting configuration in LandModel.tsx traverse loop with env and emissive values for all land types",
+      "summary": "Update map initialization camera settings to safe values for flat overhead view",
       "acceptanceCriteria": [
-        "Settings object defined with all 6 biome types plus DEFAULT fallback",
-        "Each biome has correct env and emissive values as specified",
-        "Config is applied inside traverse: const config = settings[landType] || settings.DEFAULT",
-        "Material properties set: child.material.envMapIntensity = config.env and child.material.userData.baseEmissive = config.emissive"
+        "Map center is set to [1704, 961] (middle of 3408x1922 image)",
+        "Zoom level is changed from -1 to 1",
+        "Pitch is changed from 30 to 0 for flat overhead view"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/LandModel.tsx",
+          "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "Add a biome-specific lighting configuration object that maps land types to env and emissive values. Define the settings object with these exact mappings: MYTHIC_VOID {env: 3.0, emissive: 7.5}, ISLAND_ARCHIPELAGO {env: 3.0, emissive: 6.0}, DESERT_DUNE {env: 1.0, emissive: 6.2}, VOLCANIC_CRAG {env: 1.5, emissive: 6.6}, FOREST_VALLEY {env: 1.0, emissive: 2.5}, MYTHIC_AETHER {env: 1.0, emissive: 5.5}, DEFAULT {env: 1.0, emissive: 3.2}. In the traverse loop where materials are processed, apply the configuration by retrieving const config = settings[landType] || settings.DEFAULT, then set child.material.envMapIntensity = config.env and store child.material.userData.baseEmissive = config.emissive for later use in the pulse animation. Ensure this logic only applies to materials with emissive maps or colors as specified in the constraints."
+          "description": "Update the maptalks.Map initialization options to use safe camera settings: center at [1704, 961] (the middle of the 3408x1922 image), zoom level 1 (instead of -1), and pitch 0 degrees (instead of 30) for a flat overhead view. These settings ensure predictable rendering on tablets."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Update pulse animation logic in LandModel.tsx useFrame hook to use new formula with stored baseEmissive values",
+      "summary": "Add on-screen debug UI overlay displaying real-time debug messages",
       "acceptanceCriteria": [
-        "Pulse calculation uses Math.sin(state.clock.elapsedTime * 0.8) * 0.25 added to 1.0",
-        "emissiveIntensity multiplies the stored baseEmissive value (or 3.2 default) by pulse",
-        "Pulse logic only applies to materials with emissive map or color as specified in constraints"
+        "New debugMsg state variable initialized to 'Initializing...'",
+        "Debug overlay div rendered with inline styles: position absolute, top 80px, left 20px, lime color text, semi-transparent black background, zIndex 9999",
+        "Debug overlay displays current debugMsg value prefixed with 'DEBUG: '"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/LandModel.tsx",
+          "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "Update the pulse animation logic in the useFrame hook (around line 153) to use the new formula. Replace the existing pulse calculation with: const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25. Then update the emissiveIntensity assignment to: child.material.emissiveIntensity = (child.material.userData.baseEmissive || 3.2) * pulse. This retrieves the biome-specific baseEmissive value stored during the traverse loop in REQ-2 and applies the oscillating pulse multiplier. Ensure this logic only applies to materials that have an emissive map or emissive color, as specified in the constraints. Do not modify Bloom threshold, Anisotropy, Dithering, or DPR settings."
+          "description": "Add a new state variable `const [debugMsg, setDebugMsg] = useState('Initializing...');` and render an on-screen debug overlay div with inline styles: position: 'absolute', top: '80px', left: '20px', color: 'lime', backgroundColor: 'rgba(0,0,0,0.7)', padding: '10px', borderRadius: '5px', zIndex: 9999, fontFamily: 'monospace', fontSize: '14px'. The div should display the text 'DEBUG: ' followed by the current debugMsg value. This overlay is crucial for tablet debugging where DevTools are not accessible."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Implement event capture to update on-screen debug messages for map initialization and image loading",
+      "acceptanceCriteria": [
+        "After map initialization, a 500ms timeout updates debugMsg with 'Map Size: {width}x{height}'",
+        "ImageLayer has 'resourceloaderror' event listener that sets debugMsg to 'IMAGE LOAD ERROR (CORS or Link)'",
+        "ImageLayer has 'layerload' event listener that sets debugMsg to 'IMAGE LOADED OK'",
+        "All debug messages are visible on tablet screen without DevTools"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MapView.tsx",
+          "operation": "modify",
+          "description": "After creating the maptalks.Map instance, add a 500ms setTimeout that captures map dimensions and updates debugMsg with 'Map Size: ' + mapRef.current.width + 'x' + mapRef.current.height. On the ImageLayer instance, add event listeners: 'resourceloaderror' listener that calls setDebugMsg('IMAGE LOAD ERROR (CORS or Link)'), and 'layerload' listener that calls setDebugMsg('IMAGE LOADED OK'). These events provide real-time feedback on map initialization and image loading status visible on the tablet screen without requiring DevTools."
         }
       ]
     }

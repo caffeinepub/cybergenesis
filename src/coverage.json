@@ -1,46 +1,57 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-20T17:05:44.644Z",
+  "generatedAt": "2026-02-21T23:14:49.799Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Replace the Environment component HDRI URL in CubeVisualization.tsx with 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr', set environmentIntensity to 1.0, and blur to 0",
+        "summary": "Replace the map container's className-based styling with hardcoded inline styles to prevent height collapse: width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0, backgroundColor: '#111', zIndex: 0",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/CubeVisualization.tsx"
+          "frontend/src/components/MapView.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/CubeVisualization.tsx"
+          "frontend/src/components/MapView.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "In LandModel.tsx traverse loop, implement biome-specific lighting settings with a configuration object mapping land types (MYTHIC_VOID, ISLAND_ARCHIPELAGO, DESERT_DUNE, VOLCANIC_CRAG, FOREST_VALLEY, MYTHIC_AETHER, DEFAULT) to env and emissive values: MYTHIC_VOID {env: 3.0, emissive: 7.5}, ISLAND_ARCHIPELAGO {env: 3.0, emissive: 6.0}, DESERT_DUNE {env: 1.0, emissive: 6.2}, VOLCANIC_CRAG {env: 1.5, emissive: 6.6}, FOREST_VALLEY {env: 1.0, emissive: 2.5}, MYTHIC_AETHER {env: 1.0, emissive: 5.5}, DEFAULT {env: 1.0, emissive: 3.2}",
+        "summary": "Update map initialization camera settings to safe values: center at [1704, 961], zoom level 1, and pitch 0 degrees for flat view",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/LandModel.tsx"
+          "frontend/src/components/MapView.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/LandModel.tsx"
+          "frontend/src/components/MapView.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Update the pulse animation logic in LandModel.tsx useFrame hook (around line 153) to use the formula: const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25; and set child.material.emissiveIntensity = (child.material.userData.baseEmissive || 3.2) * pulse",
+        "summary": "Add on-screen debug UI overlay with lime green text on semi-transparent black background positioned at top-left (top: 80px, left: 20px, zIndex: 9999) displaying real-time debug messages",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/LandModel.tsx"
+          "frontend/src/components/MapView.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/LandModel.tsx"
+          "frontend/src/components/MapView.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Implement event capture to update on-screen debug messages: display map dimensions 500ms after initialization, capture and display ImageLayer 'resourceloaderror' events as 'IMAGE LOAD ERROR (CORS or Link)', and capture 'layerload' events as 'IMAGE LOADED OK'",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/MapView.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/MapView.tsx"
         ]
       }
     ]
@@ -50,8 +61,7 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/CubeVisualization.tsx",
-    "frontend/src/components/LandModel.tsx",
+    "frontend/src/components/MapView.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

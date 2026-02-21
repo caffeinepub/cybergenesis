@@ -1,73 +1,97 @@
 {
   "kind": "build_request",
-  "title": "Implement Visual Engine finalization with Artist Workshop HDRI and biome-specific lighting",
-  "projectName": "CyberGenesis",
-  "priority": "normal",
+  "title": "Add on-screen debug UI and foolproof CSS to MapView for tablet testing",
+  "projectName": "CyberLand Map",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Replace the Environment component HDRI URL in CubeVisualization.tsx with 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr', set environmentIntensity to 1.0, and blur to 0",
+      "text": "Replace the map container's className-based styling with hardcoded inline styles to prevent height collapse: width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0, backgroundColor: '#111', zIndex: 0",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-final"
+          "msg-last"
         ],
         "quotes": [
-          "Replace the current Environment URL with this Artist Workshop HDRI: `<Environment files=\"https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr\" environmentIntensity={1.0} blur={0} />`"
+          "Replace `className=\"map-content\"` with hardcoded inline styles to prevent 0px height collapse"
         ]
       },
       "acceptanceCriteria": [
-        "Environment component uses the artist_workshop_1k.hdr HDRI file",
-        "environmentIntensity is set to exactly 1.0",
-        "blur property is set to 0"
+        "Map container div uses inline style object instead of className",
+        "Container has explicit 100vw width and 100vh height",
+        "Container is absolutely positioned at top-left with zIndex 0"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In LandModel.tsx traverse loop, implement biome-specific lighting settings with a configuration object mapping land types (MYTHIC_VOID, ISLAND_ARCHIPELAGO, DESERT_DUNE, VOLCANIC_CRAG, FOREST_VALLEY, MYTHIC_AETHER, DEFAULT) to env and emissive values: MYTHIC_VOID {env: 3.0, emissive: 7.5}, ISLAND_ARCHIPELAGO {env: 3.0, emissive: 6.0}, DESERT_DUNE {env: 1.0, emissive: 6.2}, VOLCANIC_CRAG {env: 1.5, emissive: 6.6}, FOREST_VALLEY {env: 1.0, emissive: 2.5}, MYTHIC_AETHER {env: 1.0, emissive: 5.5}, DEFAULT {env: 1.0, emissive: 3.2}",
+      "text": "Update map initialization camera settings to safe values: center at [1704, 961], zoom level 1, and pitch 0 degrees for flat view",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-final"
+          "msg-last"
         ],
         "quotes": [
-          "In the `traverse` loop, update the mapping for ENVMap and Emissive using this specific data: const settings = { MYTHIC_VOID: { env: 3.0, emissive: 7.5 }, ..."
+          "SAFE CAMERA (As you suggested): In map options: `center: [1704, 961]` `zoom: 1` `pitch: 0`"
         ]
       },
       "acceptanceCriteria": [
-        "Settings object defined with all 6 biome types plus DEFAULT fallback",
-        "Each biome has correct env and emissive values as specified",
-        "Config is applied inside traverse: const config = settings[landType] || settings.DEFAULT",
-        "Material properties set: child.material.envMapIntensity = config.env and child.material.userData.baseEmissive = config.emissive"
+        "Map center is set to [1704, 961] (middle of 3408x1922 image)",
+        "Zoom level is changed from -1 to 1",
+        "Pitch is changed from 30 to 0 for flat overhead view"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Update the pulse animation logic in LandModel.tsx useFrame hook (around line 153) to use the formula: const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25; and set child.material.emissiveIntensity = (child.material.userData.baseEmissive || 3.2) * pulse",
+      "text": "Add on-screen debug UI overlay with lime green text on semi-transparent black background positioned at top-left (top: 80px, left: 20px, zIndex: 9999) displaying real-time debug messages",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-final"
+          "msg-last"
         ],
         "quotes": [
-          "Update the pulse logic (around line 153) to use the stored values: `const pulse = 1.0 + Math.sin(state.clock.elapsedTime * 0.8) * 0.25;` `child.material.emissiveIntensity = (child.material.userData.baseEmissive || 3.2) * pulse;`"
+          "ON-SCREEN DEBUGGER (Crucial for Tablet): Add a new state: `const [debugMsg, setDebugMsg] = useState('Initializing...');`"
         ]
       },
       "acceptanceCriteria": [
-        "Pulse calculation uses Math.sin(state.clock.elapsedTime * 0.8) * 0.25 added to 1.0",
-        "emissiveIntensity multiplies the stored baseEmissive value (or 3.2 default) by pulse",
-        "Pulse logic only applies to materials with emissive map or color as specified in constraints"
+        "New debugMsg state variable initialized to 'Initializing...'",
+        "Debug overlay div rendered with inline styles: position absolute, top 80px, left 20px, lime color text, semi-transparent black background, zIndex 9999",
+        "Debug overlay displays current debugMsg value prefixed with 'DEBUG: '"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Implement event capture to update on-screen debug messages: display map dimensions 500ms after initialization, capture and display ImageLayer 'resourceloaderror' events as 'IMAGE LOAD ERROR (CORS or Link)', and capture 'layerload' events as 'IMAGE LOADED OK'",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "CAPTURE EVENTS TO DEBUG UI: After `mapRef.current = new maptalks.Map(...)`, add: `setTimeout(() => setDebugMsg('Map Size: ' + mapRef.current.width + 'x' + mapRef.current.height), 500);`"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After map initialization, a 500ms timeout updates debugMsg with 'Map Size: {width}x{height}'",
+        "ImageLayer has 'resourceloaderror' event listener that sets debugMsg to 'IMAGE LOAD ERROR (CORS or Link)'",
+        "ImageLayer has 'layerload' event listener that sets debugMsg to 'IMAGE LOADED OK'",
+        "All debug messages are visible on tablet screen without DevTools"
       ]
     }
   ],
   "constraints": [
-    "Do not change Bloom threshold (keep it at 2.1)",
-    "Do not modify Anisotropy settings",
-    "Do not modify Dithering settings",
-    "Do not modify DPR settings",
-    "Ensure pulse logic only applies to materials that have an emissive map or color"
+    "Do not modify frontend/src/hooks/useInternetIdentity.ts or frontend/src/hooks/useInternetIdentity.tsx",
+    "Do not modify frontend/src/hooks/useActor.ts",
+    "Do not modify frontend/src/main.tsx",
+    "Do not modify frontend/src/components/ui components",
+    "Only modify frontend/src/components/MapView.tsx"
   ],
-  "nonGoals": [],
+  "nonGoals": [
+    "Changing the Maptalks.js CDN URL or library version",
+    "Modifying the image source URL from GitHub Raw",
+    "Adding DevTools or console.log statements (user cannot access these on tablet)",
+    "Changing the map extent coordinates [0, 0, 3408, 1922]",
+    "Implementing any backend changes"
+  ],
   "imageRequirements": {
     "required": [],
     "edits": []

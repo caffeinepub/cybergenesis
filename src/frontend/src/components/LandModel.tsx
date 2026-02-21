@@ -51,7 +51,7 @@ export default function LandModel({ modelUrl, biome }: LandModelProps) {
     const settings: Record<string, { env: number; emissive: number }> = {
       MYTHIC_VOID: { env: 3.0, emissive: 7.5 },
       ISLAND_ARCHIPELAGO: { env: 3.0, emissive: 6.0 },
-      DESERT_DUNE: { env: 1.0, emissive: 6.2 },
+      DESERT_DUNE: { env: 0.5, emissive: 6.2 },
       VOLCANIC_CRAG: { env: 1.5, emissive: 6.6 },
       FOREST_VALLEY: { env: 1.0, emissive: 2.5 },
       MYTHIC_AETHER: { env: 1.0, emissive: 5.5 },
@@ -81,6 +81,7 @@ export default function LandModel({ modelUrl, biome }: LandModelProps) {
             if (m.emissiveMap) {
               // Model HAS an emissive map
               m.emissive = new THREE.Color(0xffffff);
+              m.toneMapped = false; // Bypasses color crushing, preserves native texture color
               m.userData.baseEmissive = config.emissive;
               console.log(`[LandModel] Emissive enabled: baseEmissive=${config.emissive}, envMapIntensity=${config.env}`);
             } else {

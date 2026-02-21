@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Finalize the visual engine by implementing the Artist Workshop HDRI and biome-specific lighting configuration with dynamic pulse animations.
+**Goal:** Add on-screen debug UI and foolproof inline CSS to MapView for tablet testing without DevTools access.
 
 **Planned changes:**
-- Replace Environment component HDRI with Artist Workshop HDRI (artist_workshop_1k.hdr) at intensity 1.0 and blur 0
-- Implement biome-specific lighting configuration mapping 6 land types plus default fallback to env and emissive values
-- Update pulse animation formula to use sin-based calculation with stored baseEmissive values per biome
+- Replace map container className with hardcoded inline styles (100vw/100vh, absolute positioning, zIndex 0)
+- Update map initialization to safe camera settings (center [1704, 961], zoom 1, pitch 0)
+- Add on-screen debug UI overlay with lime green text at top-left showing real-time debug messages
+- Capture map dimension, image load success, and image load error events to display in debug UI
 
-**User-visible outcome:** Each biome (Mythic Void, Island Archipelago, Desert Dune, Volcanic Crag, Forest Valley, Mythic Aether) will have distinct environmental lighting and emissive glow intensity with smooth pulsing animations, creating more immersive and varied visual atmospheres across different land types.
+**User-visible outcome:** Map displays with guaranteed full viewport dimensions and a visible on-screen debug overlay showing map initialization status and image loading events, enabling troubleshooting directly on tablet without browser DevTools.

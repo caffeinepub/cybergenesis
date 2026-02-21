@@ -89,9 +89,11 @@ export default function Dashboard() {
     setActiveTab('land');
   };
 
+  const isMapOpen = activeTab === 'map';
+
   return (
     <div className="dashboard-container flex flex-col min-h-screen bg-transparent">
-      {activeTab === 'map' && (
+      {isMapOpen && (
         <MapView landData={currentLand} onClose={handleMapClose} />
       )}
 
