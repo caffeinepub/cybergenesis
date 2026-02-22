@@ -1,77 +1,56 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Interactive 2D map viewer with neon ray markers, implementing flipped Y-axis coordinate system for proper top-down image orientation",
+  "summary": "Interactive 3D map viewer with drone-like navigation physics and cinematic camera controls",
   "architectural_notes": [
-    "Flipped Y-axis coordinate system: map center [1704, -961], extent [0, -1922, 3408, 0]",
-    "Neon ray markers positioned at [land.x, -land.y] to align with flipped image coordinates",
-    "Map physics: default zoom 2, range -1 to 5, free panning with seamless mode, no maxExtent constraint",
-    "ImageLayer configured with canvas renderer and anonymous cross-origin",
-    "UI layers: pointer-events: none on ray markers, close button at z-index 100"
+    "MapView.tsx uses Maptalks identity projection with spatial reference resolutions [32,16,8,4,2,1]",
+    "Coordinate system: fullExtent and maxExtent set to [0, -1922, 3408, 0] with panLimit enabled",
+    "Kinetic physics: dragInertia enabled with intensity 0.8 and 1500ms duration for drone-like feel",
+    "Camera: default pitch 45°, dragPitch/touchPitch enabled, maxPitch 65° to prevent flipping",
+    "ImageLayer uses webp source with forceRenderOnMoving: true and canvas renderer",
+    "Cinematic entry: animateTo with zoom 3, pitch 55°, bearing 15°, 3500ms duration, 500ms delay",
+    "Mobile viewport: 100dvh height, touchAction: none, overflow hidden for proper touch handling",
+    "Retina scaling: devicePixelRatio set to window.devicePixelRatio || 2",
+    "UIMarkers use position: [land.x, -land.y] with pointer-events: none to avoid blocking navigation"
   ],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-implement-flipped-y-axis-coordinate-system-in-mapview-set-map-center-to-1704-961-and-map-extent-to-0-1922-3408-0-for-proper-top-down-image-orientation",
-      "title": "Implement flipped Y-axis coordinate system in MapView: set map center to [1704, -961] and map extent to [0, -1922, 3408, 0] for proper top-down image orientation",
+      "id": "feature-replace-the-map-instantiation-block-in-mapview-tsx-around-lines-127-148-with-the-complete-golden-archive-configuration-identity-projection-with-spatialreference-using-resolutions-32-16-8-4-2-1-fullextent-top-0-left-0-bottom-1922-right-3408-maxextent-new-window-maptalks-extent-0-1922-3408-0-center-1704-961-zoom-1-minzoom-0-maxzoom-5-pitch-45-bearing-0-devicepixelratio-window-devicepixelratio-2-enable-all-drag-touch-controls-draggable-dragpan-dragrotate-dragpitch-touchzoom-touchrotate-touchpitch-draginertia-true-seamlesszoom-true-centercross-false-attribution-false-add-map-config-panlimit-true-after-instantiation",
+      "title": "Replace the map instantiation block in MapView.tsx (around lines 127-148) with the complete Golden Archive configuration: identity projection with spatialReference using resolutions [32, 16, 8, 4, 2, 1], fullExtent {top: 0, left: 0, bottom: -1922, right: 3408}, maxExtent new window.maptalks.Extent(0, -1922, 3408, 0), center [1704, -961], zoom 1, minZoom 0, maxZoom 5, pitch 45, bearing 0, devicePixelRatio window.devicePixelRatio || 2, enable all drag/touch controls (draggable, dragPan, dragRotate, dragPitch, touchZoom, touchRotate, touchPitch), dragInertia true, seamlessZoom true, centerCross false, attribution false. Add map.config('panLimit', true) after instantiation.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-imagelayer-extent-configuration-to-0-1922-3408-0-and-add-canvas-renderer-with-anonymous-cross-origin-support",
-      "title": "Update ImageLayer extent configuration to [0, -1922, 3408, 0] and add canvas renderer with anonymous cross-origin support",
+      "id": "feature-update-the-imagelayer-configuration-in-mapview-tsx-around-lines-151-160-to-use-the-webp-source-url-https-raw-githubusercontent-com-dobr312-cyberland-refs-heads-main-cybermap-img-8296-webp-extent-0-1922-3408-0-opacity-1-renderer-canvas-crossorigin-anonymous-and-add-forcerenderonmoving-true-to-the-layer-options",
+      "title": "Update the ImageLayer configuration in MapView.tsx (around lines 151-160) to use the webp source URL 'https://raw.githubusercontent.com/dobr312/cyberland/refs/heads/main/CyberMap/IMG_8296.webp', extent [0, -1922, 3408, 0], opacity 1, renderer 'canvas', crossOrigin 'anonymous', and add forceRenderOnMoving: true to the layer options.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-position-neon-ray-uimarkers-using-flipped-coordinates-set-position-to-land-x-land-y-to-align-with-the-flipped-y-axis-coordinate-system",
-      "title": "Position neon ray UIMarkers using flipped coordinates: set position to [land.x, -land.y] to align with the flipped Y-axis coordinate system",
+      "id": "feature-update-the-animateto-block-in-mapview-tsx-around-lines-221-233-to-use-these-cinematic-drone-entry-parameters-center-targetx-targety-zoom-3-pitch-55-bearing-15-duration-3500ms-easing-out-with-the-entire-animation-wrapped-in-a-500ms-settimeout-delay",
+      "title": "Update the animateTo block in MapView.tsx (around lines 221-233) to use these cinematic drone entry parameters: center [targetX, -targetY], zoom 3, pitch 55, bearing 15, duration 3500ms, easing 'out', with the entire animation wrapped in a 500ms setTimeout delay.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-configure-map-physics-set-default-zoom-to-2-minzoom-to-1-maxzoom-to-5-enable-dragpan-disable-dragpitch-and-enable-seamless-mode-to-prevent-bouncing",
-      "title": "Configure map physics: set default zoom to 2, minZoom to -1, maxZoom to 5, enable dragPan, disable dragPitch, and enable seamless mode to prevent bouncing",
+      "id": "feature-update-the-map-container-div-style-in-mapview-tsx-around-lines-284-294-to-include-position-fixed-top-0-left-0-width-100vw-height-100dvh-zindex-1000-background-000-overflow-hidden-and-add-touchaction-none-for-mobile-viewport-handling",
+      "title": "Update the map container div style in MapView.tsx (around lines 284-294) to include: position fixed, top 0, left 0, width 100vw, height 100dvh, zIndex 1000, background #000, overflow hidden, and add touchAction 'none' for mobile viewport handling.",
       "reqIds": [
         "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-maxextent-constraint-from-map-options-to-allow-free-panning-across-the-entire-map-area",
-      "title": "Remove maxExtent constraint from map options to allow free panning across the entire map area",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-the-green-debug-ui-overlay-from-mapview-component",
-      "title": "Remove the green debug UI overlay from MapView component",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-close-button-has-zindex-of-100-and-set-pointer-events-to-none-on-neon-ray-marker-content-the-ray-div-to-prevent-blocking-map-dragging-interactions",
-      "title": "Ensure close button has zIndex of 100 and set pointer-events to none on neon ray marker content (the ray div) to prevent blocking map dragging interactions",
-      "reqIds": [
-        "REQ-7"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [],
-  "gameProjectType": "2d",
-  "projectName": "CyberGenesis Map",
+  "projectName": "CyberGenesis",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

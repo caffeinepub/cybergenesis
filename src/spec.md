@@ -1,15 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Fix map orientation by implementing flipped Y-axis coordinates and optimize map physics for smooth panning and zooming.
+**Goal:** Rewrite the Golden Archive MapView with identity projection coordinate system, precise boundary enforcement, and cinematic drone navigation physics.
 
 **Planned changes:**
-- Implement flipped Y-axis coordinate system with map center at [1704, -961] and extent [0, -1922, 3408, 0]
-- Update ImageLayer extent to [0, -1922, 3408, 0] with canvas renderer and anonymous cross-origin support
-- Position neon ray UIMarkers using flipped coordinates [land.x, -land.y]
-- Configure map physics: zoom level 2 (range -1 to 5), enable dragPan, disable dragPitch, enable seamless mode
-- Remove maxExtent constraint to allow free panning
-- Remove green debug UI overlay
-- Set close button z-index to 100 and add pointer-events: none to neon ray marker divs
+- Replace map instantiation with identity projection using custom spatial reference (resolutions: 32, 16, 8, 4, 2, 1) and strict boundaries (maxExtent [0, -1922, 3408, 0])
+- Update ImageLayer to use webp source with forceRenderOnMoving for smooth rendering during navigation
+- Implement cinematic drone entry animation (zoom 3, pitch 55°, bearing 15°, 3500ms duration with 500ms delay)
+- Update map container to use fixed positioning with 100dvh height and touchAction: none for proper mobile viewport handling
 
-**User-visible outcome:** The map displays in correct orientation (not upside down) with neon rays properly aligned to land positions. Users can smoothly pan and zoom across the map without bouncing or interaction blocking, and the debug overlay is removed for a clean view.
+**User-visible outcome:** Users experience a smooth, cinematic drone-style entry animation when viewing the Golden Archive map, with enforced boundaries preventing navigation outside the map area and improved rendering performance during movement.

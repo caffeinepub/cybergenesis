@@ -1,155 +1,95 @@
 {
   "kind": "build_request",
-  "title": "Finalize map orientation and physics with Y-axis flip",
-  "projectName": "CyberGenesis Map",
-  "priority": "high",
+  "title": "Implement Golden Archive MapView rewrite with drone navigation physics",
+  "projectName": "CyberGenesis",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Implement flipped Y-axis coordinate system in MapView: set map center to [1704, -961] and map extent to [0, -1922, 3408, 0] for proper top-down image orientation",
+      "text": "Replace the map instantiation block in MapView.tsx (around lines 127-148) with the complete Golden Archive configuration: identity projection with spatialReference using resolutions [32, 16, 8, 4, 2, 1], fullExtent {top: 0, left: 0, bottom: -1922, right: 3408}, maxExtent new window.maptalks.Extent(0, -1922, 3408, 0), center [1704, -961], zoom 1, minZoom 0, maxZoom 5, pitch 45, bearing 0, devicePixelRatio window.devicePixelRatio || 2, enable all drag/touch controls (draggable, dragPan, dragRotate, dragPitch, touchZoom, touchRotate, touchPitch), dragInertia true, seamlessZoom true, centerCross false, attribution false. Add map.config('panLimit', true) after instantiation.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-6"
         ],
         "quotes": [
-          "Map Center: [1704, -961]",
-          "Map Extent: [0, -1922, 3408, 0]"
+          "Replace the current `new window.maptalks.Map(...)` instantiation (around lines 127-148) with this precise config"
         ]
       },
       "acceptanceCriteria": [
-        "Map center is positioned at coordinates [1704, -961]",
-        "Map extent is configured as [0, -1922, 3408, 0]",
-        "Map image appears correctly oriented (not upside down)"
+        "Map uses identity projection with correct spatial reference and resolution pyramid",
+        "Boundaries are enforced with maxExtent [0, -1922, 3408, 0] and panLimit true",
+        "All drag and touch controls are enabled as specified",
+        "dragInertia is enabled for kinetic physics",
+        "devicePixelRatio is set for retina display support"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update ImageLayer extent configuration to [0, -1922, 3408, 0] and add canvas renderer with anonymous cross-origin support",
+      "text": "Update the ImageLayer configuration in MapView.tsx (around lines 151-160) to use the webp source URL 'https://raw.githubusercontent.com/dobr312/cyberland/refs/heads/main/CyberMap/IMG_8296.webp', extent [0, -1922, 3408, 0], opacity 1, renderer 'canvas', crossOrigin 'anonymous', and add forceRenderOnMoving: true to the layer options.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-6"
         ],
         "quotes": [
-          "ImageLayer Extent: [0, -1922, 3408, 0]",
-          "renderer: 'canvas', crossOrigin: 'anonymous'"
+          "Update the ImageLayer configuration (around lines 151-160) to use the new webp source and force rendering"
         ]
       },
       "acceptanceCriteria": [
-        "ImageLayer extent matches [0, -1922, 3408, 0]",
-        "ImageLayer uses canvas renderer",
-        "ImageLayer has crossOrigin set to 'anonymous'"
+        "ImageLayer uses the specified webp URL as the base map",
+        "Layer extent matches the coordinate system [0, -1922, 3408, 0]",
+        "forceRenderOnMoving is set to true for smooth rendering during navigation"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Position neon ray UIMarkers using flipped coordinates: set position to [land.x, -land.y] to align with the flipped Y-axis coordinate system",
+      "text": "Update the animateTo block in MapView.tsx (around lines 221-233) to use these cinematic drone entry parameters: center [targetX, -targetY], zoom 3, pitch 55, bearing 15, duration 3500ms, easing 'out', with the entire animation wrapped in a 500ms setTimeout delay.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-6"
         ],
         "quotes": [
-          "position: [land.x, -land.y]"
+          "Find the animateTo block (around lines 221-233) and update it"
         ]
       },
       "acceptanceCriteria": [
-        "UIMarker positions use [land.x, -land.y] format",
-        "Neon rays align perfectly with land positions on the flipped map image"
+        "Initial animation zooms to level 3 with 55° pitch and 15° bearing",
+        "Animation duration is 3500ms with 'out' easing",
+        "Animation starts after 500ms delay"
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Configure map physics: set default zoom to 2, minZoom to -1, maxZoom to 5, enable dragPan, disable dragPitch, and enable seamless mode to prevent bouncing",
+      "text": "Update the map container div style in MapView.tsx (around lines 284-294) to include: position fixed, top 0, left 0, width 100vw, height 100dvh, zIndex 1000, background #000, overflow hidden, and add touchAction 'none' for mobile viewport handling.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-6"
         ],
         "quotes": [
-          "zoom: 2",
-          "minZoom: -1",
-          "maxZoom: 5",
-          "dragPan: true",
-          "dragPitch: false",
-          "seamless: true"
+          "In the main return statement (around lines 284-294), update the style"
         ]
       },
       "acceptanceCriteria": [
-        "Default zoom level is 2",
-        "User can zoom out to level -1 and zoom in to level 5",
-        "Map panning is enabled",
-        "Map pitching is disabled",
-        "Seamless mode prevents map from bouncing at boundaries"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Remove maxExtent constraint from map options to allow free panning across the entire map area",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "Remove `maxExtent` from the Map options for now"
-        ]
-      },
-      "acceptanceCriteria": [
-        "maxExtent is not set in map configuration",
-        "User can pan freely without artificial boundaries"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Remove the green debug UI overlay from MapView component",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "Remove the Green Debug UI"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Debug UI overlay is not rendered",
-        "No green diagnostic text appears on screen"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Ensure close button has zIndex of 100 and set pointer-events to none on neon ray marker content (the ray div) to prevent blocking map dragging interactions",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "Ensure the Close Button is visible (zIndex: 100)",
-          "pointer-events: none on the ray div"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Close button has z-index: 100",
-        "Close button remains visible and clickable",
-        "Neon ray marker divs have pointer-events: none",
-        "Map dragging is not blocked by ray markers"
+        "Container uses 100dvh for proper mobile viewport height",
+        "touchAction: none prevents default touch behaviors",
+        "overflow: hidden prevents scrolling outside the map"
       ]
     }
   ],
   "constraints": [
-    "Use Maptalks.js CDN library as already implemented in MapView.tsx",
-    "Maintain existing neon ray visual styling and biome color coding",
-    "Keep map in 2D mode (no 3D transforms)",
-    "Do not modify backend/main.mo or any immutable frontend paths"
+    "Do NOT modify UIMarker logic in MapView.tsx",
+    "Do NOT modify React hooks in MapView.tsx",
+    "Do NOT modify Emissive land logic in MapView.tsx",
+    "Only replace the four specific sections identified: map instantiation (~127-148), ImageLayer config (~151-160), animateTo block (~221-233), and container style (~284-294)"
   ],
   "nonGoals": [
-    "Adding map boundaries or extent restrictions (to be added later if needed)",
-    "Changing the underlying map library",
-    "Modifying 3D visualization components",
-    "Adding new map interaction features beyond panning and zooming"
+    "Changing any component logic outside the four specified sections",
+    "Modifying marker rendering or click interactions",
+    "Altering React state management or useEffect hooks",
+    "Removing or changing the Green Debug UI (mentioned for cleanup but not in scope)"
   ],
   "imageRequirements": {
     "required": [],

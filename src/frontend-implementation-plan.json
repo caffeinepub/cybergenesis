@@ -1,117 +1,71 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Finalize map orientation and physics with Y-axis flip",
+  "title": "Implement Golden Archive MapView rewrite with drone navigation physics",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Implement flipped Y-axis coordinate system in MapView: set map center to [1704, -961] and map extent to [0, -1922, 3408, 0] for proper top-down image orientation",
+      "summary": "Replace map instantiation with Golden Archive identity projection configuration",
       "acceptanceCriteria": [
-        "Map center is positioned at coordinates [1704, -961]",
-        "Map extent is configured as [0, -1922, 3408, 0]",
-        "Map image appears correctly oriented (not upside down)"
+        "Map uses identity projection with correct spatial reference and resolution pyramid",
+        "Boundaries are enforced with maxExtent [0, -1922, 3408, 0] and panLimit true",
+        "All drag and touch controls are enabled as specified",
+        "dragInertia is enabled for kinetic physics",
+        "devicePixelRatio is set for retina display support"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "Update the Maptalks Map initialization to use flipped Y-axis coordinates: set center to [1704, -961] and configure the map's coordinate system to use extent [0, -1922, 3408, 0]. This ensures the map image displays in proper top-down orientation rather than upside down."
+          "description": "Replace the map instantiation block (approximately lines 127-148) with Golden Archive configuration. Update the `new window.maptalks.Map(...)` call to use identity projection with spatialReference containing resolutions [32, 16, 8, 4, 2, 1], fullExtent {top: 0, left: 0, bottom: -1922, right: 3408}, maxExtent new window.maptalks.Extent(0, -1922, 3408, 0), center [1704, -961], zoom 1, minZoom 0, maxZoom 5, pitch 45, bearing 0, devicePixelRatio window.devicePixelRatio || 2. Enable all drag/touch controls: draggable, dragPan, dragRotate, dragPitch, touchZoom, touchRotate, touchPitch set to true. Set dragInertia: true, seamlessZoom: true, centerCross: false, attribution: false. After map instantiation, add map.config('panLimit', true) to enforce boundary constraints."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Update ImageLayer extent configuration to [0, -1922, 3408, 0] and add canvas renderer with anonymous cross-origin support",
+      "summary": "Update ImageLayer to use Golden Archive webp source with continuous rendering",
       "acceptanceCriteria": [
-        "ImageLayer extent matches [0, -1922, 3408, 0]",
-        "ImageLayer uses canvas renderer",
-        "ImageLayer has crossOrigin set to 'anonymous'"
+        "ImageLayer uses the specified webp URL as the base map",
+        "Layer extent matches the coordinate system [0, -1922, 3408, 0]",
+        "forceRenderOnMoving is set to true for smooth rendering during navigation"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "Modify the ImageLayer configuration to set extent to [0, -1922, 3408, 0] matching the flipped coordinate system. Add renderer: 'canvas' and crossOrigin: 'anonymous' options to the ImageLayer to ensure proper rendering and CORS compliance for the map image asset."
+          "description": "Update the ImageLayer configuration (approximately lines 151-160) to use the webp source URL 'https://raw.githubusercontent.com/dobr312/cyberland/refs/heads/main/CyberMap/IMG_8296.webp'. Set extent to [0, -1922, 3408, 0], opacity to 1, renderer to 'canvas', crossOrigin to 'anonymous', and add forceRenderOnMoving: true to the layer options for smooth rendering during map movement."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Position neon ray UIMarkers using flipped coordinates: set position to [land.x, -land.y] to align with the flipped Y-axis coordinate system",
+      "summary": "Update animateTo with cinematic drone entry parameters",
       "acceptanceCriteria": [
-        "UIMarker positions use [land.x, -land.y] format",
-        "Neon rays align perfectly with land positions on the flipped map image"
+        "Initial animation zooms to level 3 with 55° pitch and 15° bearing",
+        "Animation duration is 3500ms with 'out' easing",
+        "Animation starts after 500ms delay"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "Update all UIMarker position calculations to use [land.x, -land.y] instead of [land.x, land.y]. This flips the Y-coordinate to match the new flipped coordinate system, ensuring neon ray markers appear at the correct land positions on the map."
+          "description": "Update the animateTo animation block (approximately lines 221-233) to use cinematic drone entry parameters. Wrap the entire animateTo call in a setTimeout with 500ms delay. Set center to [targetX, -targetY], zoom to 3, pitch to 55, bearing to 15, duration to 3500, and easing to 'out'. This creates a smooth cinematic entry effect when navigating to a land marker."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Configure map physics: set default zoom to 2, minZoom to -1, maxZoom to 5, enable dragPan, disable dragPitch, and enable seamless mode to prevent bouncing",
+      "summary": "Update map container styling for mobile viewport and touch handling",
       "acceptanceCriteria": [
-        "Default zoom level is 2",
-        "User can zoom out to level -1 and zoom in to level 5",
-        "Map panning is enabled",
-        "Map pitching is disabled",
-        "Seamless mode prevents map from bouncing at boundaries"
+        "Container uses 100dvh for proper mobile viewport height",
+        "touchAction: none prevents default touch behaviors",
+        "overflow: hidden prevents scrolling outside the map"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "Update Map initialization options to set zoom: 2, minZoom: -1, maxZoom: 5. Set dragPan: true to enable panning, dragPitch: false to disable pitch/tilt interactions. Add seamless: true option to prevent map bouncing behavior at edges, allowing smooth panning across the entire map surface."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Remove maxExtent constraint from map options to allow free panning across the entire map area",
-      "acceptanceCriteria": [
-        "maxExtent is not set in map configuration",
-        "User can pan freely without artificial boundaries"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/MapView.tsx",
-          "operation": "modify",
-          "description": "Remove the maxExtent property from the Map options object if it exists. This allows users to pan freely across the entire map without artificial boundary constraints."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Remove the green debug UI overlay from MapView component",
-      "acceptanceCriteria": [
-        "Debug UI overlay is not rendered",
-        "No green diagnostic text appears on screen"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/MapView.tsx",
-          "operation": "modify",
-          "description": "Remove all debug UI rendering code that displays green overlay text or diagnostic information. This includes any JSX elements rendering debug state information (map coordinates, extent values, marker counts, etc.) that appear as green text overlays on the map."
-        }
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "summary": "Ensure close button has zIndex of 100 and set pointer-events to none on neon ray marker content (the ray div) to prevent blocking map dragging interactions",
-      "acceptanceCriteria": [
-        "Close button has z-index: 100",
-        "Close button remains visible and clickable",
-        "Neon ray marker divs have pointer-events: none",
-        "Map dragging is not blocked by ray markers"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/MapView.tsx",
-          "operation": "modify",
-          "description": "Update the close button styling to explicitly set zIndex: 100 in its style object to ensure it remains on top. Modify the neon ray marker div (the visual ray element, not the entire marker container) to include pointerEvents: 'none' in its style, allowing map dragging interactions to pass through the ray visuals while keeping interactive elements (like the close button) clickable."
+          "description": "Update the map container div style (approximately lines 284-294 in the main return statement) to include: position: 'fixed', top: 0, left: 0, width: '100vw', height: '100dvh', zIndex: 1000, background: '#000', overflow: 'hidden', and touchAction: 'none'. The 100dvh ensures proper mobile viewport height accounting for browser chrome, and touchAction: 'none' prevents default touch behaviors that could interfere with map interactions."
         }
       ]
     }

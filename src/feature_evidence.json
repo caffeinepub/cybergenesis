@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-implement-flipped-y-axis-coordinate-system-in-mapview-set-map-center-to-1704-961-and-map-extent-to-0-1922-3408-0-for-proper-top-down-image-orientation",
-      "featureTitle": "Implement flipped Y-axis coordinate system in MapView: set map center to [1704, -961] and map extent to [0, -1922, 3408, 0] for proper top-down image orientation",
+      "featureId": "feature-replace-the-map-instantiation-block-in-mapview-tsx-around-lines-127-148-with-the-complete-golden-archive-configuration-identity-projection-with-spatialreference-using-resolutions-32-16-8-4-2-1-fullextent-top-0-left-0-bottom-1922-right-3408-maxextent-new-window-maptalks-extent-0-1922-3408-0-center-1704-961-zoom-1-minzoom-0-maxzoom-5-pitch-45-bearing-0-devicepixelratio-window-devicepixelratio-2-enable-all-drag-touch-controls-draggable-dragpan-dragrotate-dragpitch-touchzoom-touchrotate-touchpitch-draginertia-true-seamlesszoom-true-centercross-false-attribution-false-add-map-config-panlimit-true-after-instantiation",
+      "featureTitle": "Replace the map instantiation block in MapView.tsx (around lines 127-148) with the complete Golden Archive configuration: identity projection with spatialReference using resolutions [32, 16, 8, 4, 2, 1], fullExtent {top: 0, left: 0, bottom: -1922, right: 3408}, maxExtent new window.maptalks.Extent(0, -1922, 3408, 0), center [1704, -961], zoom 1, minZoom 0, maxZoom 5, pitch 45, bearing 0, devicePixelRatio window.devicePixelRatio || 2, enable all drag/touch controls (draggable, dragPan, dragRotate, dragPitch, touchZoom, touchRotate, touchPitch), dragInertia true, seamlessZoom true, centerCross false, attribution false. Add map.config('panLimit', true) after instantiation.",
       "files": [
         "frontend/src/components/MapView.tsx"
       ],
@@ -23,8 +23,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-imagelayer-extent-configuration-to-0-1922-3408-0-and-add-canvas-renderer-with-anonymous-cross-origin-support",
-      "featureTitle": "Update ImageLayer extent configuration to [0, -1922, 3408, 0] and add canvas renderer with anonymous cross-origin support",
+      "featureId": "feature-update-the-imagelayer-configuration-in-mapview-tsx-around-lines-151-160-to-use-the-webp-source-url-https-raw-githubusercontent-com-dobr312-cyberland-refs-heads-main-cybermap-img-8296-webp-extent-0-1922-3408-0-opacity-1-renderer-canvas-crossorigin-anonymous-and-add-forcerenderonmoving-true-to-the-layer-options",
+      "featureTitle": "Update the ImageLayer configuration in MapView.tsx (around lines 151-160) to use the webp source URL 'https://raw.githubusercontent.com/dobr312/cyberland/refs/heads/main/CyberMap/IMG_8296.webp', extent [0, -1922, 3408, 0], opacity 1, renderer 'canvas', crossOrigin 'anonymous', and add forceRenderOnMoving: true to the layer options.",
       "files": [
         "frontend/src/components/MapView.tsx"
       ],
@@ -44,8 +44,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-position-neon-ray-uimarkers-using-flipped-coordinates-set-position-to-land-x-land-y-to-align-with-the-flipped-y-axis-coordinate-system",
-      "featureTitle": "Position neon ray UIMarkers using flipped coordinates: set position to [land.x, -land.y] to align with the flipped Y-axis coordinate system",
+      "featureId": "feature-update-the-animateto-block-in-mapview-tsx-around-lines-221-233-to-use-these-cinematic-drone-entry-parameters-center-targetx-targety-zoom-3-pitch-55-bearing-15-duration-3500ms-easing-out-with-the-entire-animation-wrapped-in-a-500ms-settimeout-delay",
+      "featureTitle": "Update the animateTo block in MapView.tsx (around lines 221-233) to use these cinematic drone entry parameters: center [targetX, -targetY], zoom 3, pitch 55, bearing 15, duration 3500ms, easing 'out', with the entire animation wrapped in a 500ms setTimeout delay.",
       "files": [
         "frontend/src/components/MapView.tsx"
       ],
@@ -65,8 +65,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-configure-map-physics-set-default-zoom-to-2-minzoom-to-1-maxzoom-to-5-enable-dragpan-disable-dragpitch-and-enable-seamless-mode-to-prevent-bouncing",
-      "featureTitle": "Configure map physics: set default zoom to 2, minZoom to -1, maxZoom to 5, enable dragPan, disable dragPitch, and enable seamless mode to prevent bouncing",
+      "featureId": "feature-update-the-map-container-div-style-in-mapview-tsx-around-lines-284-294-to-include-position-fixed-top-0-left-0-width-100vw-height-100dvh-zindex-1000-background-000-overflow-hidden-and-add-touchaction-none-for-mobile-viewport-handling",
+      "featureTitle": "Update the map container div style in MapView.tsx (around lines 284-294) to include: position fixed, top 0, left 0, width 100vw, height 100dvh, zIndex 1000, background #000, overflow hidden, and add touchAction 'none' for mobile viewport handling.",
       "files": [
         "frontend/src/components/MapView.tsx"
       ],
@@ -82,69 +82,6 @@
       ],
       "testIds": [
         "REQ-4"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-remove-maxextent-constraint-from-map-options-to-allow-free-panning-across-the-entire-map-area",
-      "featureTitle": "Remove maxExtent constraint from map options to allow free panning across the entire map area",
-      "files": [
-        "frontend/src/components/MapView.tsx"
-      ],
-      "components": [
-        "authorization@1.0.1",
-        "http-outcalls@1.1.1",
-        "blob-storage@2.0.3",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-remove-the-green-debug-ui-overlay-from-mapview-component",
-      "featureTitle": "Remove the green debug UI overlay from MapView component",
-      "files": [
-        "frontend/src/components/MapView.tsx"
-      ],
-      "components": [
-        "authorization@1.0.1",
-        "http-outcalls@1.1.1",
-        "blob-storage@2.0.3",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-6"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-close-button-has-zindex-of-100-and-set-pointer-events-to-none-on-neon-ray-marker-content-the-ray-div-to-prevent-blocking-map-dragging-interactions",
-      "featureTitle": "Ensure close button has zIndex of 100 and set pointer-events to none on neon ray marker content (the ray div) to prevent blocking map dragging interactions",
-      "files": [
-        "frontend/src/components/MapView.tsx"
-      ],
-      "components": [
-        "authorization@1.0.1",
-        "http-outcalls@1.1.1",
-        "blob-storage@2.0.3",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-7"
       ],
       "confidence": "high"
     }

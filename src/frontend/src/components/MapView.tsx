@@ -123,40 +123,56 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
     console.log('Initializing Maptalks map with', lands.length, 'lands...');
 
     try {
-      // Create map with identity projection and FLIPPED Y-AXIS coordinates
+      // GOLDEN ARCHIVE FIX #1: Identity Projection & The "Cage" (Boundaries)
       const map = new window.maptalks.Map(mapContainerRef.current, {
-        center: [1704, -961], // Center with negative Y
-        zoom: 2, // Default zoom level
-        minZoom: -1,
+        center: [1704, -961],
+        zoom: 1,
+        minZoom: 0,
         maxZoom: 5,
-        pitch: 0,
+        pitch: 45,
         bearing: 0,
         centerCross: false,
+        devicePixelRatio: window.devicePixelRatio || 2,
+
         spatialReference: {
           projection: 'identity',
+          resolutions: [32, 16, 8, 4, 2, 1],
+          fullExtent: {
+            top: 0,
+            left: 0,
+            bottom: -1922,
+            right: 3408,
+          },
         },
-        // NO maxExtent - allow free panning
+        maxExtent: new window.maptalks.Extent(0, -1922, 3408, 0),
+
         draggable: true,
-        scrollWheelZoom: true,
+        dragPan: true,
+        dragRotate: true,
+        dragPitch: true,
         touchZoom: true,
-        doubleClickZoom: false,
-        dragPan: true, // Enable panning
-        dragPitch: false, // Disable pitch
-        dragRotate: false,
+        touchRotate: true,
+        touchPitch: true,
+
+        dragInertia: true,
+        seamlessZoom: true,
         attribution: false,
-        seamless: true, // Prevent bouncing
       });
 
-      // Add ImageLayer with flipped Y-axis extent and canvas renderer
+      map.config('panLimit', true);
+
+      // GOLDEN ARCHIVE FIX #2: Image Layer Optimization
       const imageLayer = new window.maptalks.ImageLayer('base-layer', [
         {
-          url: 'https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_8296.webp',
-          extent: [0, -1922, 3408, 0], // Flipped Y-axis extent
+          url: 'https://raw.githubusercontent.com/dobr312/cyberland/refs/heads/main/CyberMap/IMG_8296.webp',
+          extent: [0, -1922, 3408, 0],
           opacity: 1,
           renderer: 'canvas',
           crossOrigin: 'anonymous',
         },
-      ]);
+      ], {
+        forceRenderOnMoving: true,
+      });
 
       // Add error listener for image loading
       imageLayer.on('resourceloaderror', () => {
@@ -212,7 +228,7 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
 
       markersRef.current = markers;
 
-      // Fly to user's land
+      // GOLDEN ARCHIVE FIX #3: Cinematic Drone Entry (Animation)
       const ownerLand = lands.find((l) => l.principal?.toString() === userPrincipal);
       if (ownerLand) {
         const targetX = 1704 + (ownerLand.coordinates.lon / 180) * 1704;
@@ -221,12 +237,13 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
         setTimeout(() => {
           map.animateTo(
             {
-              center: [targetX, -targetY], // Negative Y for flipped coordinates
-              zoom: 2,
-              pitch: 0,
+              center: [targetX, -targetY],
+              zoom: 3,
+              pitch: 55,
+              bearing: 15,
             },
             {
-              duration: 2000,
+              duration: 3500,
               easing: 'out',
             }
           );
@@ -282,15 +299,16 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[9999]"
       style={{
-        width: '100vw',
-        height: '100vh',
-        position: 'absolute',
+        position: 'fixed',
         top: 0,
         left: 0,
+        width: '100vw',
+        height: '100dvh',
+        zIndex: 1000,
         background: '#000',
         overflow: 'hidden',
+        touchAction: 'none',
       }}
     >
       {/* Close button with z-index 100 */}
@@ -305,12 +323,12 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
         <X className="w-6 h-6 text-[#00ffff] group-hover:text-white transition-colors" />
       </button>
 
-      {/* Map container with FOOLPROOF inline styles */}
+      {/* Map container with GOLDEN ARCHIVE FIX #4: Mobile Viewport Fix (CSS) */}
       <div
         ref={mapContainerRef}
         style={{
           width: '100vw',
-          height: '100vh',
+          height: '100dvh',
           position: 'absolute',
           top: 0,
           left: 0,
