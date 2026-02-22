@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-replace-the-map-container-s-classname-based-styling-with-hardcoded-inline-styles-to-prevent-height-collapse-width-100vw-height-100vh-position-absolute-top-0-left-0-backgroundcolor-111-zindex-0",
-      "featureTitle": "Replace the map container's className-based styling with hardcoded inline styles to prevent height collapse: width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0, backgroundColor: '#111', zIndex: 0",
+      "featureId": "feature-implement-flipped-y-axis-coordinate-system-in-mapview-set-map-center-to-1704-961-and-map-extent-to-0-1922-3408-0-for-proper-top-down-image-orientation",
+      "featureTitle": "Implement flipped Y-axis coordinate system in MapView: set map center to [1704, -961] and map extent to [0, -1922, 3408, 0] for proper top-down image orientation",
       "files": [
         "frontend/src/components/MapView.tsx"
       ],
@@ -23,8 +23,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-map-initialization-camera-settings-to-safe-values-center-at-1704-961-zoom-level-1-and-pitch-0-degrees-for-flat-view",
-      "featureTitle": "Update map initialization camera settings to safe values: center at [1704, 961], zoom level 1, and pitch 0 degrees for flat view",
+      "featureId": "feature-update-imagelayer-extent-configuration-to-0-1922-3408-0-and-add-canvas-renderer-with-anonymous-cross-origin-support",
+      "featureTitle": "Update ImageLayer extent configuration to [0, -1922, 3408, 0] and add canvas renderer with anonymous cross-origin support",
       "files": [
         "frontend/src/components/MapView.tsx"
       ],
@@ -44,8 +44,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-on-screen-debug-ui-overlay-with-lime-green-text-on-semi-transparent-black-background-positioned-at-top-left-top-80px-left-20px-zindex-9999-displaying-real-time-debug-messages",
-      "featureTitle": "Add on-screen debug UI overlay with lime green text on semi-transparent black background positioned at top-left (top: 80px, left: 20px, zIndex: 9999) displaying real-time debug messages",
+      "featureId": "feature-position-neon-ray-uimarkers-using-flipped-coordinates-set-position-to-land-x-land-y-to-align-with-the-flipped-y-axis-coordinate-system",
+      "featureTitle": "Position neon ray UIMarkers using flipped coordinates: set position to [land.x, -land.y] to align with the flipped Y-axis coordinate system",
       "files": [
         "frontend/src/components/MapView.tsx"
       ],
@@ -65,8 +65,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-event-capture-to-update-on-screen-debug-messages-display-map-dimensions-500ms-after-initialization-capture-and-display-imagelayer-resourceloaderror-events-as-image-load-error-cors-or-link-and-capture-layerload-events-as-image-loaded-ok",
-      "featureTitle": "Implement event capture to update on-screen debug messages: display map dimensions 500ms after initialization, capture and display ImageLayer 'resourceloaderror' events as 'IMAGE LOAD ERROR (CORS or Link)', and capture 'layerload' events as 'IMAGE LOADED OK'",
+      "featureId": "feature-configure-map-physics-set-default-zoom-to-2-minzoom-to-1-maxzoom-to-5-enable-dragpan-disable-dragpitch-and-enable-seamless-mode-to-prevent-bouncing",
+      "featureTitle": "Configure map physics: set default zoom to 2, minZoom to -1, maxZoom to 5, enable dragPan, disable dragPitch, and enable seamless mode to prevent bouncing",
       "files": [
         "frontend/src/components/MapView.tsx"
       ],
@@ -82,6 +82,69 @@
       ],
       "testIds": [
         "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-remove-maxextent-constraint-from-map-options-to-allow-free-panning-across-the-entire-map-area",
+      "featureTitle": "Remove maxExtent constraint from map options to allow free panning across the entire map area",
+      "files": [
+        "frontend/src/components/MapView.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-remove-the-green-debug-ui-overlay-from-mapview-component",
+      "featureTitle": "Remove the green debug UI overlay from MapView component",
+      "files": [
+        "frontend/src/components/MapView.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-close-button-has-zindex-of-100-and-set-pointer-events-to-none-on-neon-ray-marker-content-the-ray-div-to-prevent-blocking-map-dragging-interactions",
+      "featureTitle": "Ensure close button has zIndex of 100 and set pointer-events to none on neon ray marker content (the ray div) to prevent blocking map dragging interactions",
+      "files": [
+        "frontend/src/components/MapView.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
       ],
       "confidence": "high"
     }

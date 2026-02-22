@@ -1,70 +1,117 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add on-screen debug UI and foolproof CSS to MapView for tablet testing",
+  "title": "Finalize map orientation and physics with Y-axis flip",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Replace map container className-based styling with hardcoded inline styles to prevent height collapse",
+      "summary": "Implement flipped Y-axis coordinate system in MapView: set map center to [1704, -961] and map extent to [0, -1922, 3408, 0] for proper top-down image orientation",
       "acceptanceCriteria": [
-        "Map container div uses inline style object instead of className",
-        "Container has explicit 100vw width and 100vh height",
-        "Container is absolutely positioned at top-left with zIndex 0"
+        "Map center is positioned at coordinates [1704, -961]",
+        "Map extent is configured as [0, -1922, 3408, 0]",
+        "Map image appears correctly oriented (not upside down)"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "Replace the map container's className=\"map-content\" with an inline style object containing: width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0, backgroundColor: '#111', zIndex: 0. This ensures the container has explicit dimensions and positioning to prevent 0px height collapse on tablets."
+          "description": "Update the Maptalks Map initialization to use flipped Y-axis coordinates: set center to [1704, -961] and configure the map's coordinate system to use extent [0, -1922, 3408, 0]. This ensures the map image displays in proper top-down orientation rather than upside down."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Update map initialization camera settings to safe values for flat overhead view",
+      "summary": "Update ImageLayer extent configuration to [0, -1922, 3408, 0] and add canvas renderer with anonymous cross-origin support",
       "acceptanceCriteria": [
-        "Map center is set to [1704, 961] (middle of 3408x1922 image)",
-        "Zoom level is changed from -1 to 1",
-        "Pitch is changed from 30 to 0 for flat overhead view"
+        "ImageLayer extent matches [0, -1922, 3408, 0]",
+        "ImageLayer uses canvas renderer",
+        "ImageLayer has crossOrigin set to 'anonymous'"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "Update the maptalks.Map initialization options to use safe camera settings: center at [1704, 961] (the middle of the 3408x1922 image), zoom level 1 (instead of -1), and pitch 0 degrees (instead of 30) for a flat overhead view. These settings ensure predictable rendering on tablets."
+          "description": "Modify the ImageLayer configuration to set extent to [0, -1922, 3408, 0] matching the flipped coordinate system. Add renderer: 'canvas' and crossOrigin: 'anonymous' options to the ImageLayer to ensure proper rendering and CORS compliance for the map image asset."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Add on-screen debug UI overlay displaying real-time debug messages",
+      "summary": "Position neon ray UIMarkers using flipped coordinates: set position to [land.x, -land.y] to align with the flipped Y-axis coordinate system",
       "acceptanceCriteria": [
-        "New debugMsg state variable initialized to 'Initializing...'",
-        "Debug overlay div rendered with inline styles: position absolute, top 80px, left 20px, lime color text, semi-transparent black background, zIndex 9999",
-        "Debug overlay displays current debugMsg value prefixed with 'DEBUG: '"
+        "UIMarker positions use [land.x, -land.y] format",
+        "Neon rays align perfectly with land positions on the flipped map image"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "Add a new state variable `const [debugMsg, setDebugMsg] = useState('Initializing...');` and render an on-screen debug overlay div with inline styles: position: 'absolute', top: '80px', left: '20px', color: 'lime', backgroundColor: 'rgba(0,0,0,0.7)', padding: '10px', borderRadius: '5px', zIndex: 9999, fontFamily: 'monospace', fontSize: '14px'. The div should display the text 'DEBUG: ' followed by the current debugMsg value. This overlay is crucial for tablet debugging where DevTools are not accessible."
+          "description": "Update all UIMarker position calculations to use [land.x, -land.y] instead of [land.x, land.y]. This flips the Y-coordinate to match the new flipped coordinate system, ensuring neon ray markers appear at the correct land positions on the map."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Implement event capture to update on-screen debug messages for map initialization and image loading",
+      "summary": "Configure map physics: set default zoom to 2, minZoom to -1, maxZoom to 5, enable dragPan, disable dragPitch, and enable seamless mode to prevent bouncing",
       "acceptanceCriteria": [
-        "After map initialization, a 500ms timeout updates debugMsg with 'Map Size: {width}x{height}'",
-        "ImageLayer has 'resourceloaderror' event listener that sets debugMsg to 'IMAGE LOAD ERROR (CORS or Link)'",
-        "ImageLayer has 'layerload' event listener that sets debugMsg to 'IMAGE LOADED OK'",
-        "All debug messages are visible on tablet screen without DevTools"
+        "Default zoom level is 2",
+        "User can zoom out to level -1 and zoom in to level 5",
+        "Map panning is enabled",
+        "Map pitching is disabled",
+        "Seamless mode prevents map from bouncing at boundaries"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/MapView.tsx",
           "operation": "modify",
-          "description": "After creating the maptalks.Map instance, add a 500ms setTimeout that captures map dimensions and updates debugMsg with 'Map Size: ' + mapRef.current.width + 'x' + mapRef.current.height. On the ImageLayer instance, add event listeners: 'resourceloaderror' listener that calls setDebugMsg('IMAGE LOAD ERROR (CORS or Link)'), and 'layerload' listener that calls setDebugMsg('IMAGE LOADED OK'). These events provide real-time feedback on map initialization and image loading status visible on the tablet screen without requiring DevTools."
+          "description": "Update Map initialization options to set zoom: 2, minZoom: -1, maxZoom: 5. Set dragPan: true to enable panning, dragPitch: false to disable pitch/tilt interactions. Add seamless: true option to prevent map bouncing behavior at edges, allowing smooth panning across the entire map surface."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Remove maxExtent constraint from map options to allow free panning across the entire map area",
+      "acceptanceCriteria": [
+        "maxExtent is not set in map configuration",
+        "User can pan freely without artificial boundaries"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MapView.tsx",
+          "operation": "modify",
+          "description": "Remove the maxExtent property from the Map options object if it exists. This allows users to pan freely across the entire map without artificial boundary constraints."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Remove the green debug UI overlay from MapView component",
+      "acceptanceCriteria": [
+        "Debug UI overlay is not rendered",
+        "No green diagnostic text appears on screen"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MapView.tsx",
+          "operation": "modify",
+          "description": "Remove all debug UI rendering code that displays green overlay text or diagnostic information. This includes any JSX elements rendering debug state information (map coordinates, extent values, marker counts, etc.) that appear as green text overlays on the map."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Ensure close button has zIndex of 100 and set pointer-events to none on neon ray marker content (the ray div) to prevent blocking map dragging interactions",
+      "acceptanceCriteria": [
+        "Close button has z-index: 100",
+        "Close button remains visible and clickable",
+        "Neon ray marker divs have pointer-events: none",
+        "Map dragging is not blocked by ray markers"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MapView.tsx",
+          "operation": "modify",
+          "description": "Update the close button styling to explicitly set zIndex: 100 in its style object to ensure it remains on top. Modify the neon ray marker div (the visual ray element, not the entire marker container) to include pointerEvents: 'none' in its style, allowing map dragging interactions to pass through the ray visuals while keeping interactive elements (like the close button) clickable."
         }
       ]
     }

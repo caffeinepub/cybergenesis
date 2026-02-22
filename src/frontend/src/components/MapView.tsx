@@ -22,7 +22,6 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const [maptalksSdkLoaded, setMaptalksSdkLoaded] = useState(false);
-  const [debugMsg, setDebugMsg] = useState('Initializing...');
   const { actor } = useActor();
   const { identity } = useInternetIdentity();
 
@@ -44,12 +43,9 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
       // Check if already loaded
       if (window.maptalks) {
         console.log('Maptalks already loaded');
-        setDebugMsg('Maptalks SDK already loaded');
         setMaptalksSdkLoaded(true);
         return;
       }
-
-      setDebugMsg('Loading Maptalks SDK...');
 
       // Load CSS
       const cssLink = document.createElement('link');
@@ -64,22 +60,18 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
 
       script.onload = () => {
         console.log('Maptalks.js loaded successfully');
-        setDebugMsg('Maptalks SDK loaded successfully');
         // Wait a bit to ensure the library is fully initialized
         setTimeout(() => {
           if (window.maptalks) {
             setMaptalksSdkLoaded(true);
-            setDebugMsg('SDK ready, waiting for map init...');
           } else {
             console.error('Maptalks loaded but not available on window');
-            setDebugMsg('ERROR: SDK loaded but not on window');
           }
         }, 100);
       };
 
       script.onerror = () => {
         console.error('Failed to load Maptalks.js');
-        setDebugMsg('ERROR: Failed to load Maptalks SDK');
       };
 
       document.head.appendChild(script);
@@ -115,7 +107,6 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
     // SECURITY: Strict Mode protection - prevent duplicate map instances
     if (mapRef.current) {
       console.log('Map already initialized, skipping duplicate initialization');
-      setDebugMsg('Map already initialized (duplicate prevented)');
       return;
     }
 
@@ -126,89 +117,76 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
         container: !!mapContainerRef.current,
         lands: !!lands,
       });
-      setDebugMsg(
-        `Waiting: SDK=${maptalksSdkLoaded} MT=${!!window.maptalks} CNT=${!!mapContainerRef.current} LANDS=${!!lands}`
-      );
       return;
     }
 
     console.log('Initializing Maptalks map with', lands.length, 'lands...');
-    setDebugMsg('Creating map instance...');
 
     try {
-      // Create map with identity projection and POSITIVE coordinates
+      // Create map with identity projection and FLIPPED Y-AXIS coordinates
       const map = new window.maptalks.Map(mapContainerRef.current, {
-        center: [1704, 961], // Center of the image (positive Y)
-        zoom: 1, // SAFE ZOOM: Changed from -1 to 1 for closer view
-        minZoom: -3,
-        maxZoom: 2,
-        pitch: 0, // SAFE PITCH: Changed from 30 to 0 for flat overhead view
+        center: [1704, -961], // Center with negative Y
+        zoom: 2, // Default zoom level
+        minZoom: -1,
+        maxZoom: 5,
+        pitch: 0,
         bearing: 0,
         centerCross: false,
         spatialReference: {
           projection: 'identity',
         },
-        maxExtent: [0, 0, 3408, 1922], // Positive coordinate quadrant
+        // NO maxExtent - allow free panning
         draggable: true,
         scrollWheelZoom: true,
         touchZoom: true,
         doubleClickZoom: false,
-        dragPan: true,
+        dragPan: true, // Enable panning
+        dragPitch: false, // Disable pitch
         dragRotate: false,
         attribution: false,
+        seamless: true, // Prevent bouncing
       });
 
-      // Capture map size after 500ms
-      setTimeout(() => {
-        if (mapRef.current) {
-          const width = mapRef.current.getSize().width;
-          const height = mapRef.current.getSize().height;
-          setDebugMsg(`Map Size: ${width}x${height}`);
-          console.log('Map dimensions:', width, 'x', height);
-        }
-      }, 500);
-
-      // Add ImageLayer with matching extent
+      // Add ImageLayer with flipped Y-axis extent and canvas renderer
       const imageLayer = new window.maptalks.ImageLayer('base-layer', [
         {
           url: 'https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_8296.webp',
-          extent: [0, 0, 3408, 1922], // Exact match with map extent
+          extent: [0, -1922, 3408, 0], // Flipped Y-axis extent
           opacity: 1,
+          renderer: 'canvas',
+          crossOrigin: 'anonymous',
         },
       ]);
 
       // Add error listener for image loading
       imageLayer.on('resourceloaderror', () => {
         console.error('Image failed to load');
-        setDebugMsg('IMAGE LOAD ERROR (CORS or Link)');
       });
 
       // Add success listener for image loading
       imageLayer.on('layerload', () => {
         console.log('Image loaded successfully');
-        setDebugMsg('IMAGE LOADED OK');
       });
 
       imageLayer.addTo(map);
 
-      // Create neon ray markers using UIMarker
+      // Create neon ray markers using UIMarker with flipped Y coordinates
       const markers: any[] = [];
 
       lands.forEach((land) => {
         const isOwner = land.principal.toString() === userPrincipal;
         const biomeColor = getBiomeColor(land.biome);
 
-        // Convert lat/lon to positive map coordinates
-        // Map coordinates: X from 0 to 3408, Y from 0 to 1922
+        // Convert lat/lon to map coordinates with FLIPPED Y
         const mapX = 1704 + (land.coordinates.lon / 180) * 1704;
-        const mapY = 961 + (land.coordinates.lat / 90) * 961; // Positive Y
+        const mapY = 961 + (land.coordinates.lat / 90) * 961;
 
         // Neon ray dimensions
         const beamWidth = isOwner ? 2.5 : 0.8;
         const beamHeight = 150;
         const opacity = isOwner ? 1.0 : 0.3;
 
-        // Create vertical neon ray with CSS gradient
+        // Create vertical neon ray with CSS gradient and pointer-events: none
         const rayHTML = `
           <div style="
             width: ${beamWidth}px;
@@ -221,7 +199,8 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
           "></div>
         `;
 
-        const marker = new window.maptalks.ui.UIMarker([mapX, mapY], {
+        // Position with NEGATIVE Y to align with flipped coordinate system
+        const marker = new window.maptalks.ui.UIMarker([mapX, -mapY], {
           content: rayHTML,
           verticalAlignment: 'bottom',
           eventsPropagation: false,
@@ -237,13 +216,13 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
       const ownerLand = lands.find((l) => l.principal?.toString() === userPrincipal);
       if (ownerLand) {
         const targetX = 1704 + (ownerLand.coordinates.lon / 180) * 1704;
-        const targetY = 961 + (ownerLand.coordinates.lat / 90) * 961; // Positive Y
+        const targetY = 961 + (ownerLand.coordinates.lat / 90) * 961;
 
         setTimeout(() => {
           map.animateTo(
             {
-              center: [targetX, targetY],
-              zoom: 0,
+              center: [targetX, -targetY], // Negative Y for flipped coordinates
+              zoom: 2,
               pitch: 0,
             },
             {
@@ -259,7 +238,6 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
       console.log('Maptalks map initialized successfully with', markers.length, 'neon rays');
     } catch (error) {
       console.error('Error initializing Maptalks map:', error);
-      setDebugMsg(`ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     // CLEANUP: Strict cleanup function to remove map on unmount
@@ -315,36 +293,17 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
         overflow: 'hidden',
       }}
     >
-      {/* Close button */}
+      {/* Close button with z-index 100 */}
       <button
         onClick={onClose}
-        className="absolute top-10 right-10 z-[10000] glassmorphism px-6 py-3 rounded-lg border border-[#00ffff]/50 hover:border-[#00ffff] transition-all duration-300 group"
+        className="absolute top-10 right-10 glassmorphism px-6 py-3 rounded-lg border border-[#00ffff]/50 hover:border-[#00ffff] transition-all duration-300 group"
         style={{
+          zIndex: 100,
           boxShadow: '0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1)',
         }}
       >
         <X className="w-6 h-6 text-[#00ffff] group-hover:text-white transition-colors" />
       </button>
-
-      {/* ON-SCREEN DEBUG UI - Visible on tablet without DevTools */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '80px',
-          left: '20px',
-          color: 'lime',
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          padding: '10px',
-          borderRadius: '5px',
-          zIndex: 9999,
-          fontFamily: 'monospace',
-          fontSize: '14px',
-          maxWidth: '90vw',
-          wordBreak: 'break-word',
-        }}
-      >
-        DEBUG: {debugMsg}
-      </div>
 
       {/* Map container with FOOLPROOF inline styles */}
       <div

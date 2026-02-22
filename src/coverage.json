@@ -1,18 +1,18 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-21T23:14:49.799Z",
+  "generatedAt": "2026-02-22T00:08:58.394Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 7,
+    "implemented": 7,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Replace the map container's className-based styling with hardcoded inline styles to prevent height collapse: width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0, backgroundColor: '#111', zIndex: 0",
+        "summary": "Implement flipped Y-axis coordinate system in MapView: set map center to [1704, -961] and map extent to [0, -1922, 3408, 0] for proper top-down image orientation",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/MapView.tsx"
@@ -23,7 +23,7 @@
       },
       {
         "id": "REQ-2",
-        "summary": "Update map initialization camera settings to safe values: center at [1704, 961], zoom level 1, and pitch 0 degrees for flat view",
+        "summary": "Update ImageLayer extent configuration to [0, -1922, 3408, 0] and add canvas renderer with anonymous cross-origin support",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/MapView.tsx"
@@ -34,7 +34,7 @@
       },
       {
         "id": "REQ-3",
-        "summary": "Add on-screen debug UI overlay with lime green text on semi-transparent black background positioned at top-left (top: 80px, left: 20px, zIndex: 9999) displaying real-time debug messages",
+        "summary": "Position neon ray UIMarkers using flipped coordinates: set position to [land.x, -land.y] to align with the flipped Y-axis coordinate system",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/MapView.tsx"
@@ -45,7 +45,40 @@
       },
       {
         "id": "REQ-4",
-        "summary": "Implement event capture to update on-screen debug messages: display map dimensions 500ms after initialization, capture and display ImageLayer 'resourceloaderror' events as 'IMAGE LOAD ERROR (CORS or Link)', and capture 'layerload' events as 'IMAGE LOADED OK'",
+        "summary": "Configure map physics: set default zoom to 2, minZoom to -1, maxZoom to 5, enable dragPan, disable dragPitch, and enable seamless mode to prevent bouncing",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/MapView.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/MapView.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Remove maxExtent constraint from map options to allow free panning across the entire map area",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/MapView.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/MapView.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Remove the green debug UI overlay from MapView component",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/MapView.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/MapView.tsx"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Ensure close button has zIndex of 100 and set pointer-events to none on neon ray marker content (the ray div) to prevent blocking map dragging interactions",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/MapView.tsx"

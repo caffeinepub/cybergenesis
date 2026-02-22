@@ -1,96 +1,155 @@
 {
   "kind": "build_request",
-  "title": "Add on-screen debug UI and foolproof CSS to MapView for tablet testing",
-  "projectName": "CyberLand Map",
+  "title": "Finalize map orientation and physics with Y-axis flip",
+  "projectName": "CyberGenesis Map",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Replace the map container's className-based styling with hardcoded inline styles to prevent height collapse: width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0, backgroundColor: '#111', zIndex: 0",
+      "text": "Implement flipped Y-axis coordinate system in MapView: set map center to [1704, -961] and map extent to [0, -1922, 3408, 0] for proper top-down image orientation",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-5"
         ],
         "quotes": [
-          "Replace `className=\"map-content\"` with hardcoded inline styles to prevent 0px height collapse"
+          "Map Center: [1704, -961]",
+          "Map Extent: [0, -1922, 3408, 0]"
         ]
       },
       "acceptanceCriteria": [
-        "Map container div uses inline style object instead of className",
-        "Container has explicit 100vw width and 100vh height",
-        "Container is absolutely positioned at top-left with zIndex 0"
+        "Map center is positioned at coordinates [1704, -961]",
+        "Map extent is configured as [0, -1922, 3408, 0]",
+        "Map image appears correctly oriented (not upside down)"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update map initialization camera settings to safe values: center at [1704, 961], zoom level 1, and pitch 0 degrees for flat view",
+      "text": "Update ImageLayer extent configuration to [0, -1922, 3408, 0] and add canvas renderer with anonymous cross-origin support",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-5"
         ],
         "quotes": [
-          "SAFE CAMERA (As you suggested): In map options: `center: [1704, 961]` `zoom: 1` `pitch: 0`"
+          "ImageLayer Extent: [0, -1922, 3408, 0]",
+          "renderer: 'canvas', crossOrigin: 'anonymous'"
         ]
       },
       "acceptanceCriteria": [
-        "Map center is set to [1704, 961] (middle of 3408x1922 image)",
-        "Zoom level is changed from -1 to 1",
-        "Pitch is changed from 30 to 0 for flat overhead view"
+        "ImageLayer extent matches [0, -1922, 3408, 0]",
+        "ImageLayer uses canvas renderer",
+        "ImageLayer has crossOrigin set to 'anonymous'"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add on-screen debug UI overlay with lime green text on semi-transparent black background positioned at top-left (top: 80px, left: 20px, zIndex: 9999) displaying real-time debug messages",
+      "text": "Position neon ray UIMarkers using flipped coordinates: set position to [land.x, -land.y] to align with the flipped Y-axis coordinate system",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-5"
         ],
         "quotes": [
-          "ON-SCREEN DEBUGGER (Crucial for Tablet): Add a new state: `const [debugMsg, setDebugMsg] = useState('Initializing...');`"
+          "position: [land.x, -land.y]"
         ]
       },
       "acceptanceCriteria": [
-        "New debugMsg state variable initialized to 'Initializing...'",
-        "Debug overlay div rendered with inline styles: position absolute, top 80px, left 20px, lime color text, semi-transparent black background, zIndex 9999",
-        "Debug overlay displays current debugMsg value prefixed with 'DEBUG: '"
+        "UIMarker positions use [land.x, -land.y] format",
+        "Neon rays align perfectly with land positions on the flipped map image"
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Implement event capture to update on-screen debug messages: display map dimensions 500ms after initialization, capture and display ImageLayer 'resourceloaderror' events as 'IMAGE LOAD ERROR (CORS or Link)', and capture 'layerload' events as 'IMAGE LOADED OK'",
+      "text": "Configure map physics: set default zoom to 2, minZoom to -1, maxZoom to 5, enable dragPan, disable dragPitch, and enable seamless mode to prevent bouncing",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-5"
         ],
         "quotes": [
-          "CAPTURE EVENTS TO DEBUG UI: After `mapRef.current = new maptalks.Map(...)`, add: `setTimeout(() => setDebugMsg('Map Size: ' + mapRef.current.width + 'x' + mapRef.current.height), 500);`"
+          "zoom: 2",
+          "minZoom: -1",
+          "maxZoom: 5",
+          "dragPan: true",
+          "dragPitch: false",
+          "seamless: true"
         ]
       },
       "acceptanceCriteria": [
-        "After map initialization, a 500ms timeout updates debugMsg with 'Map Size: {width}x{height}'",
-        "ImageLayer has 'resourceloaderror' event listener that sets debugMsg to 'IMAGE LOAD ERROR (CORS or Link)'",
-        "ImageLayer has 'layerload' event listener that sets debugMsg to 'IMAGE LOADED OK'",
-        "All debug messages are visible on tablet screen without DevTools"
+        "Default zoom level is 2",
+        "User can zoom out to level -1 and zoom in to level 5",
+        "Map panning is enabled",
+        "Map pitching is disabled",
+        "Seamless mode prevents map from bouncing at boundaries"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Remove maxExtent constraint from map options to allow free panning across the entire map area",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "Remove `maxExtent` from the Map options for now"
+        ]
+      },
+      "acceptanceCriteria": [
+        "maxExtent is not set in map configuration",
+        "User can pan freely without artificial boundaries"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Remove the green debug UI overlay from MapView component",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "Remove the Green Debug UI"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Debug UI overlay is not rendered",
+        "No green diagnostic text appears on screen"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Ensure close button has zIndex of 100 and set pointer-events to none on neon ray marker content (the ray div) to prevent blocking map dragging interactions",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "Ensure the Close Button is visible (zIndex: 100)",
+          "pointer-events: none on the ray div"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Close button has z-index: 100",
+        "Close button remains visible and clickable",
+        "Neon ray marker divs have pointer-events: none",
+        "Map dragging is not blocked by ray markers"
       ]
     }
   ],
   "constraints": [
-    "Do not modify frontend/src/hooks/useInternetIdentity.ts or frontend/src/hooks/useInternetIdentity.tsx",
-    "Do not modify frontend/src/hooks/useActor.ts",
-    "Do not modify frontend/src/main.tsx",
-    "Do not modify frontend/src/components/ui components",
-    "Only modify frontend/src/components/MapView.tsx"
+    "Use Maptalks.js CDN library as already implemented in MapView.tsx",
+    "Maintain existing neon ray visual styling and biome color coding",
+    "Keep map in 2D mode (no 3D transforms)",
+    "Do not modify backend/main.mo or any immutable frontend paths"
   ],
   "nonGoals": [
-    "Changing the Maptalks.js CDN URL or library version",
-    "Modifying the image source URL from GitHub Raw",
-    "Adding DevTools or console.log statements (user cannot access these on tablet)",
-    "Changing the map extent coordinates [0, 0, 3408, 1922]",
-    "Implementing any backend changes"
+    "Adding map boundaries or extent restrictions (to be added later if needed)",
+    "Changing the underlying map library",
+    "Modifying 3D visualization components",
+    "Adding new map interaction features beyond panning and zooming"
   ],
   "imageRequirements": {
     "required": [],
