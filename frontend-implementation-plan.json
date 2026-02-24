@@ -1,0 +1,90 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Rewrite MapView.tsx with 2056×2056 asset, manual cover-zoom pinning, and cinematic drone flight",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Replace map background layer with new 2056×2056 IMG_0133.webp asset and configure ImageLayer extent to [0, -2056, 2056, 0]",
+      "acceptanceCriteria": [
+        "The IMG_0133.webp image is loaded as the sole ImageLayer in maptalks.",
+        "ImageLayer extent is exactly [0, -2056, 2056, 0].",
+        "No previous asset URLs remain in the component."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MapView.tsx",
+          "operation": "modify",
+          "description": "Replace the current ImageLayer configuration to use the new asset URL https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp with extent [0, -2056, 2056, 0]. Remove any references to the old 2048×2048 asset. Ensure the ImageLayer is created with urlTemplate pointing to the new webp file and the exact extent coordinates specified."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Configure maptalks Map with identity projection, specific resolutions array, fullExtent matching 2056×2056 dimensions, and disable all rotation/pitch interactions",
+      "acceptanceCriteria": [
+        "Map initializes with center [1028, -1028] and zoom 2.",
+        "panLimit is true and panLimitViscosity is 0.",
+        "Drag rotation, drag pitch, and touch zoom-rotate are all disabled.",
+        "The SpatialReference uses identity projection with the specified resolutions array."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MapView.tsx",
+          "operation": "modify",
+          "description": "Update the Map initialization to use SpatialReference with projection: 'identity', resolutions: [32, 16, 8, 4, 2, 1, 0.5], and fullExtent: { top: 0, left: 0, bottom: -2056, right: 2056 }. Set initial map state to center: [1028, -1028], zoom: 2, pitch: 0, bearing: 0, panLimit: true, panLimitViscosity: 0. Disable all rotation and pitch interactions by setting dragRotate: false, dragPitch: false, touchZoomRotate: false in the map options. Remove any references to the old 2048-based coordinate system."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Implement bulletproof iPhone Gallery edge-pinning logic that executes once on map idle, dynamically calculates minZoom based on container dimensions, and sets black backgrounds",
+      "acceptanceCriteria": [
+        "The pinning logic executes only once on the first idle event.",
+        "minZoom is dynamically calculated based on the actual container dimensions.",
+        "After pinning, the map image fills the entire container with no black bars.",
+        "The wrapper and container divs have a black (#000) background."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MapView.tsx",
+          "operation": "modify",
+          "description": "Inside the map.on('idle', ...) event handler, implement the edge-pinning logic guarded by hasAnimated.current. On the first idle event, read containerRef.current.clientWidth and clientHeight, compute targetRes = Math.min(2056 / vW, 2056 / vH), then compute minZoomLevel = Math.log2(32 / targetRes). Call map.setMinZoom(minZoomLevel) and map.setZoom(minZoomLevel) to pin the image edges to the viewport. Set hasAnimated.current = true at the end of this logic block. Apply background-color: #000 to both the wrapper div and the map container div to ensure black backgrounds show during loading and edge cases."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Trigger cinematic drone flight animation with 200ms delay after pinning logic, animating to selected land coordinates at minZoomLevel+2 over 3500ms with 'out' easing",
+      "acceptanceCriteria": [
+        "On first map idle event (with valid land target), the map animates from minZoomLevel to minZoomLevel+2 over 3500ms.",
+        "Animation starts after a 200ms delay.",
+        "The drone flight easing is 'out'.",
+        "Animation never fires more than once per map mount."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MapView.tsx",
+          "operation": "modify",
+          "description": "Immediately after the pinning logic inside the map.on('idle', ...) handler, add a setTimeout with 200ms delay. Inside the timeout, check if selectedLand exists and has valid coordinates (lon, lat). If true, compute the target center using the formula: [1028 + (lon / 180 * 1028), -(1028 + (lat / 90 * 1028))]. Call map.animateTo with center set to this computed value, zoom set to minZoomLevel + 2, duration: 3500, and easing: 'out'. Ensure this animation block is within the hasAnimated guard so it only executes once per map mount."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Update all land parcel marker and target coordinate calculations to use 1028-offset formula for 2056×2056 coordinate space",
+      "acceptanceCriteria": [
+        "Every UIMarker is positioned using mapX = 1028 + (lon/180)*1028 and mapY = -(1028 + (lat/90)*1028).",
+        "No legacy coordinate formulas remain in the component.",
+        "Markers appear correctly distributed across the 2056×2056 map space."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MapView.tsx",
+          "operation": "modify",
+          "description": "Replace all existing marker coordinate calculations with the new 1028-offset formula. For every UIMarker placement and any animateTo center target, compute mapX = 1028 + (land.coordinates.lon / 180) * 1028 and mapY = -(1028 + (land.coordinates.lat / 90) * 1028). Remove any legacy formulas that reference the old 1024-based or 2048-based coordinate system. Ensure consistency across marker creation for landData array items and any click handlers that target specific land coordinates."
+        }
+      ]
+    }
+  ]
+}

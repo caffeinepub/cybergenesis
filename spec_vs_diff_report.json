@@ -1,0 +1,14 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-24T10:31:33.937Z",
+  "summary": "The diff shows MapView.tsx has been rewritten with most of the required features. The file summary confirms the 2056×2056 asset, manual cover-zoom pinning, cinematic drone flight, 1028-offset coordinates, and disabled rotation/pitch. The visible code confirms REQ-1 (IMG_0133.webp, extent [0,-2056,2056,0]), REQ-2 (SpatialReference, center [1028,-1028], zoom 2, dragRotate/dragPitch/touchZoomRotate all false, panLimit/panLimitViscosity), and REQ-3/4/5 are described in the file summary as implemented. The diff is truncated so full verification of REQ-3, REQ-4, REQ-5 details is limited but the file-summary description is consistent with requirements.",
+  "missing_requirements": [],
+  "hallucinated_features": [],
+  "confidence": 0.8,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/components/MapView.tsx",
+    "project_state.json"
+  ]
+}
