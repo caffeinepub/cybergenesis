@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useActor } from '../hooks/useActor';
 import { useQuery } from '@tanstack/react-query';
 import type { LandData } from '@/backend';
-import { X } from 'lucide-react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 
 interface MapViewProps {
@@ -10,7 +9,6 @@ interface MapViewProps {
   onClose: () => void;
 }
 
-// Extend Window interface for Maptalks
 declare global {
   interface Window {
     maptalks?: any;
@@ -19,9 +17,6 @@ declare global {
 
 const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const hasAnimated = useRef(false);
   const [maptalksSdkLoaded, setMaptalksSdkLoaded] = useState(false);
   const { actor } = useActor();
   const { identity } = useInternetIdentity();
@@ -36,284 +31,222 @@ const MapView: React.FC<MapViewProps> = ({ landData, onClose }) => {
     enabled: !!actor,
   });
 
-  const userPrincipal = identity?.getPrincipal().toString();
-
   // Load Maptalks.js via CDN
   useEffect(() => {
-    const loadMaptalks = async () => {
-      if (window.maptalks) {
-        setMaptalksSdkLoaded(true);
-        return;
-      }
-
-      // Load CSS
-      const cssLink = document.createElement('link');
-      cssLink.rel = 'stylesheet';
-      cssLink.href = 'https://cdn.jsdelivr.net/npm/maptalks@1.0.0-rc.28/dist/maptalks.css';
-      document.head.appendChild(cssLink);
-
-      // Load JS
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/maptalks@1.0.0-rc.28/dist/maptalks.min.js';
-      script.async = false;
-
-      script.onload = () => {
-        setTimeout(() => {
-          if (window.maptalks) {
-            setMaptalksSdkLoaded(true);
-          }
-        }, 100);
-      };
-
-      script.onerror = () => {
-        console.error('Failed to load Maptalks.js');
-      };
-
-      document.head.appendChild(script);
-    };
-
-    loadMaptalks();
-  }, []);
-
-  // Biome color mapping for neon rays
-  const getBiomeColor = (biome: string): string => {
-    switch (biome) {
-      case 'MYTHIC_VOID':
-        return '#9933FF';
-      case 'MYTHIC_AETHER':
-        return '#00FFFF';
-      case 'ISLAND_ARCHIPELAGO':
-        return '#00aaff';
-      case 'FOREST_VALLEY':
-        return '#00ff41';
-      case 'SNOW_PEAK':
-        return '#ffffff';
-      case 'DESERT_DUNE':
-        return '#FF8800';
-      case 'VOLCANIC_CRAG':
-        return '#ff3300';
-      default:
-        return '#ffffff';
-    }
-  };
-
-  // Initialize Maptalks map (only after SDK is loaded)
-  useEffect(() => {
-    if (mapRef.current) {
+    if (window.maptalks) {
+      setMaptalksSdkLoaded(true);
       return;
     }
 
+    const cssLink = document.createElement('link');
+    cssLink.rel = 'stylesheet';
+    cssLink.href = 'https://cdn.jsdelivr.net/npm/maptalks@1.0.0-rc.28/dist/maptalks.css';
+    document.head.appendChild(cssLink);
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/maptalks@1.0.0-rc.28/dist/maptalks.min.js';
+    script.async = false;
+    script.onload = () => {
+      setTimeout(() => {
+        if (window.maptalks) setMaptalksSdkLoaded(true);
+      }, 100);
+    };
+    script.onerror = () => console.error('Failed to load Maptalks.js');
+    document.head.appendChild(script);
+  }, []);
+
+  // Biome → neon color
+  const getBiomeColor = (biome: string): string => {
+    switch (biome) {
+      case 'MYTHIC_VOID':        return '#9933FF';
+      case 'MYTHIC_AETHER':      return '#00FFFF';
+      case 'ISLAND_ARCHIPELAGO': return '#00aaff';
+      case 'FOREST_VALLEY':      return '#00ff41';
+      case 'SNOW_PEAK':          return '#ffffff';
+      case 'DESERT_DUNE':        return '#FF8800';
+      case 'VOLCANIC_CRAG':      return '#ff3300';
+      default:                   return '#ffffff';
+    }
+  };
+
+  // Main map initialization — re-runs only when SDK loads or lands data arrives
+  useEffect(() => {
     if (!maptalksSdkLoaded || !window.maptalks || !mapContainerRef.current || !lands) {
       return;
     }
 
-    try {
-      // REQ-2: Map initialization with 2056×2056 identity projection
-      const map = new window.maptalks.Map(mapContainerRef.current, {
-        center: [1028, -1028],
-        zoom: 2,
-        pitch: 0,
-        bearing: 0,
-        devicePixelRatio: window.devicePixelRatio || 2,
-        spatialReference: {
-          projection: 'identity',
-          resolutions: [32, 16, 8, 4, 2, 1, 0.5],
-          fullExtent: { top: 0, left: 0, bottom: -2056, right: 2056 },
-        },
-        draggable: true,
-        dragPan: true,
-        dragRotate: false,
-        dragPitch: false,
-        touchZoomRotate: false,
-        dragInertia: true,
-        panLimit: true,
-        panLimitViscosity: 0,
-      });
+    const container = mapContainerRef.current;
 
-      // REQ-1: ImageLayer with new 2056×2056 asset
-      const imageLayer = new window.maptalks.ImageLayer(
-        'base-layer',
-        [
-          {
-            url: 'https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp',
-            extent: [0, -2056, 2056, 0],
-            opacity: 1,
-            renderer: 'canvas',
-            crossOrigin: 'anonymous',
-          },
-        ],
+    // Initialize map — pass the DOM element directly
+    const map = new window.maptalks.Map(container, {
+      center: [1028, -1028],
+      zoom: 2,
+      spatialReference: {
+        projection: 'identity',
+        resolutions: [32, 16, 8, 4, 2, 1, 0.5],
+        fullExtent: { top: 5000, left: -5000, bottom: -5000, right: 5000 },
+      },
+      dragPitch: false,
+      dragRotate: false,
+      pitchWithRotate: false,
+      dragRotatePitch: false,
+      touchZoomRotate: false,
+      doubleClickZoom: false,
+      attribution: false,
+      baseLayer: new window.maptalks.ImageLayer('base', [
         {
-          forceRenderOnMoving: true,
-        }
-      );
+          url: 'https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp',
+          extent: [0, -2056, 2056, 0],
+        },
+      ]),
+    });
 
-      imageLayer.addTo(map);
+    // Cover effect + setMaxExtent + UIMarkers + 600ms animateTo
+    map.on('load', () => {
+      const extent = new window.maptalks.Extent(0, -2056, 2056, 0);
+      map.setMaxExtent(extent);
 
-      // REQ-5: Create neon ray markers using 1028-offset formula
-      const markers: any[] = [];
+      // Math.max for Cover effect — fills the viewport without letterboxing
+      const scale = Math.max(container.clientWidth / 2056, container.clientHeight / 2056);
+      const minZoom = Math.log2(32 / (2056 / (2056 * scale)));
+      map.setMinZoom(minZoom);
+      map.setZoom(minZoom);
+      map.fitExtent(extent, 0);
+
+      // Neon beam UIMarkers — 100% engine-rendered, zero React JSX
+      const currentUserPrincipal = identity?.getPrincipal().toString();
 
       lands.forEach((land) => {
-        const isOwner = land.principal.toString() === userPrincipal;
+        const isOwner = land.principal.toString() === currentUserPrincipal;
         const biomeColor = getBiomeColor(land.biome);
 
-        // 1028-offset coordinate formula for 2056×2056 space
-        const mapX = 1028 + (land.coordinates.lon / 180) * 1028;
-        const mapY = 1028 + (land.coordinates.lat / 90) * 1028;
+        const x = 1028 + (land.coordinates.lon / 180) * 1028;
+        const y = 1028 + (land.coordinates.lat / 90) * 1028;
 
-        const beamWidth = isOwner ? 2.5 : 0.8;
-        const beamHeight = 150;
-        const opacity = isOwner ? 1.0 : 0.3;
+        const beamWidth  = isOwner ? 3 : 1;
+        const beamHeight = isOwner ? 180 : 120;
+        const opacity    = isOwner ? 1.0 : 0.35;
+        const glowSpread = isOwner ? 12 : 6;
 
-        const rayHTML = `
+        const htmlString = `
           <div style="
             width: ${beamWidth}px;
             height: ${beamHeight}px;
-            background: linear-gradient(to top, ${biomeColor}, transparent);
+            background: linear-gradient(to top, ${biomeColor}ff, ${biomeColor}88, transparent);
             opacity: ${opacity};
-            box-shadow: 0 0 ${beamWidth * 4}px ${biomeColor}, 0 0 ${beamWidth * 8}px ${biomeColor};
-            transform: translateX(-50%);
+            box-shadow: 0 0 ${glowSpread}px ${biomeColor}, 0 0 ${glowSpread * 2}px ${biomeColor};
             pointer-events: none;
+            border-radius: 1px;
           "></div>
         `;
 
-        const marker = new window.maptalks.ui.UIMarker([mapX, -mapY], {
-          content: rayHTML,
-          verticalAlignment: 'bottom',
-          eventsPropagation: false,
-        });
-
-        markers.push(marker);
-        marker.addTo(map);
-      });
-
-      markersRef.current = markers;
-
-      // REQ-3 & REQ-4: Bulletproof pinning + cinematic drone flight on first idle
-      map.on('idle', () => {
-        const container = mapContainerRef.current;
-        if (container && container.clientWidth > 0 && !hasAnimated.current) {
-          const vW = container.clientWidth;
-          const vH = container.clientHeight;
-          const mapSize = 2056;
-
-          // Manual "cover" resolution calculation
-          const targetRes = Math.min(mapSize / vW, mapSize / vH);
-          const minZoomLevel = Math.log2(32 / targetRes);
-
-          // Pin edges: set minZoom and snap current zoom
-          map.setMinZoom(minZoomLevel);
-          map.setZoom(minZoomLevel);
-
-          // Find owner land for drone flight target
-          const ownerLand = lands.find((l) => l.principal?.toString() === userPrincipal);
-
-          // Integrated animation — no separate useEffect
-          if (ownerLand) {
-            const lon = ownerLand.coordinates.lon;
-            const lat = ownerLand.coordinates.lat;
-            const targetX = 1028 + (lon / 180) * 1028;
-            const targetY = 1028 + (lat / 90) * 1028;
-
-            setTimeout(() => {
-              map.animateTo(
-                {
-                  center: [targetX, -targetY],
-                  zoom: minZoomLevel + 2,
-                },
-                {
-                  duration: 3500,
-                  easing: 'out',
-                }
-              );
-            }, 200);
+        new window.maptalks.ui.UIMarker(
+          [Math.floor(x), Math.floor(-y)],
+          {
+            content: htmlString,
+            verticalAlignment: 'middle',
+            horizontalAlignment: 'middle',
+            eventsPropagation: false,
           }
-
-          hasAnimated.current = true;
-        }
+        ).addTo(map);
       });
 
-      mapRef.current = map;
-    } catch (error) {
-      console.error('Error initializing Maptalks map:', error);
-    }
+      // 600ms delayed drone animation to target land
+      const lon = landData.coordinates.lon;
+      const lat = landData.coordinates.lat;
+      const targetX = Math.floor(1028 + (lon / 180 * 1028));
+      const targetY = Math.floor(-(1028 + (lat / 90 * 1028)));
+
+      setTimeout(() => {
+        map.animateTo(
+          {
+            center: [targetX, targetY],
+            zoom: minZoom + 1.5,
+          },
+          {
+            duration: 3500,
+            easing: 'out',
+          }
+        );
+      }, 600);
+    });
 
     // Cleanup on unmount
     return () => {
-      if (markersRef.current.length > 0) {
-        markersRef.current.forEach((marker) => {
-          try {
-            marker.remove();
-          } catch (e) {
-            // ignore
-          }
-        });
-        markersRef.current = [];
-      }
-
-      if (mapRef.current) {
-        try {
-          mapRef.current.remove();
-        } catch (e) {
-          console.error('Error removing map:', e);
-        }
-        mapRef.current = null;
-      }
+      if (map) map.remove();
     };
-  }, [maptalksSdkLoaded, lands, userPrincipal]);
-
-  // Show loading screen
-  if (!maptalksSdkLoaded || !lands) {
-    return (
-      <div
-        style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: '#000' }}
-        className="flex items-center justify-center"
-      >
-        <div className="text-[#00ffff] text-xl animate-pulse font-orbitron">
-          {!maptalksSdkLoaded ? 'Загрузка библиотеки Maptalks...' : 'Загрузка данных земель...'}
-        </div>
-      </div>
-    );
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maptalksSdkLoaded, lands]);
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100dvh',
-        zIndex: 1000,
-        backgroundColor: '#000',
-        overflow: 'hidden',
-        touchAction: 'none',
-      }}
-    >
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-10 right-10 glassmorphism px-6 py-3 rounded-lg border border-[#00ffff]/50 hover:border-[#00ffff] transition-all duration-300 group"
-        style={{
-          zIndex: 100,
-          boxShadow: '0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1)',
-        }}
-      >
-        <X className="w-6 h-6 text-[#00ffff] group-hover:text-white transition-colors" />
-      </button>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      zIndex: 9999,
+      background: '#000',
+      overflow: 'hidden',
+      display: 'block',
+    }}>
+      {/* Loading overlay — shown until SDK and data are ready */}
+      {(!maptalksSdkLoaded || !lands) && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 10002,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#000',
+        }}>
+          <div style={{
+            color: '#00ffff',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            letterSpacing: '0.1em',
+            animation: 'pulse 1.5s ease-in-out infinite',
+          }}>
+            {!maptalksSdkLoaded ? 'Загрузка библиотеки Maptalks...' : 'Загрузка данных земель...'}
+          </div>
+        </div>
+      )}
 
-      {/* Map container */}
+      {/* Map Container — MUST have 100% of the fixed parent; touchAction: auto for mobile */}
       <div
         ref={mapContainerRef}
         style={{
-          width: '100vw',
-          height: '100dvh',
+          width: '100%',
+          height: '100%',
           position: 'absolute',
           top: 0,
           left: 0,
-          backgroundColor: '#000',
-          zIndex: 0,
+          touchAction: 'auto',
         }}
       />
+
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        style={{
+          position: 'absolute',
+          top: 'env(safe-area-inset-top, 20px)',
+          right: '20px',
+          zIndex: 10001,
+          padding: '12px 24px',
+          background: 'rgba(0,0,0,0.7)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.3)',
+          borderRadius: '12px',
+          backdropFilter: 'blur(10px)',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+        }}
+      >
+        ✕
+      </button>
     </div>
   );
 };

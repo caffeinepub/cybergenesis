@@ -1,79 +1,46 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T10:31:33.940Z",
+  "generatedAt": "2026-02-26T01:50:23.028Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 5,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Rewrite frontend/src/components/MapView.tsx to use the new 2056×2056 image asset from https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp as the map background layer with an ImageLayer extent of [0, -2056, 2056, 0].",
+        "summary": "In CubeVisualization.tsx, update only the following numeric values in the Bloom post-processing pass: set intensity to 0.15, set radius to 0.5, set luminanceThreshold to 0.1. Do NOT modify smoothing, any other Bloom properties, any other post-processing passes, or any other logic or structure in the file.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/MapView.tsx"
+          "frontend/src/components/CubeVisualization.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/MapView.tsx"
+          "frontend/src/components/CubeVisualization.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Configure the maptalks Map with SpatialReference { projection: 'identity', resolutions: [32, 16, 8, 4, 2, 1, 0.5], fullExtent: { top: 0, left: 0, bottom: -2056, right: 2056 } } and initial state { center: [1028, -1028], zoom: 2, pitch: 0, bearing: 0, panLimit: true, panLimitViscosity: 0 }. Disable all rotation and pitch interactions: dragRotate: false, dragPitch: false, touchZoomRotate: false.",
+        "summary": "In LandModel.tsx, within the biomeConfigs block, change emissiveIntensity from 1.5 to 1.0 for every biome entry. Do NOT change the pulse value (keep it at 0.15), do NOT modify any other material properties, and do NOT touch any geometry logic or structure.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/MapView.tsx"
+          "frontend/src/components/LandModel.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/MapView.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Implement the 'bulletproof' iPhone Gallery edge-pinning logic inside map.on('idle', ...) that runs exactly once (guarded by hasAnimated.current). On first idle event: read the container's clientWidth and clientHeight, compute targetRes = Math.min(mapSize / vW, mapSize / vH) where mapSize = 2056, compute minZoomLevel = Math.log2(32 / targetRes), then call map.setMinZoom(minZoomLevel) and map.setZoom(minZoomLevel) to pin the image edges to the viewport. Set the map background and wrapper div background to #000.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/MapView.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/MapView.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "After the pinning logic runs, trigger a cinematic drone flight animation with a 200ms delay using map.animateTo({ center: [1028 + (lon / 180 * 1028), -(1028 + (lat / 90 * 1028))], zoom: minZoomLevel + 2 }, { duration: 3500, easing: 'out' }), where lon and lat correspond to the currently selected land's coordinates. This animation must only run if a target land with valid coordinates is available, and must not fire again after hasAnimated.current is set to true.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/MapView.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/MapView.tsx"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Update all land parcel marker and target coordinate calculations to use the 1028-offset formula: mapX = 1028 + (land.coordinates.lon / 180) * 1028 and mapY = -(1028 + (land.coordinates.lat / 90) * 1028). Apply this formula consistently for UIMarkers placement and any animateTo center targets.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/MapView.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/MapView.tsx"
+          "frontend/src/components/LandModel.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/MapView.tsx",
+    "frontend/src/components/CubeVisualization.tsx",
+    "frontend/src/components/LandModel.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

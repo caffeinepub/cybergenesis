@@ -1,69 +1,34 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "CyberLand map project using maptalks with a 2056x2056 webp asset (IMG_0133.webp). MapView.tsx features iPhone Gallery-style pinned edges, manual pixel-perfect cover zoom calculation, cinematic drone flight animation, and land parcel markers.",
+  "summary": "3D project with crystal glass visualization featuring AgX tone mapping, selective bloom on Layer 1, physical intensities, and biome configurations. Currently calibrating bloom and emissive settings for subtle professional glow.",
   "architectural_notes": [
-    "maptalks SpatialReference: projection 'identity', resolutions [32,16,8,4,2,1,0.5], fullExtent top:0 left:0 bottom:-2056 right:2056",
-    "Map asset: IMG_0133.webp 2056x2056px, ImageLayer extent [0,-2056,2056,0]",
-    "Cover zoom: targetRes = Math.min(mapSize/vW, mapSize/vH); minZoomLevel = Math.log2(32/targetRes)",
-    "Marker coordinates: mapX = 1028 + (lon/180)*1028; mapY = 1028 + (lat/90)*1028",
-    "Drone flight: animateTo center+zoom with duration 3500ms easing 'out', delayed 200ms, triggered once via hasAnimated ref",
-    "Controls: dragRotate:false, dragPitch:false, touchZoomRotate:false, panLimit:true, panLimitViscosity:0"
+    "Bloom settings (CubeVisualisation.tsx): intensity=0.15, radius=0.5, luminanceThreshold=0.1; do not touch smoothing or other post-processing passes",
+    "LandModel.tsx biomeConfigs: emissiveIntensity=1.0 for all biomes, pulse=0.15; metalness/roughness and geometry logic must not be changed"
   ],
   "known_issues": [],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-rewrite-frontend-src-components-mapview-tsx-to-use-the-new-2056-2056-image-asset-from-https-raw-githubusercontent-com-dobr312-cyberland-main-cybermap-img-0133-webp-as-the-map-background-layer-with-an-imagelayer-extent-of-0-2056-2056-0",
-      "title": "Rewrite frontend/src/components/MapView.tsx to use the new 2056×2056 image asset from https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp as the map background layer with an ImageLayer extent of [0, -2056, 2056, 0].",
+      "id": "feature-in-cubevisualization-tsx-update-only-the-following-numeric-values-in-the-bloom-post-processing-pass-set-intensity-to-0-15-set-radius-to-0-5-set-luminancethreshold-to-0-1-do-not-modify-smoothing-any-other-bloom-properties-any-other-post-processing-passes-or-any-other-logic-or-structure-in-the-file",
+      "title": "In CubeVisualization.tsx, update only the following numeric values in the Bloom post-processing pass: set intensity to 0.15, set radius to 0.5, set luminanceThreshold to 0.1. Do NOT modify smoothing, any other Bloom properties, any other post-processing passes, or any other logic or structure in the file.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-configure-the-maptalks-map-with-spatialreference-projection-identity-resolutions-32-16-8-4-2-1-0-5-fullextent-top-0-left-0-bottom-2056-right-2056-and-initial-state-center-1028-1028-zoom-2-pitch-0-bearing-0-panlimit-true-panlimitviscosity-0-disable-all-rotation-and-pitch-interactions-dragrotate-false-dragpitch-false-touchzoomrotate-false",
-      "title": "Configure the maptalks Map with SpatialReference { projection: 'identity', resolutions: [32, 16, 8, 4, 2, 1, 0.5], fullExtent: { top: 0, left: 0, bottom: -2056, right: 2056 } } and initial state { center: [1028, -1028], zoom: 2, pitch: 0, bearing: 0, panLimit: true, panLimitViscosity: 0 }. Disable all rotation and pitch interactions: dragRotate: false, dragPitch: false, touchZoomRotate: false.",
+      "id": "feature-in-landmodel-tsx-within-the-biomeconfigs-block-change-emissiveintensity-from-1-5-to-1-0-for-every-biome-entry-do-not-change-the-pulse-value-keep-it-at-0-15-do-not-modify-any-other-material-properties-and-do-not-touch-any-geometry-logic-or-structure",
+      "title": "In LandModel.tsx, within the biomeConfigs block, change emissiveIntensity from 1.5 to 1.0 for every biome entry. Do NOT change the pulse value (keep it at 0.15), do NOT modify any other material properties, and do NOT touch any geometry logic or structure.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-implement-the-bulletproof-iphone-gallery-edge-pinning-logic-inside-map-on-idle-that-runs-exactly-once-guarded-by-hasanimated-current-on-first-idle-event-read-the-container-s-clientwidth-and-clientheight-compute-targetres-math-min-mapsize-vw-mapsize-vh-where-mapsize-2056-compute-minzoomlevel-math-log2-32-targetres-then-call-map-setminzoom-minzoomlevel-and-map-setzoom-minzoomlevel-to-pin-the-image-edges-to-the-viewport-set-the-map-background-and-wrapper-div-background-to-000",
-      "title": "Implement the 'bulletproof' iPhone Gallery edge-pinning logic inside map.on('idle', ...) that runs exactly once (guarded by hasAnimated.current). On first idle event: read the container's clientWidth and clientHeight, compute targetRes = Math.min(mapSize / vW, mapSize / vH) where mapSize = 2056, compute minZoomLevel = Math.log2(32 / targetRes), then call map.setMinZoom(minZoomLevel) and map.setZoom(minZoomLevel) to pin the image edges to the viewport. Set the map background and wrapper div background to #000.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-after-the-pinning-logic-runs-trigger-a-cinematic-drone-flight-animation-with-a-200ms-delay-using-map-animateto-center-1028-lon-180-1028-1028-lat-90-1028-zoom-minzoomlevel-2-duration-3500-easing-out-where-lon-and-lat-correspond-to-the-currently-selected-land-s-coordinates-this-animation-must-only-run-if-a-target-land-with-valid-coordinates-is-available-and-must-not-fire-again-after-hasanimated-current-is-set-to-true",
-      "title": "After the pinning logic runs, trigger a cinematic drone flight animation with a 200ms delay using map.animateTo({ center: [1028 + (lon / 180 * 1028), -(1028 + (lat / 90 * 1028))], zoom: minZoomLevel + 2 }, { duration: 3500, easing: 'out' }), where lon and lat correspond to the currently selected land's coordinates. This animation must only run if a target land with valid coordinates is available, and must not fire again after hasAnimated.current is set to true.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-all-land-parcel-marker-and-target-coordinate-calculations-to-use-the-1028-offset-formula-mapx-1028-land-coordinates-lon-180-1028-and-mapy-1028-land-coordinates-lat-90-1028-apply-this-formula-consistently-for-uimarkers-placement-and-any-animateto-center-targets",
-      "title": "Update all land parcel marker and target coordinate calculations to use the 1028-offset formula: mapX = 1028 + (land.coordinates.lon / 180) * 1028 and mapY = -(1028 + (land.coordinates.lat / 90) * 1028). Apply this formula consistently for UIMarkers placement and any animateTo center targets.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Rewrite MapView.tsx with 2056x2056 asset, manual cover-zoom pinning, drone flight animation, and 1028-offset marker coordinates",
-      "reqIds": [],
-      "status": "pending"
-    }
-  ],
-  "gameProjectType": "none",
-  "projectName": "CyberLand",
+  "new_feature_requests": [],
+  "gameProjectType": "3d",
+  "projectName": "Crystal Glass",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

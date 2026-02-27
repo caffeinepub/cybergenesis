@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import LandModel from './LandModel';
 
 interface CubeVisualizationProps {
@@ -21,6 +22,45 @@ const BIOME_MODEL_MAP: Record<string, string> = {
   MYTHIC_AETHER: 'https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/MYTHIC_AETHER.glb',
 };
 
+// Composite shader: blends bloom render target onto the final scene
+const COMPOSITE_SHADER = {
+  uniforms: {
+    baseTexture: { value: null as THREE.Texture | null },
+    bloomTexture: { value: null as THREE.Texture | null },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D baseTexture;
+    uniform sampler2D bloomTexture;
+    varying vec2 vUv;
+    void main() {
+      gl_FragColor = texture2D(baseTexture, vUv) + vec4(1.0) * texture2D(bloomTexture, vUv);
+    }
+  `,
+};
+
+// Camera layer setup: enable both Layer 0 (default) and Layer 1 (bloom targets)
+function CameraLayerSetup() {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    // Layer 0 is enabled by default; explicitly enable it to be safe
+    camera.layers.enable(0);
+    // Layer 1 is used for selective bloom targets (emissive meshes)
+    camera.layers.enable(1);
+    console.log('[CameraLayerSetup] Camera now sees Layer 0 and Layer 1');
+  }, [camera]);
+
+  return null;
+}
+
+// Camera-linked directional key light
 function KeyLightSync() {
   const keyLight = useRef<THREE.DirectionalLight>(null);
 
@@ -38,7 +78,7 @@ function KeyLightSync() {
     <directionalLight
       ref={keyLight}
       name="KeyLight"
-      intensity={Math.PI * 2.0}
+      intensity={Math.PI * 0.8}
       color="#ffffff"
     />
   );
@@ -92,19 +132,14 @@ const BackgroundSphere = () => {
     }
 
     void main(void) {
-        // Universal Screen-Space coordinates
         vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
         
-        // Deep Indigo Base
         vec3 c1 = vec3(0.2, 0.0, 0.4);
-        // Electric Cyan Highlight
         vec3 c2 = vec3(0.0, 0.8, 1.0);
-        // Hot Magenta Highlight (Desaturated slightly for realism)
         vec3 c3 = vec3(0.9, 0.1, 0.4);
-        // Pure Void Black (Crucial for contrast)
         vec3 c4 = vec3(0.0, 0.0, 0.05);
 
-        float time2 = time * 0.2; // Slow down for elegance
+        float time2 = time * 0.2;
 
         vec2 q = vec2(0.0);
         q.x = fbm(p + 0.00 * time2);
@@ -116,14 +151,12 @@ const BackgroundSphere = () => {
         
         float f = fbm(p + r);
 
-        // Mix our colors using the FBM logic
         vec3 color = mix(c1, c2, clamp((f * f) * 4.0, 0.0, 1.0));
         color = mix(color, c3, clamp(length(q), 0.0, 1.0));
         color = mix(color, c4, clamp(length(r.x), 0.0, 1.0));
 
         color = (f * f * f * 1.5 + 0.5 * f) * color;
 
-        // Increased contrast power (pow 3.0) to crush blacks and boost bloom
         gl_FragColor = vec4(pow(color, vec3(3.0)) * 6.0, 1.0);
     }
   `;
@@ -161,92 +194,181 @@ function SceneSetup() {
   const { scene } = useThree();
 
   useEffect(() => {
-    // Set scene.background to null so shader plane is visible
     scene.background = null;
-    
-    // Deep Space fog color 0x05010a
     scene.fog = new THREE.FogExp2(0x05010a, 0.0015);
-    
-    console.log('[Scene Setup] Background set to null, Deep Space fog (0x05010a, density 0.0015) applied');
+    console.log('[Scene Setup] Background set to null, Deep Space fog applied');
   }, [scene]);
 
   return null;
 }
 
-function BloomEffect() {
+/**
+ * Selective Bloom via dual-composer + layer technique:
+ * 1. bloomComposer renders ONLY Layer 1 (emissive meshes) → writes to render target (not screen)
+ * 2. finalComposer renders full scene (Layer 0 + 1) and composites bloom texture on top
+ *
+ * Camera sees both Layer 0 and Layer 1 (set in CameraLayerSetup).
+ * HueSaturation is applied via a custom ShaderPass after compositing.
+ */
+function SelectiveBloomEffect() {
   const { gl, scene, camera, size } = useThree();
-  const composerRef = useRef<EffectComposer | null>(null);
-  const renderPassRef = useRef<RenderPass | null>(null);
+
+  const bloomComposerRef = useRef<EffectComposer | null>(null);
+  const finalComposerRef = useRef<EffectComposer | null>(null);
   const bloomPassRef = useRef<UnrealBloomPass | null>(null);
 
   useEffect(() => {
-    // Ensure renderer uses opaque clear alpha
     gl.setClearAlpha(1);
-    
-    // Initialize EffectComposer with default settings
-    const composer = new EffectComposer(gl);
-    composer.renderToScreen = true;
-    composerRef.current = composer;
 
-    // Standard RenderPass with default clearing behavior
-    const renderPass = new RenderPass(scene, camera);
-    renderPassRef.current = renderPass;
-    composer.addPass(renderPass);
+    // ── Bloom Composer (Layer 1 only, renders to off-screen target) ──
+    const bloomComposer = new EffectComposer(gl);
+    bloomComposer.renderToScreen = false;
+    bloomComposerRef.current = bloomComposer;
 
-    // Bloom configuration: threshold=2.1, luminanceSmoothing=0.5, intensity=0.32, radius=0.7
+    const bloomRenderPass = new RenderPass(scene, camera);
+    bloomComposer.addPass(bloomRenderPass);
+
+    // Bloom settings: intensity=0.15, radius=0.5, luminanceThreshold=0.1
     const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2),
-      0.32, // intensity
-      0.7,  // radius
-      2.1   // threshold
+      new THREE.Vector2(size.width / 2, size.height / 2),
+      0.15,  // intensity
+      0.5,   // radius
+      0.1    // luminanceThreshold
     );
     bloomPassRef.current = bloomPass;
-    
-    // Set luminanceSmoothing if supported (feature detection)
-    if ('luminanceSmoothing' in bloomPass) {
-      (bloomPass as any).luminanceSmoothing = 0.5;
-      console.log('[Bloom] UnrealBloomPass initialized: threshold=2.1, intensity=0.32, radius=0.7, luminanceSmoothing=0.5');
-    } else {
-      console.log('[Bloom] UnrealBloomPass initialized: threshold=2.1, intensity=0.32, radius=0.7');
-    }
-    
-    composer.addPass(bloomPass);
+    bloomComposer.addPass(bloomPass);
+
+    // ── Final Composer (full scene + bloom composite + HueSaturation) ──
+    const finalComposer = new EffectComposer(gl);
+    finalComposer.renderToScreen = true;
+    finalComposerRef.current = finalComposer;
+
+    const finalRenderPass = new RenderPass(scene, camera);
+    finalComposer.addPass(finalRenderPass);
+
+    // Composite pass: merges base scene with bloom render target
+    const compositePass = new ShaderPass(
+      new THREE.ShaderMaterial({
+        uniforms: {
+          baseTexture: { value: null },
+          bloomTexture: { value: bloomComposer.renderTarget2.texture },
+        },
+        vertexShader: COMPOSITE_SHADER.vertexShader,
+        fragmentShader: COMPOSITE_SHADER.fragmentShader,
+        defines: {},
+      }),
+      'baseTexture'
+    );
+    compositePass.needsSwap = true;
+    finalComposer.addPass(compositePass);
+
+    // HueSaturation pass: +10% saturation boost after bloom composite
+    const hueSaturationPass = new ShaderPass(
+      new THREE.ShaderMaterial({
+        uniforms: {
+          tDiffuse: { value: null },
+          hue: { value: 0.0 },
+          saturation: { value: 0.1 },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform sampler2D tDiffuse;
+          uniform float hue;
+          uniform float saturation;
+          varying vec2 vUv;
+
+          vec3 rgb2hsl(vec3 c) {
+            float maxC = max(c.r, max(c.g, c.b));
+            float minC = min(c.r, min(c.g, c.b));
+            float l = (maxC + minC) * 0.5;
+            float s = 0.0;
+            float h = 0.0;
+            if (maxC != minC) {
+              float d = maxC - minC;
+              s = l > 0.5 ? d / (2.0 - maxC - minC) : d / (maxC + minC);
+              if (maxC == c.r) h = (c.g - c.b) / d + (c.g < c.b ? 6.0 : 0.0);
+              else if (maxC == c.g) h = (c.b - c.r) / d + 2.0;
+              else h = (c.r - c.g) / d + 4.0;
+              h /= 6.0;
+            }
+            return vec3(h, s, l);
+          }
+
+          float hue2rgb(float p, float q, float t) {
+            if (t < 0.0) t += 1.0;
+            if (t > 1.0) t -= 1.0;
+            if (t < 1.0/6.0) return p + (q - p) * 6.0 * t;
+            if (t < 1.0/2.0) return q;
+            if (t < 2.0/3.0) return p + (q - p) * (2.0/3.0 - t) * 6.0;
+            return p;
+          }
+
+          vec3 hsl2rgb(vec3 c) {
+            if (c.y == 0.0) return vec3(c.z);
+            float q = c.z < 0.5 ? c.z * (1.0 + c.y) : c.z + c.y - c.z * c.y;
+            float p = 2.0 * c.z - q;
+            return vec3(
+              hue2rgb(p, q, c.x + 1.0/3.0),
+              hue2rgb(p, q, c.x),
+              hue2rgb(p, q, c.x - 1.0/3.0)
+            );
+          }
+
+          void main() {
+            vec4 texel = texture2D(tDiffuse, vUv);
+            vec3 hsl = rgb2hsl(texel.rgb);
+            hsl.x = fract(hsl.x + hue);
+            hsl.y = clamp(hsl.y * (1.0 + saturation), 0.0, 1.0);
+            gl_FragColor = vec4(hsl2rgb(hsl), texel.a);
+          }
+        `,
+      })
+    );
+    finalComposer.addPass(hueSaturationPass);
+
+    console.log('[SelectiveBloom] Dual-composer initialized: Layer1-only bloom + HueSaturation(+0.1)');
 
     return () => {
-      // Cleanup on unmount
-      if (bloomPassRef.current) {
-        bloomPassRef.current.dispose();
-        bloomPassRef.current = null;
-      }
-      if (renderPassRef.current) {
-        renderPassRef.current.dispose();
-        renderPassRef.current = null;
-      }
-      if (composerRef.current) {
-        composerRef.current.dispose();
-        composerRef.current = null;
-      }
-      console.log('[Bloom] Composer disposed');
+      bloomPassRef.current?.dispose();
+      bloomPassRef.current = null;
+      bloomComposerRef.current?.dispose();
+      bloomComposerRef.current = null;
+      finalComposerRef.current?.dispose();
+      finalComposerRef.current = null;
+      console.log('[SelectiveBloom] Composers disposed');
     };
-  }, [gl, scene, camera, size.width, size.height]);
+  }, [gl, scene, camera]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle resize
   useEffect(() => {
-    if (composerRef.current) {
-      composerRef.current.setSize(size.width, size.height);
-      
-      // Update bloom pass resolution to 50% of new size
-      if (bloomPassRef.current) {
-        bloomPassRef.current.resolution.set(size.width / 2, size.height / 2);
-      }
+    if (bloomComposerRef.current) {
+      bloomComposerRef.current.setSize(size.width, size.height);
+    }
+    if (finalComposerRef.current) {
+      finalComposerRef.current.setSize(size.width, size.height);
+    }
+    if (bloomPassRef.current) {
+      bloomPassRef.current.resolution.set(size.width / 2, size.height / 2);
     }
   }, [size]);
 
-  // Clean render loop - only composer.render(), no manual clearing
   useFrame(() => {
-    if (composerRef.current) {
-      composerRef.current.render();
-    }
+    if (!bloomComposerRef.current || !finalComposerRef.current) return;
+
+    // Step 1: Render only Layer 1 (emissive/bloom targets) into bloom render target
+    camera.layers.set(1);
+    bloomComposerRef.current.render();
+
+    // Step 2: Restore camera to see both layers, render full scene + composite bloom
+    camera.layers.enable(0);
+    camera.layers.enable(1);
+    finalComposerRef.current.render();
   }, 1);
 
   return null;
@@ -261,14 +383,11 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
     return url || null;
   }, [biome]);
 
-  // Fullscreen state and container ref
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fullscreen toggle handler
   const toggleFullscreen = async () => {
     if (!containerRef.current) return;
-
     try {
       if (!document.fullscreenElement) {
         await containerRef.current.requestFullscreen();
@@ -280,12 +399,10 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
     }
   };
 
-  // Sync fullscreen state with browser fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
-
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
@@ -313,49 +430,55 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           ...(({ dithering: true } as any))
         }}
         onCreated={({ gl }) => {
-          // Tone mapping exposure set to 1.0
-          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          // AgX Tone Mapping with exposure 1.2 to compensate for AgX softness
+          gl.toneMapping = THREE.AgXToneMapping;
           gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.toneMappingExposure = 1.0;
-          
-          // Ensure opaque clear alpha is set (default behavior)
+          gl.toneMappingExposure = 1.2;
           gl.setClearAlpha(1);
-          
-          console.log('[Renderer] Initialized with toneMappingExposure=1.0 and dithering=true');
+          console.log('[Renderer] AgXToneMapping, toneMappingExposure=1.2');
         }}
       >
         <Suspense fallback={null}>
-          {/* Apply null background and Deep Space fog to scene */}
+          {/* Scene background and fog */}
           <SceneSetup />
-          
-          {/* Screen-Space Quad with full FBM 4-color neon shader */}
+
+          {/* Camera layer setup: enable Layer 0 and Layer 1 */}
+          <CameraLayerSetup />
+
+          {/* Screen-Space FBM background shader */}
           <BackgroundSphere />
-          
+
           <LandModel modelUrl={modelUrl} biome={biome} />
-          
-          {/* Artist Workshop HDRI Lighting Configuration */}
-          <Environment 
-            files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr" 
-            environmentIntensity={1.0} 
-            blur={0} 
+
+          {/* Artist Workshop HDRI */}
+          <Environment
+            files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr"
+            environmentIntensity={1.0}
+            blur={0}
           />
-          <hemisphereLight 
-            intensity={0.4} 
-            color="#f7f7f7" 
-            groundColor="#3a3a3a" 
+
+          {/* Hemisphere Light: plain 0.3, NO Math.PI */}
+          <hemisphereLight
+            intensity={0.3}
+            color="#f7f7f7"
+            groundColor="#3a3a3a"
           />
+
+          {/* Camera-linked Directional Key Light: Math.PI * 0.8 */}
           <KeyLightSync />
+
+          {/* Sunlight Directional Light: Math.PI * 0.4 */}
           <directionalLight
             name="SunLight"
             position={[-10, 20, -15]}
-            intensity={Math.PI * 0.5}
+            intensity={Math.PI * 0.4}
             color="#ffe4b5"
           />
-          
+
           <OrbitControls makeDefault />
-          
-          {/* Native UnrealBloomPass with threshold=2.1, luminanceSmoothing=0.5, intensity=0.32, radius=0.7 */}
-          <BloomEffect />
+
+          {/* Selective Bloom (Layer 1 only) + HueSaturation(+0.1) */}
+          <SelectiveBloomEffect />
         </Suspense>
       </Canvas>
 
@@ -367,36 +490,14 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
         title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
       >
         {isFullscreen ? (
-          // Minimize icon (exit fullscreen)
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M8 3v3a2 2 0 0 1-2 2H3" />
             <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
             <path d="M3 16h3a2 2 0 0 1 2 2v3" />
             <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
           </svg>
         ) : (
-          // Maximize icon (enter fullscreen)
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 3h6v6" />
             <path d="M9 21H3v-6" />
             <path d="M21 3l-7 7" />

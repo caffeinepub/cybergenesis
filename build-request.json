@@ -1,125 +1,61 @@
 {
   "kind": "build_request",
-  "title": "Rewrite MapView.tsx with 2056×2056 asset, manual cover-zoom pinning, and cinematic drone flight",
-  "projectName": "CyberGenesis Map",
+  "title": "Crystal Glass calibration: numeric-only bloom and emissiveIntensity adjustments",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Rewrite frontend/src/components/MapView.tsx to use the new 2056×2056 image asset from https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp as the map background layer with an ImageLayer extent of [0, -2056, 2056, 0].",
+      "text": "In CubeVisualization.tsx, update only the following numeric values in the Bloom post-processing pass: set intensity to 0.15, set radius to 0.5, set luminanceThreshold to 0.1. Do NOT modify smoothing, any other Bloom properties, any other post-processing passes, or any other logic or structure in the file.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-4"
         ],
         "quotes": [
-          "URL: https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp",
-          "Dimensions: 2056x2056px.",
-          "ImageLayer extent: [0, -2056, 2056, 0]."
+          "In CubeVisualisation.tsx (Bloom settings): Set intensity to 0.15, Set radius to 0.5, Set luminanceThreshold to 0.1, Do NOT touch smoothing or any other post-processing passes"
         ]
       },
       "acceptanceCriteria": [
-        "The IMG_0133.webp image is loaded as the sole ImageLayer in maptalks.",
-        "ImageLayer extent is exactly [0, -2056, 2056, 0].",
-        "No previous asset URLs remain in the component."
+        "Bloom intensity value is exactly 0.15",
+        "Bloom radius value is exactly 0.5",
+        "Bloom luminanceThreshold value is exactly 0.1",
+        "All other Bloom properties (e.g., smoothing) remain unchanged",
+        "No other post-processing passes are modified",
+        "No logic, structure, metalness, or roughness settings are changed"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Configure the maptalks Map with SpatialReference { projection: 'identity', resolutions: [32, 16, 8, 4, 2, 1, 0.5], fullExtent: { top: 0, left: 0, bottom: -2056, right: 2056 } } and initial state { center: [1028, -1028], zoom: 2, pitch: 0, bearing: 0, panLimit: true, panLimitViscosity: 0 }. Disable all rotation and pitch interactions: dragRotate: false, dragPitch: false, touchZoomRotate: false.",
+      "text": "In LandModel.tsx, within the biomeConfigs block, change emissiveIntensity from 1.5 to 1.0 for every biome entry. Do NOT change the pulse value (keep it at 0.15), do NOT modify any other material properties, and do NOT touch any geometry logic or structure.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-4"
         ],
         "quotes": [
-          "SpatialReference: { projection: 'identity', resolutions: [32, 16, 8, 4, 2, 1, 0.5], fullExtent: { top: 0, left: 0, bottom: -2056, right: 2056 } }.",
-          "Initial Map State: { center: [1028, -1028], zoom: 2, pitch: 0, bearing: 0, panLimit: true, panLimitViscosity: 0 }.",
-          "Disable all rotation/pitch: dragRotate: false, dragPitch: false, touchZoomRotate: false."
+          "In LandModel.tsx (biomeConfigs block): Change emissiveIntensity from 1.5 to 1.0 for ALL biomes. Keep the pulse at 0.15 as previously set. Do NOT touch any other material properties or geometry logic."
         ]
       },
       "acceptanceCriteria": [
-        "Map initializes with center [1028, -1028] and zoom 2.",
-        "panLimit is true and panLimitViscosity is 0.",
-        "Drag rotation, drag pitch, and touch zoom-rotate are all disabled.",
-        "The SpatialReference uses identity projection with the specified resolutions array."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Implement the 'bulletproof' iPhone Gallery edge-pinning logic inside map.on('idle', ...) that runs exactly once (guarded by hasAnimated.current). On first idle event: read the container's clientWidth and clientHeight, compute targetRes = Math.min(mapSize / vW, mapSize / vH) where mapSize = 2056, compute minZoomLevel = Math.log2(32 / targetRes), then call map.setMinZoom(minZoomLevel) and map.setZoom(minZoomLevel) to pin the image edges to the viewport. Set the map background and wrapper div background to #000.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "const targetRes = Math.min(mapSize / vW, mapSize / vH);",
-          "const minZoomLevel = Math.log2(32 / targetRes);",
-          "map.setMinZoom(minZoomLevel);",
-          "map.setZoom(minZoomLevel);",
-          "Background: #000 for wrapper and container."
-        ]
-      },
-      "acceptanceCriteria": [
-        "The pinning logic executes only once on the first idle event.",
-        "minZoom is dynamically calculated based on the actual container dimensions.",
-        "After pinning, the map image fills the entire container with no black bars.",
-        "The wrapper and container divs have a black (#000) background."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "After the pinning logic runs, trigger a cinematic drone flight animation with a 200ms delay using map.animateTo({ center: [1028 + (lon / 180 * 1028), -(1028 + (lat / 90 * 1028))], zoom: minZoomLevel + 2 }, { duration: 3500, easing: 'out' }), where lon and lat correspond to the currently selected land's coordinates. This animation must only run if a target land with valid coordinates is available, and must not fire again after hasAnimated.current is set to true.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "setTimeout(() => { map.animateTo({ center: [1028 + (lon / 180 * 1028), -(1028 + (lat / 90 * 1028))], zoom: minZoomLevel + 2 }, { duration: 3500, easing: 'out' }); }, 200);",
-          "hasAnimated.current = true;"
-        ]
-      },
-      "acceptanceCriteria": [
-        "On first map idle event (with valid land target), the map animates from minZoomLevel to minZoomLevel+2 over 3500ms.",
-        "Animation starts after a 200ms delay.",
-        "The drone flight easing is 'out'.",
-        "Animation never fires more than once per map mount."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Update all land parcel marker and target coordinate calculations to use the 1028-offset formula: mapX = 1028 + (land.coordinates.lon / 180) * 1028 and mapY = -(1028 + (land.coordinates.lat / 90) * 1028). Apply this formula consistently for UIMarkers placement and any animateTo center targets.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "Ensure all markers and target calculations use the [1028 + offset] logic.",
-          "const mapX = 1028 + (land.coordinates.lon / 180) * 1028;",
-          "const mapY = 1028 + (land.coordinates.lat / 90) * 1028;"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Every UIMarker is positioned using mapX = 1028 + (lon/180)*1028 and mapY = -(1028 + (lat/90)*1028).",
-        "No legacy coordinate formulas remain in the component.",
-        "Markers appear correctly distributed across the 2056×2056 map space."
+        "Every biome entry in biomeConfigs has emissiveIntensity set to exactly 1.0",
+        "No biome entry retains the old value of 1.5",
+        "Pulse value remains at 0.15 for all biomes",
+        "No other material properties (metalness, roughness, envMapIntensity, etc.) are altered",
+        "No geometry logic or structural code is changed"
       ]
     }
   ],
   "constraints": [
-    "Keep the stable component structure from draft version 396 — do not add extra useEffect jumps or separate animation hooks.",
-    "Do not use fitZoom, fitExtent, or any automatic zoom-fitting methods; all zoom calculation must be manual.",
-    "Do not modify any files listed in frontend.immutablePaths.",
-    "No complex resolution arrays beyond [32, 16, 8, 4, 2, 1, 0.5]."
+    "Only swap the specified numeric values — no logic, structure, metalness, roughness, or other material/post-processing settings may be touched",
+    "Do not alter any files other than CubeVisualization.tsx and LandModel.tsx"
   ],
   "nonGoals": [
-    "Changes to backend logic or data models.",
-    "Adding new map layers beyond the single ImageLayer.",
-    "Implementing map rotation or pitch controls.",
-    "Modifying any component other than MapView.tsx."
+    "Changing any Bloom properties other than intensity, radius, and luminanceThreshold",
+    "Modifying smoothing or any other post-processing pass",
+    "Changing metalness, roughness, envMapIntensity, or any other PBR material property",
+    "Changing geometry logic or scene structure",
+    "Modifying the pulse value in biomeConfigs",
+    "Any backend changes"
   ],
   "imageRequirements": {
     "required": [],
