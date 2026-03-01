@@ -1,15 +1,33 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T01:50:23.025Z",
-  "summary": "Both REQ-1 and REQ-2 appear to be implemented. CubeVisualization.tsx shows Bloom settings updated to intensity=0.15, radius=0.5, luminanceThreshold=0.1. LandModel.tsx shows all biome entries with emissiveIntensity=1.0 (changed from 1.5), and the pulse value and other material properties appear untouched.",
-  "missing_requirements": [],
-  "hallucinated_features": [],
-  "confidence": 0.88,
+  "generatedAt": "2026-02-26T18:27:14.858Z",
+  "summary": "Both REQ-1 (useFrame buffer/layer sync fix) and REQ-2 (gl.autoClear=false in onCreated) are implemented in CubeVisualization.tsx per the file summary. REQ-3 (MapView.tsx Leaflet replacement) is implemented but with minor deviations from the verbatim spec: the diff shows TypeScript type annotations, a declare global block, Russian-language comments, and getBiomeColor moved outside the component — none of which appear in the verbatim JS code specified. The core functionality (Leaflet CDN, L.CRS.Simple, image overlay, polylines, neon CSS, close button, unmount cleanup) is present.",
+  "missing_requirements": [
+    {
+      "id": "REQ-3",
+      "requirement": "MapView.tsx must contain exactly the provided code verbatim — preserving all comments in English, with getBiomeColor defined inside the component, no TypeScript type annotations on props/styles/refs, and no declare global block",
+      "reason": "The diff shows: (1) Russian-language comments instead of the English comments in the spec, (2) getBiomeColor defined as a module-level function outside the component rather than inside as specified, (3) TypeScript type annotations added to props, refs, and style objects, and (4) a declare global Window interface block — none of which are in the verbatim spec code.",
+      "evidence": [
+        "frontend/src/components/MapView.tsx"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "TypeScript type annotations and declare global Window interface declaration added to MapView.tsx",
+      "reason": "The spec requires verbatim code without explicit type annotations on props, refs, or style objects, and no declare global block. These were added beyond the specification.",
+      "evidence": [
+        "frontend/src/components/MapView.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.8,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/components/CubeVisualization.tsx",
-    "frontend/src/components/LandModel.tsx",
+    "frontend/src/components/MapView.tsx",
+    "frontend/src/pages/Dashboard.tsx",
     "project_state.json"
   ]
 }

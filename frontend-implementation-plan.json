@@ -1,42 +1,58 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Crystal Glass calibration: numeric-only bloom and emissiveIntensity adjustments",
+  "title": "Fix CubeVisualisation black screen and replace MapView with Leaflet",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Update Bloom post-processing numeric values (intensity, radius, luminanceThreshold) in CubeVisualization.tsx without modifying any other properties or logic",
+      "summary": "Replace useFrame callback in SelectiveBloomEffect to fix black screen by properly syncing render buffers and camera layers",
       "acceptanceCriteria": [
-        "Bloom intensity value is exactly 0.15",
-        "Bloom radius value is exactly 0.5",
-        "Bloom luminanceThreshold value is exactly 0.1",
-        "All other Bloom properties (e.g., smoothing) remain unchanged",
-        "No other post-processing passes are modified",
-        "No logic, structure, metalness, or roughness settings are changed"
+        "The bloom composer renders only layer 1 (crystals/glow) before the final composite",
+        "bloomComposerRef.current.readBuffer.texture is assigned to compositePass.uniforms.bloomTexture.value each frame",
+        "After bloom render, camera.layers is reset to 0 and layer 1 re-enabled so BackgroundSphere is visible in final pass",
+        "gl.autoClear is set to true inside useFrame before finalComposer.render()"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Locate the Bloom post-processing pass configuration. Update only the numeric values: set intensity to 0.15, set radius to 0.5, set luminanceThreshold to 0.1. Do not modify the smoothing property, any other Bloom properties, any other post-processing passes (e.g., EffectComposer, RenderPass), or any other logic in the file. Preserve all existing imports, component structure, GLB loading logic, camera setup, lighting, and shader background exactly as-is."
+          "description": "Replace the existing useFrame callback inside the SelectiveBloomEffect component with the exact implementation provided in the BuildRequest. The new callback ensures proper buffer swapping by reading from bloomComposerRef.current.readBuffer.texture, assigns it to compositePass.uniforms.bloomTexture.value, resets camera layers (set to 0, then enable 1), and sets gl.autoClear = true before the final render. This fixes the black screen issue by synchronizing the bloom texture with the composite shader each frame."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Change emissiveIntensity from 1.5 to 1.0 for all biome entries in LandModel.tsx biomeConfigs without touching pulse, other material properties, or geometry logic",
+      "summary": "Set gl.autoClear = false in Canvas onCreated to prevent renderer conflicts with manual clearing in useFrame",
       "acceptanceCriteria": [
-        "Every biome entry in biomeConfigs has emissiveIntensity set to exactly 1.0",
-        "No biome entry retains the old value of 1.5",
-        "Pulse value remains at 0.15 for all biomes",
-        "No other material properties (metalness, roughness, envMapIntensity, etc.) are altered",
-        "No geometry logic or structural code is changed"
+        "gl.autoClear = false is present in the onCreated / renderer initialization block of the Canvas component",
+        "No duplicate or conflicting autoClear assignments exist outside of the useFrame loop"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/LandModel.tsx",
+          "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Locate the biomeConfigs object/array. For every biome entry within biomeConfigs, change the emissiveIntensity value from 1.5 to 1.0. Do not modify the pulse value (keep it at 0.15), do not change any other PBR material properties (metalness, roughness, envMapIntensity, etc.), and do not alter GLTF loading logic, KTX2 texture support, camera fitting, or any geometry/scene structure. Only swap the emissiveIntensity numeric value for all biomes."
+          "description": "Inside the Canvas component's onCreated callback (or equivalent renderer initialization block), add the line `gl.autoClear = false;` to prevent the WebGL renderer from auto-clearing buffers. This ensures the renderer does not conflict with the manual autoClear = true assignment inside the useFrame loop in REQ-1."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Replace MapView.tsx entirely with Leaflet-based implementation using L.CRS.Simple and biome-colored neon beams",
+      "acceptanceCriteria": [
+        "frontend/src/components/MapView.tsx contains exactly the provided code and nothing from the previous Maptalks-based implementation",
+        "The map uses L.CRS.Simple (pixel-grid coordinate system) loaded from window.L (Leaflet CDN)",
+        "The image overlay uses the URL https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp with bounds [[0,0],[2560,2560]]",
+        "Land data is fetched via useQuery with queryKey ['landData'] and actor?.getLandData()",
+        "Each land plot renders a polyline from center [1280,1280] to [land.y, land.x] with biome-appropriate neon color",
+        "Neon beam CSS classes apply drop-shadow filter per biome",
+        "Close button renders at top-right and calls onClose prop",
+        "Map is properly removed and ref cleared on component unmount"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MapView.tsx",
+          "operation": "modify",
+          "description": "Delete all existing content and replace with the exact code provided in the BuildRequest. The new implementation uses Leaflet (loaded via CDN as window.L) with L.CRS.Simple coordinate system, renders a 2560×2560 pixel map image overlay from GitHub, fetches land data via useQuery(['landData']), and draws neon-colored polylines from the center [1280,1280] to each land's [y,x] coordinates. Biome-specific colors and drop-shadow CSS classes provide the neon beam effect. The map is initialized in useEffect with proper cleanup on unmount."
         }
       ]
     }

@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-cubevisualization-tsx-update-only-the-following-numeric-values-in-the-bloom-post-processing-pass-set-intensity-to-0-15-set-radius-to-0-5-set-luminancethreshold-to-0-1-do-not-modify-smoothing-any-other-bloom-properties-any-other-post-processing-passes-or-any-other-logic-or-structure-in-the-file",
-      "featureTitle": "In CubeVisualization.tsx, update only the following numeric values in the Bloom post-processing pass: set intensity to 0.15, set radius to 0.5, set luminanceThreshold to 0.1. Do NOT modify smoothing, any other Bloom properties, any other post-processing passes, or any other logic or structure in the file.",
+      "featureId": "feature-in-cubevisualisation-tsx-replace-the-existing-useframe-callback-inside-selectivebloomeffect-with-the-following-exact-implementation-that-properly-swaps-render-buffers-and-resets-camera-layers-ts-useframe-state-const-gl-camera-state-if-bloomcomposerref-current-finalcomposerref-current-return-step-1-render-bloom-only-crystals-glow-camera-layers-set-1-bloomcomposerref-current-render-step-2-link-active-bloom-buffer-to-composite-shader-const-currentbloomtexture-bloomcomposerref-current-readbuffer-texture-const-compositepass-finalcomposerref-current-passes-1-as-any-if-compositepass-uniforms-bloomtexture-compositepass-uniforms-bloomtexture-value-currentbloomtexture-step-3-render-final-scene-background-land-glow-gl-autoclear-true-camera-layers-set-0-bring-back-backgroundsphere-camera-layers-enable-1-keep-crystals-glow-finalcomposerref-current-render-1",
+      "featureTitle": "In CubeVisualisation.tsx, replace the existing useFrame callback inside SelectiveBloomEffect with the following exact implementation that properly swaps render buffers and resets camera layers:\n\n```ts\nuseFrame((state) => {\n  const { gl, camera } = state;\n  if (!bloomComposerRef.current || !finalComposerRef.current) return;\n\n  // STEP 1: Render Bloom (Only crystals/glow)\n  camera.layers.set(1);\n  bloomComposerRef.current.render();\n\n  // STEP 2: Link active bloom buffer to composite shader\n  const currentBloomTexture = bloomComposerRef.current.readBuffer.texture;\n  const compositePass = finalComposerRef.current.passes[1] as any;\n  if (compositePass?.uniforms?.bloomTexture) {\n    compositePass.uniforms.bloomTexture.value = currentBloomTexture;\n  }\n\n  // STEP 3: Render Final Scene (Background + Land + Glow)\n  gl.autoClear = true;\n  camera.layers.set(0); // Bring back BackgroundSphere\n  camera.layers.enable(1); // Keep Crystals/Glow\n  finalComposerRef.current.render();\n}, 1);\n```",
       "files": [
         "frontend/src/components/CubeVisualization.tsx"
       ],
@@ -23,10 +23,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-landmodel-tsx-within-the-biomeconfigs-block-change-emissiveintensity-from-1-5-to-1-0-for-every-biome-entry-do-not-change-the-pulse-value-keep-it-at-0-15-do-not-modify-any-other-material-properties-and-do-not-touch-any-geometry-logic-or-structure",
-      "featureTitle": "In LandModel.tsx, within the biomeConfigs block, change emissiveIntensity from 1.5 to 1.0 for every biome entry. Do NOT change the pulse value (keep it at 0.15), do NOT modify any other material properties, and do NOT touch any geometry logic or structure.",
+      "featureId": "feature-in-cubevisualisation-tsx-inside-the-oncreated-callback-of-the-canvas-or-equivalent-renderer-initialization-block-set-gl-autoclear-false-so-the-webgl-renderer-does-not-auto-clear-and-fight-with-the-composer-s-manual-clear-in-useframe",
+      "featureTitle": "In CubeVisualisation.tsx, inside the onCreated callback of the Canvas (or equivalent renderer initialization block), set `gl.autoClear = false` so the WebGL renderer does not auto-clear and fight with the composer's manual clear in useFrame.",
       "files": [
-        "frontend/src/components/LandModel.tsx"
+        "frontend/src/components/CubeVisualization.tsx"
       ],
       "components": [
         "authorization@1.0.1",
@@ -40,6 +40,27 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-completely-replace-the-entire-contents-of-frontend-src-components-mapview-tsx-with-the-following-code-verbatim-preserving-all-comments-styles-and-logic-tsx-import-react-useeffect-useref-from-react-libraries-loaded-via-cdn-using-window-l-import-useactor-from-hooks-useactor-import-usequery-from-tanstack-react-query-const-map-size-2560-const-raw-map-url-https-raw-githubusercontent-com-dobr312-cyberland-main-cybermap-img-0133-webp-const-mapview-onclose-const-mapcontainerref-useref-null-const-mapref-useref-null-const-actor-useactor-const-data-lands-usequery-querykey-landdata-queryfn-actor-getlanddata-enabled-actor-useeffect-if-mapcontainerref-current-mapref-current-window-l-return-const-l-window-l-const-map-l-map-mapcontainerref-current-crs-l-crs-simple-minzoom-1-maxzoom-2-zoomcontrol-false-attributioncontrol-false-inertia-true-mapref-current-map-const-bounds-0-0-map-size-map-size-l-imageoverlay-raw-map-url-bounds-addto-map-map-fitbounds-bounds-map-setmaxbounds-bounds-if-lands-lands-foreach-land-const-color-getbiomecolor-land-biome-l-polyline-1280-1280-land-y-land-x-color-color-weight-2-opacity-0-8-classname-neon-beam-land-biome-tolowercase-addto-map-return-map-remove-mapref-current-null-lands-const-getbiomecolor-biome-const-colors-mythic-void-9933ff-mythic-aether-00ffff-volcanic-crag-ff3300-desert-dune-ff8800-forest-valley-00ff41-snow-peak-ffffff-default-00aaff-return-colors-biome-colors-default-return-div-style-containerstyle-div-ref-mapcontainerref-style-width-100-height-100-background-000-button-onclick-onclose-style-closebuttonstyle-button-style-leaflet-container-background-000-important-cursor-grab-leaflet-container-active-cursor-grabbing-mythic-void-volcanic-crag-desert-dune-mythic-aether-forest-valley-map-b-neon-beam-b-tolowercase-filter-drop-shadow-0-0-6px-getbiomecolor-b-stroke-linecap-round-stroke-linejoin-round-join-style-div-const-containerstyle-position-fixed-inset-0-zindex-9999-background-000-overflow-hidden-const-closebuttonstyle-position-absolute-top-30px-right-30px-zindex-10001-padding-12px-24px-background-rgba-0-0-0-0-7-color-fff-border-1px-solid-rgba-255-255-255-0-2-borderradius-12px-cursor-pointer-fontsize-18px-backdropfilter-blur-10px-export-default-mapview",
+      "featureTitle": "Completely replace the entire contents of frontend/src/components/MapView.tsx with the following code verbatim (preserving all comments, styles, and logic):\n\n```tsx\nimport React, { useEffect, useRef } from 'react';\n// Libraries loaded via CDN — using window.L\nimport { useActor } from '../hooks/useActor';\nimport { useQuery } from '@tanstack/react-query';\n\nconst MAP_SIZE = 2560;\nconst RAW_MAP_URL = 'https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp';\n\nconst MapView = ({ onClose }) => {\n  const mapContainerRef = useRef(null);\n  const mapRef = useRef(null);\n  const { actor } = useActor();\n\n  const { data: lands } = useQuery({\n    queryKey: ['landData'],\n    queryFn: () => actor?.getLandData(),\n    enabled: !!actor,\n  });\n\n  useEffect(() => {\n    if (!mapContainerRef.current || mapRef.current || !window.L) return;\n\n    const L = window.L;\n\n    const map = L.map(mapContainerRef.current, {\n      crs: L.CRS.Simple,\n      minZoom: -1,\n      maxZoom: 2,\n      zoomControl: false,\n      attributionControl: false,\n      inertia: true\n    });\n\n    mapRef.current = map;\n\n    const bounds = [[0, 0], [MAP_SIZE, MAP_SIZE]];\n    L.imageOverlay(RAW_MAP_URL, bounds).addTo(map);\n    map.fitBounds(bounds);\n    map.setMaxBounds(bounds);\n\n    if (lands) {\n      lands.forEach(land => {\n        const color = getBiomeColor(land.biome);\n        L.polyline([[1280, 1280], [land.y, land.x]], {\n          color: color,\n          weight: 2,\n          opacity: 0.8,\n          className: `neon-beam-${land.biome.toLowerCase()}`\n        }).addTo(map);\n      });\n    }\n\n    return () => {\n      map.remove();\n      mapRef.current = null;\n    };\n  }, [lands]);\n\n  const getBiomeColor = (biome) => {\n    const colors = {\n      'MYTHIC_VOID': '#9933FF',\n      'MYTHIC_AETHER': '#00FFFF',\n      'VOLCANIC_CRAG': '#ff3300',\n      'DESERT_DUNE': '#FF8800',\n      'FOREST_VALLEY': '#00ff41',\n      'SNOW_PEAK': '#ffffff',\n      'DEFAULT': '#00aaff'\n    };\n    return colors[biome] || colors.DEFAULT;\n  };\n\n  return (\n    <div style={containerStyle}>\n      <div ref={mapContainerRef} style={{ width: '100%', height: '100%', background: '#000' }} />\n      <button onClick={onClose} style={closeButtonStyle}>✕</button>\n      <style>{`\n        .leaflet-container { background: #000 !important; cursor: grab; }\n        .leaflet-container:active { cursor: grabbing; }\n        ${['MYTHIC_VOID', 'VOLCANIC_CRAG', 'DESERT_DUNE', 'MYTHIC_AETHER', 'FOREST_VALLEY'].map(b => `\n          .neon-beam-${b.toLowerCase()} {\n            filter: drop-shadow(0 0 6px ${getBiomeColor(b)});\n            stroke-linecap: round;\n            stroke-linejoin: round;\n          }\n        `).join('')}\n      `}</style>\n    </div>\n  );\n};\n\nconst containerStyle = {\n  position: 'fixed',\n  inset: 0,\n  zIndex: 9999,\n  background: '#000',\n  overflow: 'hidden'\n};\n\nconst closeButtonStyle = {\n  position: 'absolute',\n  top: '30px',\n  right: '30px',\n  zIndex: 10001,\n  padding: '12px 24px',\n  background: 'rgba(0,0,0,0.7)',\n  color: '#fff',\n  border: '1px solid rgba(255,255,255,0.2)',\n  borderRadius: '12px',\n  cursor: 'pointer',\n  fontSize: '18px',\n  backdropFilter: 'blur(10px)'\n};\n\nexport default MapView;\n```",
+      "files": [
+        "frontend/src/components/MapView.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "http-outcalls@1.1.1",
+        "blob-storage@2.0.3",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }
