@@ -94,7 +94,7 @@ export default function Dashboard() {
   return (
     <div className="dashboard-container flex flex-col min-h-screen bg-transparent">
       {isMapOpen && (
-        <MapView onClose={handleMapClose} />
+        <MapView landData={currentLand} onClose={handleMapClose} />
       )}
 
       <div className="dashboard min-h-screen text-white relative overflow-hidden">

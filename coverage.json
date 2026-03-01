@@ -1,46 +1,24 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T18:27:14.861Z",
+  "generatedAt": "2026-03-01T17:37:26.557Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In CubeVisualisation.tsx, replace the existing useFrame callback inside SelectiveBloomEffect with the following exact implementation that properly swaps render buffers and resets camera layers:\n\n```ts\nuseFrame((state) => {\n  const { gl, camera } = state;\n  if (!bloomComposerRef.current || !finalComposerRef.current) return;\n\n  // STEP 1: Render Bloom (Only crystals/glow)\n  camera.layers.set(1);\n  bloomComposerRef.current.render();\n\n  // STEP 2: Link active bloom buffer to composite shader\n  const currentBloomTexture = bloomComposerRef.current.readBuffer.texture;\n  const compositePass = finalComposerRef.current.passes[1] as any;\n  if (compositePass?.uniforms?.bloomTexture) {\n    compositePass.uniforms.bloomTexture.value = currentBloomTexture;\n  }\n\n  // STEP 3: Render Final Scene (Background + Land + Glow)\n  gl.autoClear = true;\n  camera.layers.set(0); // Bring back BackgroundSphere\n  camera.layers.enable(1); // Keep Crystals/Glow\n  finalComposerRef.current.render();\n}, 1);\n```",
+        "summary": "In frontend/src/components/CubeVisualization.tsx, replace ONLY the string content of the backgroundSphere's fragmentShader constant with the new FBM-based nebula shader provided below. Do not modify the vertexShader, useFrame logic, component settings, uniforms setup, or any other part of the file.\n\nNew fragmentShader content:\n```glsl\nuniform float time;\nuniform vec2 resolution;\n\n#define NUM_OCTAVES 6\n\nfloat random(vec2 pos) {\n    return fract(sin(dot(pos.xy, vec2(13.9898, 78.233))) * 43758.5453123);\n}\n\nfloat noise(vec2 pos) {\n    vec2 i = floor(pos);\n    vec2 f = fract(pos);\n    float a = random(i + vec2(0.0, 0.0));\n    float b = random(i + vec2(1.0, 0.0));\n    float c = random(i + vec2(0.0, 1.0));\n    float d = random(i + vec2(1.0, 1.0));\n    vec2 u = f * f * (3.0 - 2.0 * f);\n    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;\n}\n\nfloat fbm(vec2 pos) {\n    float v = 0.0;\n    float a = 0.5;\n    vec2 shift = vec2(100.0);\n    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));\n    for (int i = 0; i < NUM_OCTAVES; i++) {\n        float dir = mod(float(i), 2.0) > 0.5 ? 1.0 : -1.0;\n        v += a * noise(pos - 0.05 * dir * time * 0.2);\n        pos = rot * pos * 2.0 + shift;\n        a *= 0.5;\n    }\n    return v;\n}\n\nvoid main() {\n    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);\n    \n    vec3 c1 = vec3(0.2, 0.4, 0.9);\n    vec3 c2 = vec3(1.0, 0.1, 0.6);\n    vec3 c3 = vec3(0.3, 0.0, 0.5);\n    vec3 c4 = vec3(0.0, 0.0, 0.02);\n\n    float time2 = time * 0.2;\n    vec2 q = vec2(fbm(p + 0.0 * time2), fbm(p + vec2(1.0)));\n    vec2 r = vec2(fbm(p + q + vec2(1.7, 1.2) + 0.15 * time2), fbm(p + q + vec2(8.3, 2.8) + 0.126 * time2));\n    float f = fbm(p + r);\n\n    vec3 color = mix(c1, c2, clamp(f * 1.2, 0.0, 1.0));\n    color = mix(color, c3, clamp(length(q) * 1.1, 0.0, 1.0));\n    \n    float blackMask = smoothstep(0.2, 0.8, length(r.x) * 0.7);\n    color = mix(color, c4, blackMask);\n\n    color = (f * f * f * 1.5 + 0.5 * f) * color;\n    \n    gl_FragColor = vec4(pow(color, vec3(2.0)) * 5.0, 1.0);\n}\n```",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/CubeVisualization.tsx"
         ],
         "matchedFiles": [
           "frontend/src/components/CubeVisualization.tsx"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "In CubeVisualisation.tsx, inside the onCreated callback of the Canvas (or equivalent renderer initialization block), set `gl.autoClear = false` so the WebGL renderer does not auto-clear and fight with the composer's manual clear in useFrame.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/CubeVisualization.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/CubeVisualization.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Completely replace the entire contents of frontend/src/components/MapView.tsx with the following code verbatim (preserving all comments, styles, and logic):\n\n```tsx\nimport React, { useEffect, useRef } from 'react';\n// Libraries loaded via CDN — using window.L\nimport { useActor } from '../hooks/useActor';\nimport { useQuery } from '@tanstack/react-query';\n\nconst MAP_SIZE = 2560;\nconst RAW_MAP_URL = 'https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp';\n\nconst MapView = ({ onClose }) => {\n  const mapContainerRef = useRef(null);\n  const mapRef = useRef(null);\n  const { actor } = useActor();\n\n  const { data: lands } = useQuery({\n    queryKey: ['landData'],\n    queryFn: () => actor?.getLandData(),\n    enabled: !!actor,\n  });\n\n  useEffect(() => {\n    if (!mapContainerRef.current || mapRef.current || !window.L) return;\n\n    const L = window.L;\n\n    const map = L.map(mapContainerRef.current, {\n      crs: L.CRS.Simple,\n      minZoom: -1,\n      maxZoom: 2,\n      zoomControl: false,\n      attributionControl: false,\n      inertia: true\n    });\n\n    mapRef.current = map;\n\n    const bounds = [[0, 0], [MAP_SIZE, MAP_SIZE]];\n    L.imageOverlay(RAW_MAP_URL, bounds).addTo(map);\n    map.fitBounds(bounds);\n    map.setMaxBounds(bounds);\n\n    if (lands) {\n      lands.forEach(land => {\n        const color = getBiomeColor(land.biome);\n        L.polyline([[1280, 1280], [land.y, land.x]], {\n          color: color,\n          weight: 2,\n          opacity: 0.8,\n          className: `neon-beam-${land.biome.toLowerCase()}`\n        }).addTo(map);\n      });\n    }\n\n    return () => {\n      map.remove();\n      mapRef.current = null;\n    };\n  }, [lands]);\n\n  const getBiomeColor = (biome) => {\n    const colors = {\n      'MYTHIC_VOID': '#9933FF',\n      'MYTHIC_AETHER': '#00FFFF',\n      'VOLCANIC_CRAG': '#ff3300',\n      'DESERT_DUNE': '#FF8800',\n      'FOREST_VALLEY': '#00ff41',\n      'SNOW_PEAK': '#ffffff',\n      'DEFAULT': '#00aaff'\n    };\n    return colors[biome] || colors.DEFAULT;\n  };\n\n  return (\n    <div style={containerStyle}>\n      <div ref={mapContainerRef} style={{ width: '100%', height: '100%', background: '#000' }} />\n      <button onClick={onClose} style={closeButtonStyle}>✕</button>\n      <style>{`\n        .leaflet-container { background: #000 !important; cursor: grab; }\n        .leaflet-container:active { cursor: grabbing; }\n        ${['MYTHIC_VOID', 'VOLCANIC_CRAG', 'DESERT_DUNE', 'MYTHIC_AETHER', 'FOREST_VALLEY'].map(b => `\n          .neon-beam-${b.toLowerCase()} {\n            filter: drop-shadow(0 0 6px ${getBiomeColor(b)});\n            stroke-linecap: round;\n            stroke-linejoin: round;\n          }\n        `).join('')}\n      `}</style>\n    </div>\n  );\n};\n\nconst containerStyle = {\n  position: 'fixed',\n  inset: 0,\n  zIndex: 9999,\n  background: '#000',\n  overflow: 'hidden'\n};\n\nconst closeButtonStyle = {\n  position: 'absolute',\n  top: '30px',\n  right: '30px',\n  zIndex: 10001,\n  padding: '12px 24px',\n  background: 'rgba(0,0,0,0.7)',\n  color: '#fff',\n  border: '1px solid rgba(255,255,255,0.2)',\n  borderRadius: '12px',\n  cursor: 'pointer',\n  fontSize: '18px',\n  backdropFilter: 'blur(10px)'\n};\n\nexport default MapView;\n```",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/MapView.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/MapView.tsx"
         ]
       }
     ]
@@ -51,8 +29,6 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/components/CubeVisualization.tsx",
-    "frontend/src/components/MapView.tsx",
-    "frontend/src/pages/Dashboard.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

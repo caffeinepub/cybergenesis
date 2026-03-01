@@ -1,58 +1,24 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix CubeVisualisation black screen and replace MapView with Leaflet",
+  "title": "Replace backgroundSphere fragmentShader in CubeVisualization.tsx",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Replace useFrame callback in SelectiveBloomEffect to fix black screen by properly syncing render buffers and camera layers",
+      "summary": "Replace the backgroundSphere fragmentShader constant in CubeVisualization.tsx with the new FBM-based nebula shader code",
       "acceptanceCriteria": [
-        "The bloom composer renders only layer 1 (crystals/glow) before the final composite",
-        "bloomComposerRef.current.readBuffer.texture is assigned to compositePass.uniforms.bloomTexture.value each frame",
-        "After bloom render, camera.layers is reset to 0 and layer 1 re-enabled so BackgroundSphere is visible in final pass",
-        "gl.autoClear is set to true inside useFrame before finalComposer.render()"
+        "The backgroundSphere fragmentShader constant in CubeVisualization.tsx contains exactly the new FBM nebula shader code provided by the user.",
+        "The vertexShader constant for the backgroundSphere is unchanged.",
+        "The useFrame logic is unchanged.",
+        "All component props, uniform declarations, and mesh/material setup are unchanged.",
+        "The animated background renders a blue/pink/purple nebula cloud effect driven by the time and resolution uniforms.",
+        "No other files in the project are modified."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/CubeVisualization.tsx",
           "operation": "modify",
-          "description": "Replace the existing useFrame callback inside the SelectiveBloomEffect component with the exact implementation provided in the BuildRequest. The new callback ensures proper buffer swapping by reading from bloomComposerRef.current.readBuffer.texture, assigns it to compositePass.uniforms.bloomTexture.value, resets camera layers (set to 0, then enable 1), and sets gl.autoClear = true before the final render. This fixes the black screen issue by synchronizing the bloom texture with the composite shader each frame."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Set gl.autoClear = false in Canvas onCreated to prevent renderer conflicts with manual clearing in useFrame",
-      "acceptanceCriteria": [
-        "gl.autoClear = false is present in the onCreated / renderer initialization block of the Canvas component",
-        "No duplicate or conflicting autoClear assignments exist outside of the useFrame loop"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/CubeVisualization.tsx",
-          "operation": "modify",
-          "description": "Inside the Canvas component's onCreated callback (or equivalent renderer initialization block), add the line `gl.autoClear = false;` to prevent the WebGL renderer from auto-clearing buffers. This ensures the renderer does not conflict with the manual autoClear = true assignment inside the useFrame loop in REQ-1."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Replace MapView.tsx entirely with Leaflet-based implementation using L.CRS.Simple and biome-colored neon beams",
-      "acceptanceCriteria": [
-        "frontend/src/components/MapView.tsx contains exactly the provided code and nothing from the previous Maptalks-based implementation",
-        "The map uses L.CRS.Simple (pixel-grid coordinate system) loaded from window.L (Leaflet CDN)",
-        "The image overlay uses the URL https://raw.githubusercontent.com/dobr312/cyberland/main/CyberMap/IMG_0133.webp with bounds [[0,0],[2560,2560]]",
-        "Land data is fetched via useQuery with queryKey ['landData'] and actor?.getLandData()",
-        "Each land plot renders a polyline from center [1280,1280] to [land.y, land.x] with biome-appropriate neon color",
-        "Neon beam CSS classes apply drop-shadow filter per biome",
-        "Close button renders at top-right and calls onClose prop",
-        "Map is properly removed and ref cleared on component unmount"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/MapView.tsx",
-          "operation": "modify",
-          "description": "Delete all existing content and replace with the exact code provided in the BuildRequest. The new implementation uses Leaflet (loaded via CDN as window.L) with L.CRS.Simple coordinate system, renders a 2560×2560 pixel map image overlay from GitHub, fetches land data via useQuery(['landData']), and draws neon-colored polylines from the center [1280,1280] to each land's [y,x] coordinates. Biome-specific colors and drop-shadow CSS classes provide the neon beam effect. The map is initialized in useEffect with proper cleanup on unmount."
+          "description": "Replace ONLY the string content of the backgroundSphere's fragmentShader constant (lines containing the GLSL shader code) with the new FBM-based nebula shader provided in the BuildRequest. The new shader includes random(), noise(), and fbm() functions with 6 octaves, produces a blue/pink/purple nebula color scheme using four color constants (c1, c2, c3, c4), and outputs gamma-corrected color via pow(color, vec3(2.0)) * 5.0. Leave the vertexShader, useFrame hook, uniform setup, mesh configuration, and all other component logic completely untouched."
         }
       ]
     }

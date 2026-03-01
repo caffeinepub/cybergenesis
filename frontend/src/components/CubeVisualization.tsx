@@ -22,7 +22,7 @@ const BIOME_MODEL_MAP: Record<string, string> = {
   MYTHIC_AETHER: 'https://raw.githubusercontent.com/dobr312/cyberland/main/public/models/MYTHIC_AETHER.glb',
 };
 
-// STEP 3: Monolithic ACES v1 + CAS Sharpening + Specular Glints composite shader
+// Composite shader: blends bloom render target onto the final scene
 const COMPOSITE_SHADER = {
   uniforms: {
     baseTexture: { value: null as THREE.Texture | null },
@@ -39,48 +39,8 @@ const COMPOSITE_SHADER = {
     uniform sampler2D baseTexture;
     uniform sampler2D bloomTexture;
     varying vec2 vUv;
-
-    // 1. Luminance helper for specular detection
-    float luminance(vec3 v) {
-        return dot(v, vec3(0.2126, 0.7152, 0.0722));
-    }
-
-    // 2. ACES v1 Narkowicz (PlayCanvas Standard)
-    vec3 toneMapACES(vec3 x) {
-        const float a = 2.51;
-        const float b = 0.03;
-        const float c = 2.43;
-        const float d = 0.59;
-        const float e = 0.14;
-        return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
-    }
-
     void main() {
-        // --- SHARPENING ---
-        float sharpness = 0.15;
-        vec2 texSize = vec2(1024.0);
-        vec3 center = texture2D(baseTexture, vUv).rgb;
-        vec3 left   = texture2D(baseTexture, vUv - vec2(1.0/texSize.x, 0.0)).rgb;
-        vec3 right  = texture2D(baseTexture, vUv + vec2(1.0/texSize.x, 0.0)).rgb;
-        vec3 up     = texture2D(baseTexture, vUv - vec2(0.0, 1.0/texSize.y)).rgb;
-        vec3 down   = texture2D(baseTexture, vUv + vec2(0.0, 1.0/texSize.y)).rgb;
-        
-        vec3 baseRGB = center + sharpness * (4.0 * center - left - right - up - down);
-        vec3 bloomRGB = texture2D(bloomTexture, vUv).rgb;
-
-        // --- SPECULAR GLINTS (The "Sparks") ---
-        // Threshold 2.5 ensures only extreme HDR reflections (metal/glass sparks) glint.
-        float glintThreshold = 2.5; 
-        float glintStrength = 3.0; 
-        float highlight = max(0.0, luminance(baseRGB) - glintThreshold) * glintStrength;
-        vec3 finalBloom = bloomRGB + (baseRGB * highlight);
-        
-        // --- COMBINE & TONE MAPPING ---
-        vec3 color = (baseRGB + finalBloom) * 1.0; // Exposure 1.0
-        vec3 mapped = toneMapACES(color);
-        
-        // --- FINAL sRGB OUTPUT (Gamma 2.2) ---
-        gl_FragColor = vec4(pow(mapped, vec3(1.0 / 2.2)), 1.0);
+      gl_FragColor = texture2D(baseTexture, vUv) + vec4(1.0) * texture2D(bloomTexture, vUv);
     }
   `,
 };
@@ -139,7 +99,7 @@ const BackgroundSphere = () => {
   const fragmentShader = `
     uniform float time;
     uniform vec2 resolution;
-    
+
     #define NUM_OCTAVES 6
 
     float random(vec2 pos) {
@@ -162,42 +122,37 @@ const BackgroundSphere = () => {
         float a = 0.5;
         vec2 shift = vec2(100.0);
         mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
-        for (int i=0; i<NUM_OCTAVES; i++) {
+        for (int i = 0; i < NUM_OCTAVES; i++) {
             float dir = mod(float(i), 2.0) > 0.5 ? 1.0 : -1.0;
-            v += a * noise(pos - 0.05 * dir * time);
+            v += a * noise(pos - 0.05 * dir * time * 0.2);
             pos = rot * pos * 2.0 + shift;
             a *= 0.5;
         }
         return v;
     }
 
-    void main(void) {
+    void main() {
         vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
         
-        vec3 c1 = vec3(0.2, 0.0, 0.4);
-        vec3 c2 = vec3(0.0, 0.8, 1.0);
-        vec3 c3 = vec3(0.9, 0.1, 0.4);
-        vec3 c4 = vec3(0.0, 0.0, 0.05);
+        vec3 c1 = vec3(0.2, 0.4, 0.9);
+        vec3 c2 = vec3(1.0, 0.1, 0.6);
+        vec3 c3 = vec3(0.3, 0.0, 0.5);
+        vec3 c4 = vec3(0.0, 0.0, 0.02);
 
         float time2 = time * 0.2;
-
-        vec2 q = vec2(0.0);
-        q.x = fbm(p + 0.00 * time2);
-        q.y = fbm(p + vec2(1.0));
-        
-        vec2 r = vec2(0.0);
-        r.x = fbm(p + 1.0 * q + vec2(1.7, 1.2) + 0.15 * time2);
-        r.y = fbm(p + 1.0 * q + vec2(8.3, 2.8) + 0.126 * time2);
-        
+        vec2 q = vec2(fbm(p + 0.0 * time2), fbm(p + vec2(1.0)));
+        vec2 r = vec2(fbm(p + q + vec2(1.7, 1.2) + 0.15 * time2), fbm(p + q + vec2(8.3, 2.8) + 0.126 * time2));
         float f = fbm(p + r);
 
-        vec3 color = mix(c1, c2, clamp((f * f) * 4.0, 0.0, 1.0));
-        color = mix(color, c3, clamp(length(q), 0.0, 1.0));
-        color = mix(color, c4, clamp(length(r.x), 0.0, 1.0));
+        vec3 color = mix(c1, c2, clamp(f * 1.2, 0.0, 1.0));
+        color = mix(color, c3, clamp(length(q) * 1.1, 0.0, 1.0));
+        
+        float blackMask = smoothstep(0.2, 0.8, length(r.x) * 0.7);
+        color = mix(color, c4, blackMask);
 
         color = (f * f * f * 1.5 + 0.5 * f) * color;
-
-        gl_FragColor = vec4(pow(color, vec3(3.0)) * 6.0, 1.0);
+        
+        gl_FragColor = vec4(pow(color, vec3(2.0)) * 5.0, 1.0);
     }
   `;
 
@@ -246,12 +201,9 @@ function SceneSetup() {
  * Selective Bloom via dual-composer + layer technique:
  * 1. bloomComposer renders ONLY Layer 1 (emissive meshes) → writes to render target (not screen)
  * 2. finalComposer renders full scene (Layer 0 + 1) and composites bloom texture on top
- *    via monolithic ACES v1 + CAS Sharpening + Specular Glints shader
  *
- * STEP 1: NoToneMapping + LinearSRGBColorSpace (tone mapping handled in shader)
- * STEP 2: Bloom intensity=0.8, radius=0.65, threshold=0.1, luminanceSmoothing=0.1
- * STEP 3: ACES v1 Narkowicz + CAS Sharpening + Specular Glints in composite shader
- * STEP 4: HueSaturationPass removed — CompositePass is the final pass
+ * Camera sees both Layer 0 and Layer 1 (set in CameraLayerSetup).
+ * HueSaturation is applied via a custom ShaderPass after compositing.
  */
 function SelectiveBloomEffect() {
   const { gl, scene, camera, size } = useThree();
@@ -271,23 +223,17 @@ function SelectiveBloomEffect() {
     const bloomRenderPass = new RenderPass(scene, camera);
     bloomComposer.addPass(bloomRenderPass);
 
-    // STEP 2: Bloom settings — intensity=0.8, radius=0.65, threshold=0.1
+    // Bloom settings: intensity=0.15, radius=0.5, luminanceThreshold=0.1
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(size.width / 2, size.height / 2),
-      0.8,   // intensity
-      0.65,  // radius
+      0.15,  // intensity
+      0.5,   // radius
       0.1    // luminanceThreshold
     );
     bloomPassRef.current = bloomPass;
-
-    // STEP 2: Restore luminanceSmoothing=0.1 via runtime guard
-    if ('luminanceSmoothing' in bloomPass) {
-      (bloomPass as any).luminanceSmoothing = 0.1;
-    }
-
     bloomComposer.addPass(bloomPass);
 
-    // ── Final Composer (full scene + ACES v1 composite) ──
+    // ── Final Composer (full scene + bloom composite + HueSaturation) ──
     const finalComposer = new EffectComposer(gl);
     finalComposer.renderToScreen = true;
     finalComposerRef.current = finalComposer;
@@ -295,8 +241,7 @@ function SelectiveBloomEffect() {
     const finalRenderPass = new RenderPass(scene, camera);
     finalComposer.addPass(finalRenderPass);
 
-    // STEP 3 & 4: Composite pass with monolithic ACES v1 + Sharpening + Glints shader
-    // This is the FINAL pass — no HueSaturationPass after it
+    // Composite pass: merges base scene with bloom render target
     const compositePass = new ShaderPass(
       new THREE.ShaderMaterial({
         uniforms: {
@@ -312,9 +257,77 @@ function SelectiveBloomEffect() {
     compositePass.needsSwap = true;
     finalComposer.addPass(compositePass);
 
-    // STEP 4: HueSaturationPass is intentionally NOT added — CompositePass is the final pass
+    // HueSaturation pass: +10% saturation boost after bloom composite
+    const hueSaturationPass = new ShaderPass(
+      new THREE.ShaderMaterial({
+        uniforms: {
+          tDiffuse: { value: null },
+          hue: { value: 0.0 },
+          saturation: { value: 0.1 },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform sampler2D tDiffuse;
+          uniform float hue;
+          uniform float saturation;
+          varying vec2 vUv;
 
-    console.log('[SelectiveBloom] Dual-composer initialized: ACES v1 + CAS Sharpening + Specular Glints, luminanceSmoothing=0.1');
+          vec3 rgb2hsl(vec3 c) {
+            float maxC = max(c.r, max(c.g, c.b));
+            float minC = min(c.r, min(c.g, c.b));
+            float l = (maxC + minC) * 0.5;
+            float s = 0.0;
+            float h = 0.0;
+            if (maxC != minC) {
+              float d = maxC - minC;
+              s = l > 0.5 ? d / (2.0 - maxC - minC) : d / (maxC + minC);
+              if (maxC == c.r) h = (c.g - c.b) / d + (c.g < c.b ? 6.0 : 0.0);
+              else if (maxC == c.g) h = (c.b - c.r) / d + 2.0;
+              else h = (c.r - c.g) / d + 4.0;
+              h /= 6.0;
+            }
+            return vec3(h, s, l);
+          }
+
+          float hue2rgb(float p, float q, float t) {
+            if (t < 0.0) t += 1.0;
+            if (t > 1.0) t -= 1.0;
+            if (t < 1.0/6.0) return p + (q - p) * 6.0 * t;
+            if (t < 1.0/2.0) return q;
+            if (t < 2.0/3.0) return p + (q - p) * (2.0/3.0 - t) * 6.0;
+            return p;
+          }
+
+          vec3 hsl2rgb(vec3 c) {
+            if (c.y == 0.0) return vec3(c.z);
+            float q = c.z < 0.5 ? c.z * (1.0 + c.y) : c.z + c.y - c.z * c.y;
+            float p = 2.0 * c.z - q;
+            return vec3(
+              hue2rgb(p, q, c.x + 1.0/3.0),
+              hue2rgb(p, q, c.x),
+              hue2rgb(p, q, c.x - 1.0/3.0)
+            );
+          }
+
+          void main() {
+            vec4 texel = texture2D(tDiffuse, vUv);
+            vec3 hsl = rgb2hsl(texel.rgb);
+            hsl.x = fract(hsl.x + hue);
+            hsl.y = clamp(hsl.y * (1.0 + saturation), 0.0, 1.0);
+            gl_FragColor = vec4(hsl2rgb(hsl), texel.a);
+          }
+        `,
+      })
+    );
+    finalComposer.addPass(hueSaturationPass);
+
+    console.log('[SelectiveBloom] Dual-composer initialized: Layer1-only bloom + HueSaturation(+0.1)');
 
     return () => {
       bloomPassRef.current?.dispose();
@@ -340,27 +353,16 @@ function SelectiveBloomEffect() {
     }
   }, [size]);
 
-  // FINAL TECHNICAL PATCH: BUFFER & LAYER SYNC
-  useFrame((state) => {
-    const { gl, camera } = state;
+  useFrame(() => {
     if (!bloomComposerRef.current || !finalComposerRef.current) return;
 
-    // STEP 1: Render Bloom (Only crystals/glow)
+    // Step 1: Render only Layer 1 (emissive/bloom targets) into bloom render target
     camera.layers.set(1);
     bloomComposerRef.current.render();
 
-    // STEP 2: Link active bloom buffer to our Composite Shader
-    // This is the fix for the black screen - getting the texture from 'readBuffer'
-    const currentBloomTexture = bloomComposerRef.current.readBuffer.texture;
-    const compositePass = finalComposerRef.current.passes[1] as any;
-    if (compositePass?.uniforms?.bloomTexture) {
-      compositePass.uniforms.bloomTexture.value = currentBloomTexture;
-    }
-
-    // STEP 3: Render Final Scene (Background + Land + Glow)
-    gl.autoClear = true;
-    camera.layers.set(0); // Bring back BackgroundSphere
-    camera.layers.enable(1); // Keep Crystals/Glow
+    // Step 2: Restore camera to see both layers, render full scene + composite bloom
+    camera.layers.enable(0);
+    camera.layers.enable(1);
     finalComposerRef.current.render();
   }, 1);
 
@@ -423,15 +425,12 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
           ...(({ dithering: true } as any))
         }}
         onCreated={({ gl }) => {
-          // STEP 1: Disable built-in tone mapping — handled manually in ACES v1 shader
-          gl.toneMapping = THREE.NoToneMapping;
-          // STEP 1: Linear color space — gamma 2.2 applied manually in shader
-          gl.outputColorSpace = THREE.LinearSRGBColorSpace;
-          // STEP 1: No toneMappingExposure — exposure handled in shader (1.0)
+          // AgX Tone Mapping with exposure 1.2 to compensate for AgX softness
+          gl.toneMapping = THREE.AgXToneMapping;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+          gl.toneMappingExposure = 1.2;
           gl.setClearAlpha(1);
-          // Prevent renderer from fighting with the composer's manual clear in useFrame
-          gl.autoClear = false;
-          console.log('[Renderer] NoToneMapping, LinearSRGBColorSpace — ACES v1 shader active, autoClear=false');
+          console.log('[Renderer] AgXToneMapping, toneMappingExposure=1.2');
         }}
       >
         <Suspense fallback={null}>
@@ -473,7 +472,7 @@ export default function CubeVisualization({ biome }: CubeVisualizationProps) {
 
           <OrbitControls makeDefault />
 
-          {/* Selective Bloom (Layer 1 only) + ACES v1 Composite (final pass) */}
+          {/* Selective Bloom (Layer 1 only) + HueSaturation(+0.1) */}
           <SelectiveBloomEffect />
         </Suspense>
       </Canvas>
