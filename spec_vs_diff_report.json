@@ -1,10 +1,19 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-02T20:27:20.926Z",
-  "summary": "The diff shows CubeVisualization.tsx was modified with the integrated render pipeline. The file summary confirms all major features are present: ACES tonemapping, sharpening (0.15), glints (threshold 2.5, strength 3.0), dual-composer bloom (intensity 0.8, radius 0.65, threshold 0.1), NoToneMapping, autoClear=false, black clear color, BackgroundSphere on layer 0 with renderOrder -1000 and NaN-safe fragment shader, robust useFrame render loop, bloomTexture via readBuffer.texture, HueSaturationPass removed, and Suspense fallback with opaque black background. The truncated diff content confirms the composite shader fragment with all required ACES/sharpening/glints code is present. All 7 requirements appear to be implemented based on the available evidence.",
+  "generatedAt": "2026-03-01T17:37:26.553Z",
+  "summary": "The diff shows that CubeVisualization.tsx was modified and contains the new FBM-based nebula fragmentShader with the correct color palette (c1=blue, c2=pink, c3=purple, c4=near-black), blackMask via smoothstep, and gamma-corrected output. The file summary confirms the fragmentShader was updated as required. Two other files were also modified: frontend-file-summaries.txt and project_state.json — these are metadata/state tracking files, not backend or other frontend source files, so they are borderline but likely acceptable as internal tooling artifacts.",
   "missing_requirements": [],
-  "hallucinated_features": [],
+  "hallucinated_features": [
+    {
+      "description": "Modification of frontend-file-summaries.txt and project_state.json in addition to CubeVisualization.tsx",
+      "reason": "The build request constraint states 'Do not modify any other frontend files.' These two additional files were modified. However, they appear to be internal project-state/metadata files rather than application source files.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "project_state.json"
+      ]
+    }
+  ],
   "confidence": 0.82,
   "changed_files": [
     "frontend-file-summaries.txt",
