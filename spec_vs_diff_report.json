@@ -1,23 +1,15 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T17:37:26.553Z",
-  "summary": "The diff shows that CubeVisualization.tsx was modified and contains the new FBM-based nebula fragmentShader with the correct color palette (c1=blue, c2=pink, c3=purple, c4=near-black), blackMask via smoothstep, and gamma-corrected output. The file summary confirms the fragmentShader was updated as required. Two other files were also modified: frontend-file-summaries.txt and project_state.json — these are metadata/state tracking files, not backend or other frontend source files, so they are borderline but likely acceptable as internal tooling artifacts.",
+  "generatedAt": "2026-02-26T01:50:23.025Z",
+  "summary": "Both REQ-1 and REQ-2 appear to be implemented. CubeVisualization.tsx shows Bloom settings updated to intensity=0.15, radius=0.5, luminanceThreshold=0.1. LandModel.tsx shows all biome entries with emissiveIntensity=1.0 (changed from 1.5), and the pulse value and other material properties appear untouched.",
   "missing_requirements": [],
-  "hallucinated_features": [
-    {
-      "description": "Modification of frontend-file-summaries.txt and project_state.json in addition to CubeVisualization.tsx",
-      "reason": "The build request constraint states 'Do not modify any other frontend files.' These two additional files were modified. However, they appear to be internal project-state/metadata files rather than application source files.",
-      "evidence": [
-        "frontend-file-summaries.txt",
-        "project_state.json"
-      ]
-    }
-  ],
-  "confidence": 0.82,
+  "hallucinated_features": [],
+  "confidence": 0.88,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/components/CubeVisualization.tsx",
+    "frontend/src/components/LandModel.tsx",
     "project_state.json"
   ]
 }

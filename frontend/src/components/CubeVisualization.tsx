@@ -99,7 +99,7 @@ const BackgroundSphere = () => {
   const fragmentShader = `
     uniform float time;
     uniform vec2 resolution;
-
+    
     #define NUM_OCTAVES 6
 
     float random(vec2 pos) {
@@ -122,37 +122,42 @@ const BackgroundSphere = () => {
         float a = 0.5;
         vec2 shift = vec2(100.0);
         mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
-        for (int i = 0; i < NUM_OCTAVES; i++) {
+        for (int i=0; i<NUM_OCTAVES; i++) {
             float dir = mod(float(i), 2.0) > 0.5 ? 1.0 : -1.0;
-            v += a * noise(pos - 0.05 * dir * time * 0.2);
+            v += a * noise(pos - 0.05 * dir * time);
             pos = rot * pos * 2.0 + shift;
             a *= 0.5;
         }
         return v;
     }
 
-    void main() {
+    void main(void) {
         vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
         
-        vec3 c1 = vec3(0.2, 0.4, 0.9);
-        vec3 c2 = vec3(1.0, 0.1, 0.6);
-        vec3 c3 = vec3(0.3, 0.0, 0.5);
-        vec3 c4 = vec3(0.0, 0.0, 0.02);
+        vec3 c1 = vec3(0.2, 0.0, 0.4);
+        vec3 c2 = vec3(0.0, 0.8, 1.0);
+        vec3 c3 = vec3(0.9, 0.1, 0.4);
+        vec3 c4 = vec3(0.0, 0.0, 0.05);
 
         float time2 = time * 0.2;
-        vec2 q = vec2(fbm(p + 0.0 * time2), fbm(p + vec2(1.0)));
-        vec2 r = vec2(fbm(p + q + vec2(1.7, 1.2) + 0.15 * time2), fbm(p + q + vec2(8.3, 2.8) + 0.126 * time2));
+
+        vec2 q = vec2(0.0);
+        q.x = fbm(p + 0.00 * time2);
+        q.y = fbm(p + vec2(1.0));
+        
+        vec2 r = vec2(0.0);
+        r.x = fbm(p + 1.0 * q + vec2(1.7, 1.2) + 0.15 * time2);
+        r.y = fbm(p + 1.0 * q + vec2(8.3, 2.8) + 0.126 * time2);
+        
         float f = fbm(p + r);
 
-        vec3 color = mix(c1, c2, clamp(f * 1.2, 0.0, 1.0));
-        color = mix(color, c3, clamp(length(q) * 1.1, 0.0, 1.0));
-        
-        float blackMask = smoothstep(0.2, 0.8, length(r.x) * 0.7);
-        color = mix(color, c4, blackMask);
+        vec3 color = mix(c1, c2, clamp((f * f) * 4.0, 0.0, 1.0));
+        color = mix(color, c3, clamp(length(q), 0.0, 1.0));
+        color = mix(color, c4, clamp(length(r.x), 0.0, 1.0));
 
         color = (f * f * f * 1.5 + 0.5 * f) * color;
-        
-        gl_FragColor = vec4(pow(color, vec3(2.0)) * 5.0, 1.0);
+
+        gl_FragColor = vec4(pow(color, vec3(3.0)) * 6.0, 1.0);
     }
   `;
 

@@ -1,9 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Replace only the `fragmentShader` string content of the `backgroundSphere` in `CubeVisualization.tsx` with a new FBM-based nebula shader.
+**Goal:** Fine-tune crystal glass visual appearance by adjusting Bloom post-processing values and biome emissive intensity.
 
 **Planned changes:**
-- Replace the `backgroundSphere` `fragmentShader` constant in `frontend/src/components/CubeVisualization.tsx` with the new GLSL FBM nebula shader code (using `random`, `noise`, `fbm` functions and blue/pink/purple color mixing driven by `time` and `resolution` uniforms).
+- In `CubeVisualization.tsx`, set Bloom `intensity` to `0.15`, `radius` to `0.5`, and `luminanceThreshold` to `0.1`
+- In `LandModel.tsx`, set `emissiveIntensity` to `1.0` for every biome entry in `biomeConfigs` (previously `1.5`), leaving `pulse` and all other properties unchanged
 
-**User-visible outcome:** The animated background of the cube visualization renders a dynamic blue/pink/purple nebula cloud effect instead of the previous background shader.
+**User-visible outcome:** The crystal cube will display a subtler bloom glow, and all biome land models will render with slightly reduced emissive intensity.
